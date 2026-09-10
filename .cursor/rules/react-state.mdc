@@ -1,0 +1,49 @@
+---
+description: >-
+  Classify React state before picking a tool. Local UI stays in the component;
+  clinic data is Dexie, not a JS store. Adapted from Joshua's Muning
+  "How I Manage React States Effectively" note.
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# React state layers
+
+Ask **which layer** first. The tool follows. Do not dump everything into one store.
+
+| Layer | What it is | This repo |
+| --- | --- | --- |
+| Local UI | Sheet open, pressed, tab, draft input | `useState` in that component |
+| Shared chrome | Nav, density, toast host | Layout + `@karon/design-system` — **not** Zustand |
+| Live clinic data | Patients, chart events, quotes, outbox | **Dexie**. Feature hook reads/writes. UI does not own the row |
+| Network | Sync drain, PayMongo (owner, online) | **TanStack Query** for network only — never as the chart store |
+
+Zustand, Redux, Jotai, and SWR are **not** the clinic store. Server Actions are **not** the chair write path.
+
+## 1. Local stays local
+
+```tsx
+// ❌ modal in a global store
+const useUIStore = create((set) => ({ sheetOpen: false }));
+
+// ✅
+const [sheetOpen, setSheetOpen] = useState(false);
+```
+
+## 2. Live data is not React state
+
+Do not `useState` + `useEffect` fetch the patient list as the source of truth. Do not put patients in Zustand. Feature hooks (`useTodayBoard`) are the React adapter; Dexie + outbox own writes.
+
+```tsx
+// ❌
+const [patients, setPatients] = useState([]);
+useEffect(() => {
+  void db.patients.toArray().then(setPatients);
+}, []);
+
+// ✅ subscribe / live query via the feature hook; React holds sheetOpen, not the row
+```
+
+## 3. Components render; they do not orchestrate
+
+Screens do not mix Dexie, sync, and analytics in stacked `useEffect`s. Data → `local.ts` + hook. **Every `useEffect` is a signal that responsibilities may be mixed.**

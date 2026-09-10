@@ -1,0 +1,54 @@
+---
+description: Rules for generating and maintaining End-to-End (E2E) tests using Playwright in Next.js App Router applications.
+globs: e2e/**/*.spec.ts, e2e/**/*.page.ts
+alwaysApply: false
+---
+
+# End-to-End (E2E) Testing Rules (Next.js + Playwright)
+
+Follow these rules when creating or refactoring Playwright specs under `e2e/`. Do not apply them to Vitest unit tests (`*.test.ts` / `*.test.tsx`), including helpers colocated under `e2e/`.
+
+Copied from tax-plan-experts-web `e2e-test.mdc`; paths and roles adapted for this clinic repo.
+
+## 1. Directory Structure & Naming
+- **Location:** Store E2E coverage in `e2e/<feature>/`. Do not mix with unit tests and do not add a `/tests/e2e` tree.
+- **File Extensions:** Use `.spec.ts` only (`playwright.config.ts` `testMatch` is `**/*.spec.ts`).
+- **Layout:** Group by feature module, not by role (e.g. `e2e/today-board/today.spec.ts`). Put locators in `pages/` or `helpers/`; keep `test()` blocks in the spec.
+- **Run:** `yarn test:e2e` (or workspace equivalent) when the script exists. Fake data only — no real patient SPI.
+
+## 2. Page Object Model (POM) Pattern
+- Isolate locators and page-specific interactions in a page object or helper. Keep specs as user flows.
+- Put page objects next to the feature (`e2e/<feature>/pages/`) or in `e2e/pages/` when shared.
+- Import `test` / `expect` from a shared fixture (`e2e/fixtures/extended-test.ts`) once it exists, not `@playwright/test` directly in specs.
+
+```typescript
+import { type Page } from "@playwright/test";
+
+export class LoginPage {
+  constructor(private readonly page: Page) {}
+
+  async goto() {
+    await this.page.goto("/login", { waitUntil: "domcontentloaded" });
+  }
+
+  async submit() {
+    await this.page.getByTestId("e2e-login-submit").click();
+  }
+}
+```
+
+## 3. Resilient Locators
+- Prefer `getByRole` / `getByLabel` for visible UI. Use `getByTestId` for stable `e2e-*` hooks already in the app.
+- Never use fragile CSS classes (`.flex .btn-primary`) or copy that changes often.
+- Assert landmarks (URL patterns, visible shell test ids), not brittle exact copy or live data values.
+
+## 4. Routing & Network Handling
+- Use relative paths (`await page.goto("/today")`). `baseURL` is set in `playwright.config.ts`.
+- Wait for readiness with `waitForURL` or a visible landmark before acting. Prefer natural UI flows over deep-linking; soft-skip when required seed data is missing.
+- Intercept third-party traffic (PayMongo, SMS) with `page.route()` when isolation is required. Chair writes stay Dexie — do not invent REST CRUD to make a spec pass.
+
+## 5. Authentication, Roles & Mutations
+- Do not log in inside individual specs. Reuse `storageState` from `e2e/auth.setup.ts` via `test.use({ storageState })`.
+- Cover roles in one spec with `test.describe` + `test.use` + tags (`@owner`, `@assistant`). Do not create role-suffixed spec copies.
+- Tag tests that persist through a server action / DB / upload with `{ tag: "@integration" }`. Keep read-only smoke tests untagged.
+- Mutating specs must self-provision uniquely named **fake** data and clean up in fixtures.

@@ -1,0 +1,39 @@
+name: Quality
+
+# Manual only until CI is wanted. Restore pull_request + push to main then.
+on:
+  workflow_dispatch:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: yarn
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Unit tests
+        run: yarn test
+
+      - name: Install Chromium
+        run: yarn playwright install --with-deps chromium
+
+      - name: Build and run E2E
+        run: yarn test:e2e:ci

@@ -1,0 +1,611 @@
+{
+  "version": 1,
+  "skills": {
+    "accessibility": {
+      "source": "addyosmani/web-quality-skills",
+      "sourceType": "github",
+      "skillPath": "skills/accessibility/SKILL.md",
+      "computedHash": "88c64dead9bb55925c7b983f5fd95cfecf30bd8c076fd384cdb17019d1becd87"
+    },
+    "accurate-environment-model": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/accurate-environment-model/SKILL.md",
+      "computedHash": "4173499ef325df8f4d7618a5419881a81a78512b251d77d66e63ef1f85da3c4a"
+    },
+    "allowjs-mixing": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/allowjs-mixing/SKILL.md",
+      "computedHash": "a2e87ce7280a97ebd723f7aca91de7acca3169ceab7dddbc8ffa8ddfe1f06223"
+    },
+    "async-over-callbacks": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/async-over-callbacks/SKILL.md",
+      "computedHash": "65bb8d90b7782701b984dfc471da54179aa5fc100657556fa86d0eec6580f109"
+    },
+    "auth-and-authorization-patterns": {
+      "source": "aiming-lab/MetaClaw",
+      "sourceType": "github",
+      "skillPath": "memory_data/skills/auth-and-authorization-patterns/SKILL.md",
+      "computedHash": "9608af98acf3e0d50546505400fd90b02173951322f50caf1554417eece889d4"
+    },
+    "avoid-anecdotal-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/avoid-anecdotal-types/SKILL.md",
+      "computedHash": "b37833ebc42799ee5577d66332af02b18ff8195a7782c82b8272b9fceac329e7"
+    },
+    "avoid-inferable-annotations": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/avoid-inferable-annotations/SKILL.md",
+      "computedHash": "5ecd49f498d5598184be9c69edaec94d2a20f47d75ea9e62a3e66b15d0b03fd0"
+    },
+    "avoid-numeric-index": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/avoid-numeric-index/SKILL.md",
+      "computedHash": "76ba0e1157d59a3836dfe828384ba216d29d6435183320e6e63924c46674a4ab"
+    },
+    "avoid-repeated-params": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/avoid-repeated-params/SKILL.md",
+      "computedHash": "7c69106df423ba2718105cda59d4ac0571fabb4e6bd6b0aeeeac1de0707ca958"
+    },
+    "avoid-unnecessary-type-params": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/avoid-unnecessary-type-params/SKILL.md",
+      "computedHash": "5128e97c7fa04ee41ea089963713015ceef193afbb780220f18fa371903ae2b8"
+    },
+    "avoid-wrapper-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/avoid-wrapper-types/SKILL.md",
+      "computedHash": "a88ba740da329fc13729800ad1855f393f92c804e6ff3d8f44e2a815294526f5"
+    },
+    "backend-patterns": {
+      "source": "affaan-m/ecc",
+      "sourceType": "github",
+      "skillPath": "skills/backend-patterns/SKILL.md",
+      "computedHash": "45bf0c6abd0549b56142690f49437bc59c7b4f55b62dc7717ef295ec6ed6617f"
+    },
+    "best-practices": {
+      "source": "addyosmani/web-quality-skills",
+      "sourceType": "github",
+      "skillPath": "skills/best-practices/SKILL.md",
+      "computedHash": "fc34a8d4aea22d0158e0560457c82432e9d2d0ac74cf3e9aaccb599905f3f711"
+    },
+    "branded-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/branded-types/SKILL.md",
+      "computedHash": "02bdcd9f016ca9681b27004303fbdeb6b2159e0df3510fb8ac20f7ca339823f5"
+    },
+    "callback-this-type": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/callback-this-type/SKILL.md",
+      "computedHash": "6b45d67d6cec938f9f833a3d16325c4ad55054b804dd74789efc862bec735417"
+    },
+    "code-gen-independent": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/code-gen-independent/SKILL.md",
+      "computedHash": "c9042c23844dd7f3532cfd622e5c8ec231d810983b0b2cebde83a4ad38174aea"
+    },
+    "codebase-design": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/codebase-design/SKILL.md",
+      "computedHash": "caea3cb8a8281ff829fd1a2b985044e77601b62f301adf43f689ccfc74c15f6f"
+    },
+    "codegen-over-complex-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/codegen-over-complex-types/SKILL.md",
+      "computedHash": "30bef8152021dc57e95de1339327e4fa3de16223776d8db07a299cb5016f2e5b"
+    },
+    "compiler-performance": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/compiler-performance/SKILL.md",
+      "computedHash": "135c5642e45582901ed50f9d4c0fa842ff6f7cbe4b7b322de3bbcf38995c4024"
+    },
+    "conditional-types-over-overloads": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/conditional-types-over-overloads/SKILL.md",
+      "computedHash": "20329d6ddb8803b3acd0afa0a53fe78e8731bbf9baa43d04ac3f7ba6c63b7185"
+    },
+    "consistent-aliases": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/consistent-aliases/SKILL.md",
+      "computedHash": "3b728c0b10c94baddacc835a83b7120d2d53cb7cd6ee05ba3bfe8a6e508e9f24"
+    },
+    "context-type-inference": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/context-type-inference/SKILL.md",
+      "computedHash": "4c448032274df339ba8a1bfbf32589c8f64d721376703a2e7249815400b32106"
+    },
+    "control-union-distribution": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/control-union-distribution/SKILL.md",
+      "computedHash": "1311cffef49746f91db7c684e63071795241b4a3a932dfb839916c6c7fe591ac"
+    },
+    "create-objects-all-at-once": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/create-objects-all-at-once/SKILL.md",
+      "computedHash": "e8e99d688a156a102e0d4a5f261caf4b70b889ce0f4ed25d47cea27505a8450d"
+    },
+    "currying-inference": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/currying-inference/SKILL.md",
+      "computedHash": "a0e6ab21431564a814e12c3aeca05288f477ab43157abcb1a1ccacbcf9c8bc95"
+    },
+    "different-variables-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/different-variables-types/SKILL.md",
+      "computedHash": "286157b7f137b4a4d410daef3b0c6d25653b981bc8a67faaa7e1dd1c58b3c365"
+    },
+    "distinct-special-values": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/distinct-special-values/SKILL.md",
+      "computedHash": "cc82af27d46677608d36741abfd62428b77065f57148c649bc35dab91101b7da"
+    },
+    "dom-hierarchy": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/dom-hierarchy/SKILL.md",
+      "computedHash": "633255b5f8afd0090a50af0eb6ff552a51ff850f53ab96cd28cf6a5760512e2c"
+    },
+    "domain-language-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/domain-language-types/SKILL.md",
+      "computedHash": "9c0da80d49bfdf32e00f6fff1d3769ffc3d4bb895019e452561d3e2eb2ef03f1"
+    },
+    "domain-modeling": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/domain-modeling/SKILL.md",
+      "computedHash": "336547f3ff285e822fc70b69b170dc58bceef9c8ed5fad18de0046287d6be837"
+    },
+    "drizzle-orm": {
+      "source": "pedronauck/skills",
+      "sourceType": "github",
+      "skillPath": "skills/community/drizzle-orm/SKILL.md",
+      "computedHash": "a65a653560232b104947d460ded599db22dc320f1c65ee3080e8f527649be0b8"
+    },
+    "drizzle-postgres": {
+      "source": "pedronauck/skills",
+      "sourceType": "github",
+      "skillPath": "skills/community/drizzle-postgres/SKILL.md",
+      "computedHash": "c4fcaba668a53aee827c3b70a1dd900e9f782cc7cbe1e3d880b7334d7ee36374"
+    },
+    "drizzle-safe-migrations": {
+      "source": "pedronauck/skills",
+      "sourceType": "github",
+      "skillPath": "skills/mine/drizzle-safe-migrations/SKILL.md",
+      "computedHash": "cd9ac75743ecfc93d285e89f4e2d376091f3f9a8337ad0bcb93b50010d747cb6"
+    },
+    "dry-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/dry-types/SKILL.md",
+      "computedHash": "405dcaef313f1e755ffc4098084b36c23807b446704077541d8eb46b1a63301f"
+    },
+    "ecmascript-over-typescript-features": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ecmascript-over-typescript-features/SKILL.md",
+      "computedHash": "2ba2c2db77378ef2276c7f36b466ec73a6ebad1989f9695c10aff4f7419286e0"
+    },
+    "editor-interrogation": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/editor-interrogation/SKILL.md",
+      "computedHash": "4a6d6f838c4dde3ff7d33581b187ec8226f0dfd14073ee076958d90bdc628cf5"
+    },
+    "evolving-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/evolving-types/SKILL.md",
+      "computedHash": "279e37e6805825b384d2771fceb2cf8b60c6b73017f9353fed187f0b23242f62"
+    },
+    "excess-property-checking": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/excess-property-checking/SKILL.md",
+      "computedHash": "55711eb0e56e5d9bc86dd2e63839721b799171ec727671aca94080dc857a4851"
+    },
+    "exclusive-or-properties": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/exclusive-or-properties/SKILL.md",
+      "computedHash": "fd39def16648ce3a8dfd5d12d65a59c56fc0c3acd47bb35b13810f350f168b8b"
+    },
+    "exhaustiveness-checking": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/exhaustiveness-checking/SKILL.md",
+      "computedHash": "1dae9bedf18b157b37959d0b860034c9c85ef9377d7614bfe4705977b7f639b6"
+    },
+    "export-public-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/export-public-types/SKILL.md",
+      "computedHash": "8423b1e63b98de5d3db71c8beedc685ce222bb611813b14c1326ba92886a4775"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "106acf230014cbb43ca34e6410371321b56ca742f9ee0442e8ec05bf02eb0384"
+    },
+    "function-type-expressions": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/function-type-expressions/SKILL.md",
+      "computedHash": "5d896d967362204c8a11856ee3422a991b0966e09c65b3afa163b3c661ce08c3"
+    },
+    "functional-constructs-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/functional-constructs-types/SKILL.md",
+      "computedHash": "6c3c17b328472f5948d4f87f6b09013a2f03f2bb90846cd4a88991426020d70f"
+    },
+    "generics-as-functions": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/generics-as-functions/SKILL.md",
+      "computedHash": "1b953430426da93bb893fded61eecd9261ca8544f620494be5e9e5b778444ba0"
+    },
+    "hallmark": {
+      "source": "nutlope/hallmark",
+      "sourceType": "github",
+      "skillPath": "skills/hallmark/SKILL.md",
+      "computedHash": "6d53b2b609e05849c1dd0fc53e37daa7515089d5880c15e7e885c86e8b814e9c"
+    },
+    "hide-unsafe-assertions": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/hide-unsafe-assertions/SKILL.md",
+      "computedHash": "2931e5f48027d01893c751ca344eecb0f51b3849ed7022dca326a96bf03b6555"
+    },
+    "imprecise-over-inaccurate": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/imprecise-over-inaccurate/SKILL.md",
+      "computedHash": "4e426f356c8c55e21f0ca98f18aab6292330e65589466ff1769b2fee4da77c88"
+    },
+    "index-signature-alternatives": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/index-signature-alternatives/SKILL.md",
+      "computedHash": "110027ae8e35e8e510d284c21dfa436b6f101378cd0c8ad754996ec95caec09a"
+    },
+    "iterate-objects-safely": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/iterate-objects-safely/SKILL.md",
+      "computedHash": "b51d73435263819bbb470b8871e22e58740c76bc6d7e21dc50d622968b273cf6"
+    },
+    "liberal-accept-strict-return": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/liberal-accept-strict-return/SKILL.md",
+      "computedHash": "678bcc9c1e9d9f34a1a7a8e1e2e9d9b23e5aba3799a5775d8c642722542dfe04"
+    },
+    "limit-any-type": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/limit-any-type/SKILL.md",
+      "computedHash": "10f5c0136b1864a81d5392458b712bc7abcb7ec43a5f702b34679ab8ca5cd257"
+    },
+    "limit-optional-properties": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/limit-optional-properties/SKILL.md",
+      "computedHash": "0bfd667ff1e02c8d45e38c076a447055ed3b469d6a552f6efafb2d0713e74577"
+    },
+    "mirror-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mirror-types/SKILL.md",
+      "computedHash": "146f53e546a132446a5ecec01c672f406a3d9500c3354b243234544b7d2f0393"
+    },
+    "module-augmentation": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/module-augmentation/SKILL.md",
+      "computedHash": "d3d235f55766a20709d0cd908eb285871d39b26eec423a5ad117e2b164535665"
+    },
+    "module-by-module-migration": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/module-by-module-migration/SKILL.md",
+      "computedHash": "4b61cc531bb87894ca22919a7e153a8328ac7f2b5ed4307ba890cd8dd38db0cc"
+    },
+    "narrow-any-scope": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/narrow-any-scope/SKILL.md",
+      "computedHash": "3ff5ac0e7b06dd9f2e6b1632c239803069ac694e5eeb4866354171d39269e4ba"
+    },
+    "nextjs-supabase-auth": {
+      "source": "sickn33/agentic-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nextjs-supabase-auth/SKILL.md",
+      "computedHash": "f2f8b00877ed450e4b5d1e040b52c1c4d312ec2264c75d2248253814c2a9e9ba"
+    },
+    "no-null-in-aliases": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/no-null-in-aliases/SKILL.md",
+      "computedHash": "c6d986e09450107690c13d2543391957cefa2b794e8c1eb6a17a8294dc1cf2d8"
+    },
+    "no-type-in-docs": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/no-type-in-docs/SKILL.md",
+      "computedHash": "4d3f285dd7b3f70326f020328932db39288180eddf820fdc7792f159c2e2d3bf"
+    },
+    "noimplicitany-completion": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/noimplicitany-completion/SKILL.md",
+      "computedHash": "745b90f9d9c29f3a54f896a88e97802e28197491b5e96704331ff95d6fe02d63"
+    },
+    "performance": {
+      "source": "addyosmani/web-quality-skills",
+      "sourceType": "github",
+      "skillPath": "skills/performance/SKILL.md",
+      "computedHash": "25074989a0bbf636fd92e9079270b262a1c63422ed72a854494a8241dea0fcc5"
+    },
+    "postgres-best-practices": {
+      "source": "neondatabase/postgres-skills",
+      "sourceType": "github",
+      "skillPath": "skills/postgres-best-practices/SKILL.md",
+      "computedHash": "316f8f76c582ff3bf9a6c8e4238867dbdbf70735587f40cb634c4d046ff5db42"
+    },
+    "precise-any-variants": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/precise-any-variants/SKILL.md",
+      "computedHash": "0b9627d6dc375d91d92f2d34b26d00e9101012c8801c0773e2b0909c11253f71"
+    },
+    "precise-string-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/precise-string-types/SKILL.md",
+      "computedHash": "b534c4af67850e40af868ff7d009e31dab321cef83d5ef6bb0a45253e6cb4a39"
+    },
+    "prefer-type-annotations": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/prefer-type-annotations/SKILL.md",
+      "computedHash": "f735b95983370b494e08d5d1fa9cf5f69227f5589f16c17241aac41c3641e619"
+    },
+    "prefer-unknown-over-any": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/prefer-unknown-over-any/SKILL.md",
+      "computedHash": "bfd61bf6514aae5766bdca48fe81b1a6faa1e7af1ee12a0536e7afea8773cb9e"
+    },
+    "push-null-to-perimeter": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/push-null-to-perimeter/SKILL.md",
+      "computedHash": "3cf7757f2f7686214eed353b8bbb3ad76b0c5f526515c3b24a15ec40523d6cce"
+    },
+    "record-types-sync": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/record-types-sync/SKILL.md",
+      "computedHash": "f6476b87c15a35bc3d89197b3d4e9106d5e1fcd36a627d3c193284b9fea6e303"
+    },
+    "runtime-type-reconstruction": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/runtime-type-reconstruction/SKILL.md",
+      "computedHash": "3c604feccb421b7a6cdfbd7748e06257a6fbc1a25147f7f717f1c3ac2dd0366d"
+    },
+    "soundness-traps": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/soundness-traps/SKILL.md",
+      "computedHash": "f87d7e9ec56f3aa86ef2242b931b295803ffbc16ea5b8546d909343312518597"
+    },
+    "source-maps-debugging": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/source-maps-debugging/SKILL.md",
+      "computedHash": "b0d5215743b7509b0edac2572d1c698b698533dbd12bee9b700ba6148b69b5f3"
+    },
+    "structural-typing": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/structural-typing/SKILL.md",
+      "computedHash": "a813ac67853f33d13e975c5de3606d6284678f0bfc6bf08f22b4d41d45089742"
+    },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase/SKILL.md",
+      "computedHash": "a6260582f48df8ba53380bb9b9e870ed2ae5fe147799e90ed783b8aa25167d50"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
+      "computedHash": "128fac78002d916c8ca908245d398e634f540d8bcf20915b2b2359aeb18eba59"
+    },
+    "tagged-unions": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tagged-unions/SKILL.md",
+      "computedHash": "0b41fedd29144efafc7768e3eb25166796dee83747b0c5dd084188542fedf14b"
+    },
+    "tail-recursive-generics": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tail-recursive-generics/SKILL.md",
+      "computedHash": "0ea97a5dc93a36368cd9d70d456cdeb034909bbe18ad2aafe70162d4bf2068b3"
+    },
+    "tdd": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/tdd/SKILL.md",
+      "computedHash": "c1ed8cd854c64d4d226097255d3fa662dae4a758a1462fadd63cc10e413d88d7"
+    },
+    "template-literal-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/template-literal-types/SKILL.md",
+      "computedHash": "3b44648d71b649c8e7894a90cb120a5f040c72859c3faeb686c67e29ebcda096"
+    },
+    "test-your-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/test-your-types/SKILL.md",
+      "computedHash": "e13be11e4741deee4d05a5b2bc248fb48807129a037759c73050a5528ba7baef"
+    },
+    "three-versions-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/three-versions-types/SKILL.md",
+      "computedHash": "c54aa25ca4f620f63080949a6c85525a465a01ab9b764dd54b0a8a600c64a300"
+    },
+    "ts-check-jsdoc-experiment": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ts-check-jsdoc-experiment/SKILL.md",
+      "computedHash": "47a3e2ee5329c536ea6bd8f174a87f706d4b1fe7acbe32ab9fd2bee2de22d2d8"
+    },
+    "ts-js-relationship": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ts-js-relationship/SKILL.md",
+      "computedHash": "cd7ddd599c941c9b1a45a8e5406a2c9ef127d7887f7ef16277defff02015097c"
+    },
+    "tsconfig-options": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tsconfig-options/SKILL.md",
+      "computedHash": "862a28e8386f976b47112efac8ed22f4b66186d260c618a87439f99a7cf5b9f1"
+    },
+    "tsdoc-comments": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tsdoc-comments/SKILL.md",
+      "computedHash": "1a5031e229e58ddef5d17e1b702221ee14677a3d07f7204c6170060c3647f283"
+    },
+    "type-checking-vs-testing": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/type-checking-vs-testing/SKILL.md",
+      "computedHash": "b1ecf7dda40837a91f11f50b7a29ad9421438760ae00c359c10cce250133106f"
+    },
+    "type-coverage": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/type-coverage/SKILL.md",
+      "computedHash": "f7c150a64aa598147d1a46e723d2ba7c113d4b1298e8b4f3edae258ec4551218"
+    },
+    "type-display-attention": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/type-display-attention/SKILL.md",
+      "computedHash": "e19be1bfd5e2c61e793250150e73f8bccebcabd3513943bcb421173fb7f3fb63"
+    },
+    "type-narrowing": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/type-narrowing/SKILL.md",
+      "computedHash": "b3f96b2fdce04a132e423fee37bafa55de50cda4985be29f5c9384466b0131f2"
+    },
+    "type-safe-monkey-patching": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/type-safe-monkey-patching/SKILL.md",
+      "computedHash": "68d29d8621fe1e373fbdcfc4b079e43c117bbbce3e1e9c3936591b8abb3820e3"
+    },
+    "type-value-space": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/type-value-space/SKILL.md",
+      "computedHash": "ddc5086c1b54d170dee6f4ccf1b962edd8ae462d45e990f1c339a08eac3cf0de"
+    },
+    "type-vs-interface": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/type-vs-interface/SKILL.md",
+      "computedHash": "4d062632df893698f086f8c1d47b6b0003f66738a3b6db9e524f127df8723868"
+    },
+    "types-as-sets": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/types-as-sets/SKILL.md",
+      "computedHash": "38003ad6d5eb83e663be3d8a9fb0270c2376bf75a510bdd76313da48946e0d71"
+    },
+    "typescript-devdependencies": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/typescript-devdependencies/SKILL.md",
+      "computedHash": "e37aa404f03aaa31817cf0a310451ca6fa7ac76177a917a661cf44f4dcc6443d"
+    },
+    "understand-type-widening": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/understand-type-widening/SKILL.md",
+      "computedHash": "e894f3451b6d20a0fb7544c610dedcc2af8d60d209230417590f02946766d9d1"
+    },
+    "unify-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/unify-types/SKILL.md",
+      "computedHash": "ecbb2a9d62a3e7c9bb4a5e813071afdf51e758a6dbf06004f1c71d6c521c02ba"
+    },
+    "use-readonly": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/use-readonly/SKILL.md",
+      "computedHash": "9ac20581ca230e19915aa4bf53fa5840cb7451b3a8aef791e501b00512ffdc5f"
+    },
+    "valid-state-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/valid-state-types/SKILL.md",
+      "computedHash": "9f4d5192fe18410c7efde44a4d1d4045fa7d9c96dec3429949e6dc9b00a98293"
+    },
+    "variadic-tuple-types": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/variadic-tuple-types/SKILL.md",
+      "computedHash": "ed048cfa48e7610e3a71f96e63b43f953ace2e70ea030650bd76f2e7b096e36c"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "d8e7d3afe37dcc8a97b99ffb5afdb4d0919ae0092ea8b68f44eb201f035e33ac"
+    },
+    "write-modern-javascript": {
+      "source": "marius-townhouse/effective-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/write-modern-javascript/SKILL.md",
+      "computedHash": "b452aa87172098a456ec4e5230ec6627ba62a056b4269f59973a45504d3759e4"
+    }
+  }
+}

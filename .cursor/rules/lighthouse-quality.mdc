@@ -1,0 +1,57 @@
+---
+description: >-
+  When writing or changing UI, design for Lighthouse Performance, Best
+  Practices, Accessibility, and SEO. Aim 90+, prefer 100. Do not run Chrome
+  DevTools or Lighthouse unless Joshua asks.
+globs: "**/*.{tsx,jsx,css,html}"
+alwaysApply: false
+---
+
+# Lighthouse-minded UI (do not run the tool)
+
+Every UI change should be something that would score **90+** (prefer **100**) on Lighthouse: **Performance**, **Best practices**, **Accessibility**, **SEO**.
+
+**Do not** open Chrome DevTools, Lighthouse, or PageSpeed to prove it. Build as if those audits will run later.
+
+Ponytail still wins: no extra libraries “for Lighthouse.” Use Next, the design system, and HTML that is already correct.
+
+## Priority by surface
+
+| Surface | Perf / a11y / best practices | SEO |
+|---|---|---|
+| `apps/clinic` chair + login | **Primary** (NFR-08 tap size, gloves) | **Low** — `noindex` authenticated app is fine |
+| `apps/admin` (later) | **Primary** | **Low** — same; do not chase public SERP |
+| `apps/marketing` (later) | **Primary** | **Primary** — titles, description, headings, crawlable HTML |
+
+## Performance
+
+- Prefer Server Components. `"use client"` only for Dexie, odontogram, or real interactivity.
+- Do not ship Dexie / odontogram / Serwist on marketing or admin.
+- Images: `next/image` (or equivalent), width/height or aspect-ratio, no layout shift.
+- Fonts: one family from the design system; `display: swap`; no extra webfonts per page.
+- No huge client waterfalls; no unused JS in the chair path.
+
+## Accessibility (non-negotiable)
+
+- Controls have an accessible name (label / `aria-label`). Icon-only buttons named.
+- Dialog / Sheet / Drawer always have a title (shadcn rule; `sr-only` if needed).
+- Contrast from **tokens**, not pale gray on white.
+- Chair: ~44px min tap targets (`data-density="clinic"`).
+- Keyboard: focus visible; do not `outline-none` without a replacement.
+- Headings in order. One `h1` per view.
+- `html` `lang` set (default `en` / `en-PH` later).
+
+## Best practices
+
+- HTTPS in production (NFR-01). No mixed content.
+- No secrets or SPI in `console.*` or the client bundle.
+- Links: `rel` on `target="_blank"`. Buttons are `<button>`, links are `<a>` / `Link`.
+- Do not paste browser APIs that break without a feature check if the PWA must still load.
+
+## SEO (secondary except marketing)
+
+- Public pages: unique `title` + meta description (`generateMetadata`).
+- Authenticated clinic/admin: skip keyword work; still use a real document title for the tab. `robots: noindex` when we scaffold those layouts.
+- Do not block the 90-second loop for Open Graph on the today-board.
+
+If a choice would obviously tank one of these four (missing label, CLS, blocking font, `h3` with no `h1`), fix it in the same diff.

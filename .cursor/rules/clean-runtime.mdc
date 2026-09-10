@@ -1,0 +1,30 @@
+---
+description: >-
+  After a feature, non-trivial bug fix, or refactor: read existing terminals
+  for warn/error. The running app stays clean. Skip trivia.
+alwaysApply: true
+---
+
+# Clean runtime
+
+Run this **with** finalize-review, **before** claiming done. Same skip: typos, one-liners, docs-only, questions with no code.
+
+`yarn typecheck` / `lint` / `test` do not prove `next dev` is quiet. Warnings and errors in the terminals you can already see block done.
+
+## Check
+
+1. List Cursor terminals. Read each one that ran during this work (`yarn dev`, `next`, Vitest, Playwright).
+2. After your last save / Fast Refresh, scan for `WARN`, `ERROR`, `Warning:`, `Error:`, `Failed to compile`, overlay errors.
+3. Command output counts: ESLint warnings in files you touched, Vitest `console.error` / `console.warn`, non-zero exits.
+4. If Next is **already** running, its buffer after your change must be clean. Do **not** start a dev server just for this gate.
+5. If nothing is running, say so. Do not claim the runtime is clean.
+
+## Dirty — fix, then re-read
+
+Root cause in **our** code (`apps/`, `packages/`). Do not leave a debug `console.warn` / `console.error`. Intentional LogLayer/Pino at a real error path is not dirt.
+
+Framework noise you did **not** cause is not a rewrite. Do not add to it.
+
+## Skip
+
+Do not poll an empty terminal. Do not paste a log dump into the reply — one line: clean, or `file:line — what — fix`.

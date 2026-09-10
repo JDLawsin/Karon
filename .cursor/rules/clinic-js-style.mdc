@@ -1,0 +1,51 @@
+---
+description: >-
+  Use when writing or editing TypeScript or TSX in this repo. Modern ES6+
+  syntax (const/let, arrows, spread, async/await). Feature UI is a typed
+  arrow with a default export; Next route files stay default exports.
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# JavaScript / component style
+
+Write ES6+ TypeScript. Never `var`. Prefer `const`; use `let` only when the binding is reassigned.
+
+Use arrow functions, destructuring, object/array spread, optional chaining, nullish coalescing, and `async`/`await` instead of `function` callbacks, `Object.assign`, or `.then()` chains.
+
+Files: **kebab-case** (`patient-form.tsx`, `use-create-patient.ts`).
+
+## Components (`.tsx`)
+
+One component per file. Typed props, arrow function, default export:
+
+```tsx
+type Props = {
+  label: string;
+  onPress: () => void;
+};
+
+const PrimaryButton = ({ label, onPress }: Props) => {
+  return null;
+};
+
+export default PrimaryButton;
+```
+
+If the file exports more than one component, name the type `{ComponentName}Props` instead of `Props`.
+
+Next.js `page.tsx` / `layout.tsx` stay default exports (required). Keep them thin — import the feature screen as default:
+
+```tsx
+import TodayBoard from "@/features/today-board/today-board";
+
+const TodayPage = () => <TodayBoard />;
+
+export default TodayPage;
+```
+
+`route.ts` uses named HTTP handlers (`GET`, `POST`).
+
+## Not components
+
+Named exports for domain, Dexie helpers, hooks, and Zod (`export const createPatient = …`, `export const useCreatePatient = () => { … }`).

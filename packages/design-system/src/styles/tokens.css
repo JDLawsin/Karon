@@ -1,0 +1,117 @@
+:root {
+  /* Locked 2026-09-10. Intent: DESIGN.md. Do not put hex in feature files. */
+  color-scheme: light;
+  --background: oklch(0.977 0.006 220);
+  --foreground: oklch(0.28 0.025 230);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.45 0.09 240);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.945 0.008 220);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.945 0.008 220);
+  --muted-foreground: oklch(0.46 0.02 220);
+  --accent: oklch(0.94 0.02 240);
+  --accent-foreground: var(--foreground);
+  --success: oklch(0.45 0.1 155);
+  --success-foreground: oklch(0.99 0 0);
+  --success-subtle: oklch(0.94 0.03 155);
+  --warning: oklch(0.55 0.13 55);
+  --warning-foreground: oklch(0.38 0.12 50);
+  --warning-subtle: oklch(0.94 0.03 70);
+  --destructive: oklch(0.5 0.16 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --destructive-subtle: oklch(0.94 0.03 25);
+  --info: oklch(0.45 0.07 200);
+  --info-foreground: oklch(0.99 0 0);
+  --info-subtle: oklch(0.94 0.02 200);
+  --border: oklch(0.88 0.01 220);
+  --input: oklch(0.58 0.02 220);
+  --ring: var(--primary);
+  --radius: 0.5rem;
+  --control-min-height: 2.5rem;
+  --font-sans: var(--font-ibm-plex-sans, "IBM Plex Sans"), ui-sans-serif, system-ui,
+    sans-serif;
+
+  --odon-background: var(--background);
+  --odon-foreground: var(--foreground);
+  --odon-primary: var(--primary);
+  --odon-border: var(--border);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: oklch(0.18 0.02 230);
+  --foreground: oklch(0.93 0.01 220);
+  --card: oklch(0.23 0.02 230);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.23 0.02 230);
+  --popover-foreground: var(--foreground);
+  /* Lighter brand so text-primary still passes AA on dark paper. */
+  --primary: oklch(0.62 0.08 240);
+  --primary-foreground: oklch(0.18 0.02 230);
+  --secondary: oklch(0.27 0.015 230);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.27 0.015 230);
+  --muted-foreground: oklch(0.72 0.02 220);
+  --accent: oklch(0.28 0.03 240);
+  --accent-foreground: var(--foreground);
+  --success: oklch(0.68 0.1 155);
+  --success-foreground: oklch(0.18 0.02 230);
+  --success-subtle: oklch(0.28 0.04 155);
+  --warning: oklch(0.72 0.12 70);
+  --warning-foreground: oklch(0.18 0.02 230);
+  --warning-subtle: oklch(0.28 0.04 70);
+  --destructive: oklch(0.68 0.14 25);
+  --destructive-foreground: oklch(0.18 0.02 230);
+  --destructive-subtle: oklch(0.28 0.04 25);
+  --info: oklch(0.68 0.07 200);
+  --info-foreground: oklch(0.18 0.02 230);
+  --info-subtle: oklch(0.28 0.03 200);
+  --border: oklch(0.32 0.015 230);
+  --input: oklch(0.62 0.02 220);
+  --ring: var(--primary);
+}
+
+[data-density="clinic"] {
+  --control-min-height: 2.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-subtle: var(--info-subtle);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: 0.25rem;
+  --radius-md: var(--radius);
+  --radius-lg: 0.75rem;
+  --font-sans: var(--font-ibm-plex-sans, "IBM Plex Sans"), ui-sans-serif, system-ui,
+    sans-serif;
+}

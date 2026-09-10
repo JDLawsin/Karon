@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+@import "@karon/design-system/styles.css";
+@source "../../../../packages/design-system/src";
+
+body {
+  min-height: 100vh;
+}

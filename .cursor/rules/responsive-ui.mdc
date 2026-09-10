@@ -1,0 +1,29 @@
+---
+description: Require every UI feature and UI change to work across phone, tablet, desktop, and wide screens without overflow or lost functionality.
+globs: "**/*.{tsx,jsx,css,html}"
+alwaysApply: true
+---
+
+# Responsive UI is required
+
+Every new or changed user-facing UI must be responsive. Treat responsiveness as part of implementation, not follow-up polish.
+
+## Build
+
+- Start mobile-first and let layouts expand progressively.
+- Prefer normal flow, Grid/Flexbox, wrapping, `minmax()`, relative units, and existing design-system breakpoints.
+- Avoid fixed widths/heights when content or viewport size can vary. Use sensible `min-*` / `max-*` constraints.
+- Never require horizontal page scrolling at 320px wide. Only intrinsically wide controls such as data tables may scroll inside a clearly bounded region.
+- Keep actions, labels, validation, dialogs, and navigation visible and usable at every supported size.
+- Account for long names, translated-length text, browser zoom, safe areas, and mobile viewport height.
+- Preserve the clinic's 44px minimum touch-target contract.
+- Do not create separate mobile and desktop component trees unless their behavior genuinely differs.
+
+## Verify before completion
+
+- Exercise changed UI at representative phone (320–390px), tablet (~768px), desktop (~1280px), and wide-screen widths.
+- Check portrait and landscape where layout or viewport height matters.
+- Confirm there is no clipping, overlap, unintended overflow, unreadably narrow content, or functionality available at only one breakpoint.
+- Add or update the smallest useful Playwright coverage when responsive behavior is non-trivial or has regressed before; use role/text/test-id selectors per repository rules.
+
+If responsive verification cannot be run, state that explicitly instead of claiming the UI is fully verified.

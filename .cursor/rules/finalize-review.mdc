@@ -1,0 +1,37 @@
+---
+description: >-
+  Before claiming a feature, big bug fix, or refactor done: review the diff
+  through Joshua's seven vault lenses, then run yarn checks. Skip trivia.
+alwaysApply: true
+---
+
+# Finalize review
+
+Run this **before** you say a feature, non-trivial bug fix, or refactor is done. Skip typos, one-liners, docs-only, and questions with no code.
+
+Do **not** spawn seven reviewers. One pass over the **diff**, seven lenses. Empty lenses: write `none`. Findings: `file:line — severity — lens — issue — fix`. Fix **high** before claiming done; fix **medium** if it is a small diff; mention **low**.
+
+**Base (pick one, then stick to it):**
+
+1. Uncommitted work → `git diff HEAD` plus the untracked files you added.
+2. Branch commits → `git diff $(git merge-base HEAD origin/main)...HEAD` (`master` if that is the default).
+3. No git / no `origin` → the files this session actually changed.
+
+Language is TypeScript + Next.js App Router. Product locks in `AGENTS.md` and `docs/` beat generic Nest/MVC advice. Ponytail still wins: this gate does not add layers, deps, or comment blocks.
+
+## Lenses (this order)
+
+1. **Bugs** — logic, runtime, edge cases, sibling callers of anything you touched. Offline path still writes Dexie.
+2. **Security** — RLS not bypassed (`db.admin` on patient tables is a finding); no service-role in the client; no SPI in Pino/SigNoz; webhook signatures; secrets not in git.
+3. **Quality** — readability, `clinic-js-style`, tokens from `@karon/design-system`, layers (`app/` thin, features own the job, `lib/` engines), and `.cursor/rules/lighthouse-quality.mdc` (perf / a11y / best practices; SEO only if the surface is public). Do not write a second quality section.
+4. **Testability** — Zod at the Dexie/sync/PayMongo edge; Vitest next to domain; Playwright for the 90-second loop with fake data (`writing-e2e` + `e2e-test` rules; review with `review-e2e-test`). Hidden deps that block a test are a finding. Do not add a second test framework.
+5. **API / docs** — chair has no REST CRUD. Check named exports (hooks, `create-patient.ts`), F-IDs if behavior changed, comments are not a second source of truth. Do not spray JSDoc.
+6. **Simplify** — complexity, duplication, naming. Preserve behavior. Prefer delete. Same job as ponytail-review.
+
+Then run the matching commands (`yarn` workspace typecheck / lint / test when those scripts exist) and fix failures. Then `.cursor/rules/clean-runtime.mdc`: read terminals that already exist (`next dev`, Vitest). Warnings and errors block done. No completion claim without that evidence.
+
+UI that users see: exercise the flow in the browser when browser tools exist (Joshua’s web-app rule). Fake data only until Step 9.
+
+## Skip
+
+Do not turn this into a design rewrite, a new abstraction, or a docs novel. If the only findings are low and checks are green, ship.

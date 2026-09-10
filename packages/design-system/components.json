@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-nova",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/index.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@karon/design-system/primitives",
+    "hooks": "@karon/design-system/hooks",
+    "lib": "@karon/design-system/lib",
+    "utils": "@karon/design-system/lib/cn",
+    "ui": "@karon/design-system/primitives"
+  }
+}
