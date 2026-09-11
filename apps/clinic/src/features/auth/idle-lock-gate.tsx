@@ -115,7 +115,7 @@ const IdleLockGate = ({ membership, userId, children }: Props) => {
         <AlertDialogContent onEscapeKeyDown={stayLocked}>
           <AlertDialogTitle>Session locked</AlertDialogTitle>
           <AlertDialogDescription>
-            Sign in again to use the clinic. Work saved on this device is still here.
+            Sign in again to use the clinic.
           </AlertDialogDescription>
           <AlertDialogAction asChild className="mt-6 w-full">
             <a href="/login">Log in</a>

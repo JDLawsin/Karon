@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { dropClinicStores } from "@/lib/db/clinic-db";
+
 import { clearClinicPageCaches, leaveClinicSession } from "./leave-clinic-session";
+
+vi.mock("@/lib/db/clinic-db", () => ({
+  dropClinicStores: vi.fn()
+}));
 
 describe("clearClinicPageCaches", () => {
   it("deletes pages and pages-rsc caches", async () => {
@@ -30,6 +36,7 @@ describe("leaveClinicSession", () => {
     } as never);
 
     expect(rpc).toHaveBeenCalledWith("revoke_my_session");
+    expect(dropClinicStores).toHaveBeenCalled();
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
     expect(rpc.mock.invocationCallOrder[0]).toBeLessThan(
       signOut.mock.invocationCallOrder[0]!

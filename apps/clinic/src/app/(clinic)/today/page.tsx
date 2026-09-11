@@ -1,9 +1,9 @@
-import TodayBoardStub from "@/features/today-board/today-board-stub";
+import TodayBoard from "@/features/today-board/today-board";
 
 export const metadata = {
   title: "Today"
 };
 
-const TodayPage = () => <TodayBoardStub />;
+const TodayPage = () => <TodayBoard />;
 
 export default TodayPage;

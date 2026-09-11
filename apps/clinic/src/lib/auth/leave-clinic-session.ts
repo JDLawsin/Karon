@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { dropClinicStores } from "@/lib/db/clinic-db";
+
 const clearClinicPageCaches = async () => {
   if (typeof caches === "undefined") {
     return;
@@ -16,6 +18,7 @@ const clearClinicPageCaches = async () => {
 const leaveClinicSession = async (supabase: SupabaseClient) => {
   await supabase.rpc("revoke_my_session");
   await clearClinicPageCaches();
+  await dropClinicStores();
   await supabase.auth.signOut({ scope: "local" });
 };
 

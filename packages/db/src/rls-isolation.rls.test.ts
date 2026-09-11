@@ -562,4 +562,113 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
       .single();
     expect(otherOwnerAfter?.revoked_at).toBeNull();
   });
+
+  it("lets a member insert clinic events and hides other clinics", async () => {
+    const assistant = await createAuthedClient(users[1]!.email);
+    const eventId = randomUUID();
+    const { error: insertError } = await assistant.client.from("clinic_events").insert({
+      id: eventId,
+      tenant_id: clinicIds[0],
+      actor_user_id: users[1]!.id,
+      event_type: "patient.created",
+      record_id: randomUUID(),
+      payload: { name: "Test Patient", mobile: "09170000000" },
+      occurred_at: new Date().toISOString()
+    });
+
+    expect(insertError).toBeNull();
+
+    const otherId = randomUUID();
+    const { error: otherInsertError } = await admin.from("clinic_events").insert({
+      id: otherId,
+      tenant_id: clinicIds[1],
+      actor_user_id: users[2]!.id,
+      event_type: "patient.created",
+      payload: { name: "Other Clinic", mobile: "09171111111" },
+      occurred_at: new Date().toISOString()
+    });
+
+    expect(otherInsertError).toBeNull();
+
+    const { data, error } = await assistant.client.from("clinic_events").select("id");
+
+    expect(error).toBeNull();
+    expect(data?.map((row) => row.id)).toEqual([eventId]);
+
+    const { data: otherClinic, error: otherError } = await assistant.client
+      .from("clinic_events")
+      .select("id")
+      .eq("id", otherId);
+
+    expect(otherError).toBeNull();
+    expect(otherClinic).toEqual([]);
+  });
+
+  it("hides payment.recorded from assistants and lets the owner read it", async () => {
+    const assistant = await createAuthedClient(users[1]!.email);
+    const paymentId = randomUUID();
+    const { error: insertError } = await assistant.client.from("clinic_events").insert({
+      id: paymentId,
+      tenant_id: clinicIds[0],
+      actor_user_id: users[1]!.id,
+      event_type: "payment.recorded",
+      record_id: randomUUID(),
+      payload: { method: "cash" },
+      occurred_at: new Date().toISOString()
+    });
+
+    expect(insertError).toBeNull();
+
+    const { data: assistantRows, error: assistantSelectError } = await assistant.client
+      .from("clinic_events")
+      .select("id")
+      .eq("id", paymentId);
+
+    expect(assistantSelectError).toBeNull();
+    expect(assistantRows).toEqual([]);
+
+    const owner = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(owner.client);
+    const { data: ownerRows, error: ownerSelectError } = await owner.client
+      .from("clinic_events")
+      .select("id")
+      .eq("id", paymentId);
+
+    expect(ownerSelectError).toBeNull();
+    expect(ownerRows?.map((row) => row.id)).toEqual([paymentId]);
+  });
+
+  it("rejects clinic_events updates and deletes from a member JWT", async () => {
+    const assistant = await createAuthedClient(users[1]!.email);
+    const eventId = randomUUID();
+    const { error: insertError } = await assistant.client.from("clinic_events").insert({
+      id: eventId,
+      tenant_id: clinicIds[0],
+      actor_user_id: users[1]!.id,
+      event_type: "quote.created",
+      record_id: randomUUID(),
+      payload: {},
+      occurred_at: new Date().toISOString()
+    });
+
+    expect(insertError).toBeNull();
+
+    const { data: updated, error: updateError } = await assistant.client
+      .from("clinic_events")
+      .update({ payload: { overwritten: true } })
+      .eq("id", eventId)
+      .select("id");
+
+    expect(updated ?? []).toEqual([]);
+    expect(updateError?.code).toBe("42501");
+
+    const { data: removed, error: deleteError } = await assistant.client
+      .from("clinic_events")
+      .delete()
+      .eq("id", eventId)
+      .select("id");
+
+    expect(removed ?? []).toEqual([]);
+    expect(deleteError?.code).toBe("42501");
+  });
 });

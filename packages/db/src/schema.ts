@@ -156,8 +156,47 @@ export const auditEvents = pgTable(
   ]
 ).enableRLS();
 
+export const clinicEvents = pgTable(
+  "clinic_events",
+  {
+    id: uuid("id").primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => clinics.id, { onDelete: "cascade" }),
+    actorUserId: uuid("actor_user_id").notNull(),
+    eventType: text("event_type").notNull(),
+    recordId: uuid("record_id"),
+    payload: jsonb("payload")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    occurredAt: timestamptz("occurred_at").notNull(),
+    receivedAt: timestamptz("received_at").defaultNow().notNull()
+  },
+  (table) => [
+    index("clinic_events_tenant_received_idx").on(
+      table.tenantId,
+      table.receivedAt,
+      table.id
+    ),
+    check(
+      "clinic_events_type_check",
+      sql`${table.eventType} in (
+        'patient.created',
+        'patient.updated',
+        'chart.appended',
+        'quote.created',
+        'payment.recorded',
+        'appointment.set',
+        'visit.status_changed',
+        'reminder.queued'
+      )`
+    )
+  ]
+).enableRLS();
+
 export type Clinic = typeof clinics.$inferSelect;
 export type ClinicMember = typeof clinicMembers.$inferSelect;
 export type ClinicSession = typeof clinicSessions.$inferSelect;
 export type TrustedDevice = typeof trustedDevices.$inferSelect;
 export type AuditEvent = typeof auditEvents.$inferSelect;
+export type ClinicEvent = typeof clinicEvents.$inferSelect;

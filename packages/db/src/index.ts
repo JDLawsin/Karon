@@ -6,6 +6,7 @@ export { decodeJwtClaims, sessionRoleForClaims } from "./claims";
 export type { JwtClaims } from "./claims";
 export {
   auditEvents,
+  clinicEvents,
   clinicMembers,
   clinicRoleEnum,
   clinicSessions,
@@ -15,6 +16,7 @@ export {
 export type {
   AuditEvent,
   Clinic,
+  ClinicEvent,
   ClinicMember,
   ClinicSession,
   TrustedDevice
