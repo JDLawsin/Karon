@@ -8,9 +8,18 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node --experimental-strip-types ./src/migrate.ts"
   },
   "dependencies": {
-    "server-only": "^0.0.1"
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.9",
+    "server-only": "^0.0.1",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.116.0",
+    "drizzle-kit": "^0.31.10"
   }
 }

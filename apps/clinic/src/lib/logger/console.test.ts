@@ -41,6 +41,36 @@ describe("console logging bridge", () => {
     expect(output).not.toContain("Private Patient");
   });
 
+  it("redacts totp enroll qr and uri from metadata", () => {
+    const { log, sink } = createTestLogger();
+
+    log
+      .withMetadata({
+        qr_code: "data:image/svg+xml;otpauth-secret",
+        uri: "otpauth://totp/Karon:owner?secret=LEAK"
+      })
+      .info("mfa.enroll");
+
+    const output = JSON.stringify(sink.lines);
+
+    expect(output).toContain("mfa.enroll");
+    expect(output).toContain("[REDACTED]");
+    expect(output).not.toContain("otpauth-secret");
+    expect(output).not.toContain("LEAK");
+  });
+
+  it("redacts staff emails from auth event metadata", () => {
+    const { log, sink } = createTestLogger();
+
+    log.withMetadata({ email: "owner@clinic.example" }).info("auth.login");
+
+    const output = JSON.stringify(sink.lines);
+
+    expect(output).toContain("auth.login");
+    expect(output).toContain("[REDACTED]");
+    expect(output).not.toContain("owner@clinic.example");
+  });
+
   it("serializes errors without leaking tokens", () => {
     const { log, sink } = createTestLogger();
 

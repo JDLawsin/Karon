@@ -34,21 +34,30 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   const [preference, setPreferenceState] = useState<ThemePreference>("system");
   const [systemDark, setSystemDark] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setPreferenceState(parseThemePreference(localStorage.getItem(THEME_STORAGE_KEY)));
     const media = window.matchMedia("(prefers-color-scheme: dark)");
+    setPreferenceState(
+      parseThemePreference(localStorage.getItem(THEME_STORAGE_KEY))
+    );
+    setSystemDark(media.matches);
+    setReady(true);
+
     const syncSystem = () => {
       setSystemDark(media.matches);
     };
-    syncSystem();
     media.addEventListener("change", syncSystem);
     return () => media.removeEventListener("change", syncSystem);
   }, []);
 
   useEffect(() => {
+    if (!ready) {
+      return;
+    }
+
     applyResolvedTheme(resolveTheme(preference, systemDark));
-  }, [preference, systemDark]);
+  }, [preference, ready, systemDark]);
 
   const setPreference = useCallback((next: ThemePreference) => {
     setPreferenceState(next);

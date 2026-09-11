@@ -6,7 +6,7 @@ if (process.env.FORCE_COLOR) {
 
 const isCi = Boolean(process.env.CI);
 const externalBaseUrl = process.env.PLAYWRIGHT_BASE_URL;
-const baseURL = externalBaseUrl ?? "http://127.0.0.1:3000";
+const baseURL = externalBaseUrl ?? "http://localhost:3000";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -28,16 +28,22 @@ export default defineConfig({
   },
   projects: [
     {
+      name: "setup",
+      testMatch: /auth\.setup\.ts/
+    },
+    {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] }
+      use: { ...devices["Desktop Chrome"] },
+      dependencies: ["setup"],
+      testMatch: "**/*.spec.ts"
     }
   ],
   webServer: externalBaseUrl
     ? undefined
     : {
         command: isCi
-          ? "yarn workspace @karon/clinic start --port 3000"
-          : "yarn workspace @karon/clinic dev",
+          ? "corepack yarn workspace @karon/clinic start --port 3000"
+          : "corepack yarn workspace @karon/clinic dev",
         url: baseURL,
         reuseExistingServer: !isCi,
         timeout: 120_000,

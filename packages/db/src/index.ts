@@ -1,3 +1,21 @@
 import "server-only";
 
-// Drizzle schemas and RLS clients land with F-03/F-13.
+export { createDb } from "./client";
+export type { KaronDb } from "./client";
+export { decodeJwtClaims, sessionRoleForClaims } from "./claims";
+export type { JwtClaims } from "./claims";
+export {
+  auditEvents,
+  clinicMembers,
+  clinicRoleEnum,
+  clinicSessions,
+  clinics,
+  trustedDevices
+} from "./schema";
+export type {
+  AuditEvent,
+  Clinic,
+  ClinicMember,
+  ClinicSession,
+  TrustedDevice
+} from "./schema";

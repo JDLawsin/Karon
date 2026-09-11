@@ -7,8 +7,10 @@ describe("Button", () => {
   it("renders an accessible clinic-sized control", () => {
     render(<Button type="button">Save visit</Button>);
 
-    expect(
-      screen.getByRole("button", { name: "Save visit" }).className
-    ).toContain("min-h-[var(--control-min-height)]");
+    const className = screen.getByRole("button", { name: "Save visit" }).className;
+
+    expect(className).toContain("min-h-[var(--control-min-height)]");
+    expect(className).toContain("hover:bg-primary-hovered");
+    expect(className).not.toContain("min-h-10");
   });
 });

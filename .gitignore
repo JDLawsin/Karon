@@ -58,6 +58,11 @@ supabase/.branches/
 # Local tool indexes
 .codegraph/
 
+# Supabase pentest artifacts (keys, evidence \u2014 never commit)
+.sb-pentest-context.json
+.sb-pentest-evidence/
+.sb-pentest-evidence/
+
 # Logs and machine-local files
 *.log
 npm-debug.log*
