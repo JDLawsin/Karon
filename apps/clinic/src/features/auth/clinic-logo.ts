@@ -12,7 +12,11 @@ const uploadClinicLogo = async (
   const path = clinicLogoPath(tenantId);
   const { error: uploadError } = await supabase.storage
     .from(CLINIC_BRANDING_BUCKET)
-    .upload(path, file, { contentType: file.type, upsert: true });
+    .upload(path, file, {
+      cacheControl: "3600",
+      contentType: file.type,
+      upsert: true
+    });
 
   if (uploadError) {
     return { ok: false as const };

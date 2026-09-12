@@ -190,15 +190,21 @@ const ClinicDetailsForm = () => {
         error={logoError}
         file={logoFile}
         id="clinic-logo"
-        onFileChange={(file, nextError) => {
-          setLogoFile(file);
+        onFileChange={(nextFile, nextError) => {
+          setLogoFile(nextFile);
           setLogoError(nextError);
-          if (!file) {
+
+          if (nextError) {
+            return;
+          }
+
+          if (!nextFile) {
             setRemoteLogoUrl(null);
             setLogoCleared(true);
-          } else {
-            setLogoCleared(false);
+            return;
           }
+
+          setLogoCleared(false);
         }}
         remoteUrl={remoteLogoUrl}
       />

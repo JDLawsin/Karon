@@ -7,8 +7,8 @@ const AUTH_PHOTOS = [
       href: "https://www.pexels.com/photo/medical-staff-with-tablet-and-lying-patient-in-dental-clinic-3952124/"
     },
     src: "/images/auth-hero.jpg",
-    className: "absolute top-[6%] left-[6%] z-1 w-[min(14rem,36%)] -rotate-6",
-    backingClassName: "absolute -inset-3 rotate-12 rounded-lg bg-primary-foreground/15"
+    className: "absolute top-[5%] left-[4%] z-1 w-[min(17rem,44%)] -rotate-6",
+    backingClassName: "absolute -inset-4 rotate-12 rounded-lg bg-primary-foreground/15"
   },
   {
     alt: "Two clinicians review a dental image on a clinic computer.",
@@ -18,8 +18,8 @@ const AUTH_PHOTOS = [
     },
     src: "/images/auth-hero-monitor.jpg",
     className:
-      "absolute top-1/2 left-1/2 z-2 w-[min(15rem,40%)] -translate-x-1/2 -translate-y-1/2 rotate-3",
-    backingClassName: "absolute -inset-3 -rotate-6 rounded-lg bg-primary-foreground/15"
+      "absolute top-1/2 left-1/2 z-2 w-[min(18rem,48%)] -translate-x-1/2 -translate-y-1/2 rotate-3",
+    backingClassName: "absolute -inset-4 -rotate-6 rounded-lg bg-primary-foreground/15"
   },
   {
     alt: "A dentist reviews a dental x-ray on a laptop with a patient in the chair.",
@@ -28,8 +28,8 @@ const AUTH_PHOTOS = [
       href: "https://www.pexels.com/photo/dentist-explaining-the-x-ray-result-5622254/"
     },
     src: "/images/auth-hero-screen.jpg",
-    className: "absolute right-[8%] bottom-[10%] z-1 w-[min(14rem,36%)] rotate-6",
-    backingClassName: "absolute -inset-3 -rotate-12 rounded-lg bg-primary-foreground/15"
+    className: "absolute right-[5%] bottom-[12%] z-1 w-[min(17rem,44%)] rotate-6",
+    backingClassName: "absolute -inset-4 -rotate-12 rounded-lg bg-primary-foreground/15"
   }
 ] as const;
 
@@ -43,7 +43,7 @@ type PhotoCardProps = {
 const PhotoCard = ({ alt, backingClassName, className, src }: PhotoCardProps) => (
   <div className={className}>
     <div aria-hidden className={backingClassName} />
-    <div className="relative rounded-lg bg-background p-3">
+    <div className="relative rounded-lg bg-background p-4">
       <img
         alt={alt}
         className="aspect-3/4 w-full rounded-none object-cover object-center"

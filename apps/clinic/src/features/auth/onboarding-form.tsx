@@ -1,6 +1,7 @@
 "use client";
 
 import { Alert, Button, cn, Input, Label } from "@karon/design-system";
+import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { FieldPath } from "react-hook-form";
@@ -137,11 +138,16 @@ const OnboardingForm = () => {
     setStep((currentStep) => currentStep + 1);
   };
 
-  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (step < ONBOARDING_STEPS.length - 1) {
       goNext();
+    }
+  };
+
+  const createClinic = async () => {
+    if (pending) {
       return;
     }
 
@@ -227,11 +233,10 @@ const OnboardingForm = () => {
 
   return (
     <form
+      aria-busy={pending}
       className="flex flex-col gap-6"
       method="post"
-      onSubmit={(event) => {
-        void onSubmit(event);
-      }}
+      onSubmit={onSubmit}
       ref={markHydrated}
     >
       <nav aria-label="Setup steps">
@@ -409,11 +414,17 @@ const OnboardingForm = () => {
           {error}
         </Alert>
       ) : null}
+      {pending ? (
+        <Alert title="Creating your clinic" variant="info">
+          Preparing the clinic and any staff invites. Stay on this page.
+        </Alert>
+      ) : null}
       {info ? <Alert title={info} variant="info" /> : null}
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
         {step > 0 ? (
           <Button
+            disabled={pending}
             onClick={() => setStep((currentStep) => currentStep - 1)}
             type="button"
             variant="outline"
@@ -426,6 +437,7 @@ const OnboardingForm = () => {
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
           {step === 2 || step === 3 ? (
             <Button
+              disabled={pending}
               onClick={() => setStep((currentStep) => currentStep + 1)}
               type="button"
               variant="outline"
@@ -434,12 +446,27 @@ const OnboardingForm = () => {
             </Button>
           ) : null}
           {step < ONBOARDING_STEPS.length - 1 ? (
-            <Button onClick={goNext} type="button">
+            <Button disabled={pending} key="continue" onClick={goNext} type="button">
               Continue
             </Button>
           ) : (
-            <Button disabled={pending} type="submit">
-              Create clinic
+            <Button
+              aria-busy={pending}
+              disabled={pending}
+              key="create"
+              onClick={() => {
+                void createClinic();
+              }}
+              type="button"
+            >
+              {pending ? (
+                <>
+                  <LoaderCircle aria-hidden className="animate-spin" />
+                  Creating clinic
+                </>
+              ) : (
+                "Create clinic"
+              )}
             </Button>
           )}
         </div>

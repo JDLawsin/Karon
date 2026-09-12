@@ -2,8 +2,6 @@ import { z } from "zod";
 
 import { clinicNameSchema, emailSchema } from "@/features/auth/auth-schemas";
 
-const LOGO_MAX_BYTES = 512 * 1024;
-const LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const DEFAULT_TIMEZONE = "Asia/Manila";
 const DEFAULT_OPEN = "09:00";
 const DEFAULT_CLOSE = "18:00";
@@ -236,18 +234,6 @@ const fromClinicRow = (row: unknown): ClinicOnboarding => {
   };
 };
 
-const parseLogoFile = (file: File) => {
-  if (!LOGO_TYPES.has(file.type)) {
-    return { ok: false as const, error: "Use a PNG, JPEG, or WebP image." };
-  }
-
-  if (file.size > LOGO_MAX_BYTES) {
-    return { ok: false as const, error: "Use an image smaller than 512 KB." };
-  }
-
-  return { ok: true as const };
-};
-
 const WORKING_DAYS = [
   { value: 0, label: "Sunday", short: "Sun" },
   { value: 1, label: "Monday", short: "Mon" },
@@ -335,7 +321,6 @@ export {
   onboardingIdentitySchema,
   onboardingServicesSchema,
   onboardingStaffSchema,
-  parseLogoFile,
   staffInviteEmails,
   stepForOnboardingIssues,
   toClinicProfile

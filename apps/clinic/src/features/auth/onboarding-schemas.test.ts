@@ -8,7 +8,6 @@ import {
   onboardingHoursSchema,
   onboardingIdentitySchema,
   onboardingStaffSchema,
-  parseLogoFile,
   staffInviteEmails,
   stepForOnboardingIssues,
   toClinicProfile
@@ -123,16 +122,5 @@ describe("clinicOnboardingSchema", () => {
     expect(values.name).toBe("Saved Clinic");
     expect(values.city).toBe("Cebu");
     expect(values.days.length).toBeGreaterThan(0);
-  });
-});
-
-describe("parseLogoFile", () => {
-  it("rejects the wrong type or an oversized file", () => {
-    const text = new File(["x"], "note.txt", { type: "text/plain" });
-    expect(parseLogoFile(text).ok).toBe(false);
-    const huge = new File([new Uint8Array(513 * 1024)], "logo.png", {
-      type: "image/png"
-    });
-    expect(parseLogoFile(huge).ok).toBe(false);
   });
 });
