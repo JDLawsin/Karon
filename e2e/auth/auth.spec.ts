@@ -198,12 +198,13 @@ test("a signed-in assistant can change their password", async ({ page }) => {
   await login.goto();
   await login.submitPassword(email, identities().password);
   await expect(page).toHaveURL(/\/today$/);
-  await page.getByRole("link", { name: "Password" }).click();
-  await expect(page).toHaveURL(/\/update-password$/);
+  await page.getByRole("link", { name: "Settings" }).click();
+  await expect(page).toHaveURL(/\/settings$/);
   const update = new UpdatePasswordPage(page);
   await update.submitChange(identities().password, NEW_PASSWORD);
   await expect(page).toHaveURL(/\/today$/, { timeout: 30_000 });
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: "Account menu" }).click();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login$/);
   await login.goto();
   await login.submitPassword(email, NEW_PASSWORD);
@@ -382,13 +383,19 @@ test.describe("owner", { tag: "@owner" }, () => {
     await page.goto("/owner/clinic");
     await expect(page.getByRole("heading", { name: "Clinic" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Add assistant" })).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Revoke all other devices" })
-    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+    await page.getByRole("button", { name: "Toggle sidebar" }).click();
     await expect(
       page.getByRole("link", { name: "Today's collections" })
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Password" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.getByRole("link", { name: "Settings" }).click();
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await expect(page.getByLabel("Current password")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Revoke all other devices" })
+    ).toBeVisible();
   });
 
   test("revokes a listed device", async ({ page }) => {
@@ -405,7 +412,7 @@ test.describe("owner", { tag: "@owner" }, () => {
     expect(error).toBeNull();
     expect(data?.id).toBeTruthy();
 
-    await page.goto("/owner/clinic");
+    await page.goto("/settings");
     await expect(page.getByText(data!.id)).toBeVisible();
     await page
       .getByRole("listitem")
@@ -435,7 +442,7 @@ test.describe("owner", { tag: "@owner" }, () => {
     expect(error).toBeNull();
     expect(data?.id).toBeTruthy();
 
-    await page.goto("/owner/clinic");
+    await page.goto("/settings");
     await expect(page.getByText(data!.id)).toBeVisible();
     await page.getByRole("button", { name: "Revoke all other devices" }).click();
     await expect(

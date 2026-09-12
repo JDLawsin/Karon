@@ -10,11 +10,11 @@ export const metadata = {
 const OwnerClinicPage = () => (
   <section className="flex min-w-0 flex-col gap-6">
     <PageHeader
-      description="Clinic details, staff, and signed-in devices."
+      description="Clinic details and staff."
       title="Clinic"
     />
     <ClinicDetailsForm />
-    <ClinicStaff />
+    <ClinicStaff section="staff" />
   </section>
 );
 

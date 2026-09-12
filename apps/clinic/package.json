@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@dicebear/core": "9.2.2",
+    "@dicebear/notionists-neutral": "9.4.2",
     "@hookform/resolvers": "^5.9.1",
     "@karon/db": "workspace:^",
     "@karon/design-system": "workspace:*",

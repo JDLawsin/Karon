@@ -18,11 +18,63 @@ export {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "./primitives/alert-dialog";
+export { Avatar, AvatarFallback, AvatarImage } from "./primitives/avatar";
 export { Button, buttonVariants } from "./primitives/button";
 export type { ButtonProps } from "./primitives/button";
+export {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from "./primitives/collapsible";
+export {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "./primitives/dropdown-menu";
 export { Input } from "./primitives/input";
 export { Label } from "./primitives/label";
+export { Separator } from "./primitives/separator";
+export {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from "./primitives/sheet";
+export {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger,
+  useSidebar
+} from "./primitives/sidebar";
+export {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "./primitives/tooltip";
 export { cn } from "./lib/cn";
+export { useIsMobile } from "./hooks/use-mobile";
 export {
   applyResolvedTheme,
   parseThemePreference,

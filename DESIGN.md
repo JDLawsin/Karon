@@ -385,8 +385,7 @@ reads as an 8px rhythm: `2, 4, 6, 8` (8 / 16 / 24 / 32).
 
 ### Page padding
 
-- Phone: `16px` (`space-4`) inset, plus safe-area. Owner job bar sits in the
-  bottom safe area; main canvas MUST pad above it.
+- Phone: `16px` (`space-4`) inset, plus safe-area.
 - Tablet / desktop: rail `14rem` + canvas `24px` (`space-6`).
 - Max readable measure for helper prose: ~40rem. The today board MAY use the full
   canvas; quotes and settings SHOULD NOT stretch a 12-word sentence across a 1440px
@@ -401,11 +400,15 @@ center a single card on large screens; the card contents stay left-aligned.
 
 Post-login is a dashboard work surface, not a wrapping header of every utility.
 
-- Tablet+: left **rail** — jobs first (Today; owner also Collections and Clinic),
-  utilities last (theme, password, sign out). Active job uses `accent`, not a new hue.
-- Phone: wordmark + utilities on top. Owner jobs in a **bottom bar** (C4). Assistant
-  has only Today, so no bottom bar — the wordmark is home.
-- Password and Sign out MUST stay visible at 320px (not inside a closed menu).
+- Tablet+: left **rail** — Jobs (Today; owner also Collections and Clinic), then
+  Account (Settings). Settings holds password and signed-in devices. Active job uses
+  `accent`, not a new hue. Header has a collapse control; collapsed rail is icons only.
+  Footer is a staff chip (avatar, name, email) that opens theme and sign out.
+  Staff avatar is DiceBear Notionists Neutral, seeded by
+  user id (stable per person, not reshuffled on login).
+- Phone: menu trigger + wordmark + avatar on top. Theme, Settings, and Sign out stay
+  visible in that header (not only inside a closed menu). Jobs open in a left sheet.
+- Settings and Sign out MUST stay visible at 320px (not inside a closed menu).
 - Sync stays an `information` banner above the canvas, never a toast.
 
 Today’s canvas: clinic date, live counts from the real board, then rows (phone) or
@@ -414,13 +417,13 @@ column wells (tablet+). MUST NOT invent marketing stats.
 ```
 Phone                               Tablet+
 ┌─────────────────────┐           ┌──────┬──────────────────┐
-│ Karon     [theme]   │           │Karon │ Today  12 Sep    │
-│ Password  Sign out  │           │Today │ 2 waiting · 1 late│
+│ ≡ Karon        [av] │           │Karon │ Today  12 Sep    │
+│ Theme Settings Out  │           │Today │ 2 waiting · 1 late│
 │ Today      [Add]    │           │Coll. │ [Add patient]    │
 │ 9:30 Maria  Waiting │           │Clinic│ Booked │ Waiting │
-│ …                   │           │      │        │         │
-│ [Today|Coll.|Clinic]│ owner     │Pass  │        │         │
-└─────────────────────┘           │Out   └──────────────────┘
+│ …                   │           │Sett. │        │         │
+└─────────────────────┘           │av ▸  │        │         │
+  sheet: jobs                     │v0.1  └──────────────────┘
 ```
 
 ---
@@ -457,7 +460,7 @@ Radius follows **what the thing is**, not taste.
 | `sm` | 0.25rem | Lozenges, badges |
 | `md` | 0.5rem | Buttons, inputs, select, nav items |
 | `lg` | 0.75rem | Cards, dialogs, sheets |
-| `full` | pill | Avatars only (we barely use avatars in V1) |
+| `full` | pill | Avatars only |
 
 - MUST NOT use one radius on every element.
 - MUST NOT emit `rounded-3xl` / pill buttons for primary actions. Clinic controls are

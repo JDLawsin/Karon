@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const sync = vi.hoisted(() => ({
@@ -27,7 +27,11 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("@/lib/supabase/browser", () => ({
-  createBrowserSupabase: vi.fn()
+  createBrowserSupabase: () => ({
+    auth: {
+      getSession: async () => ({ data: { session: null } })
+    }
+  })
 }));
 
 vi.mock("@/lib/sync/use-clinic-sync", () => ({
@@ -44,18 +48,24 @@ vi.mock("@karon/design-system", async () => {
   );
   return {
     ...actual,
-    ThemeToggle: () => null
+    ThemeToggle: () => null,
+    useTheme: () => ({
+      preference: "system" as const,
+      resolved: "light" as const,
+      setPreference: vi.fn()
+    })
   };
 });
 
 import ClinicShell from "./clinic-shell";
 
-const renderShell = () =>
+const renderShell = (role: "assistant" | "owner" = "assistant") =>
   render(
     <ClinicShell
+      appVersion="0.1.0"
       membership={{
         tenantId: "11111111-1111-4111-8111-111111111111",
-        role: "assistant"
+        role
       }}
       userId="22222222-2222-4222-8222-222222222222"
     >
@@ -102,7 +112,44 @@ describe("ClinicShell", () => {
     expect(screen.getByRole("link", { name: "Today" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Today's collections" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Clinic" })).toBeNull();
-    expect(screen.getAllByRole("link", { name: "Password" }).length).toBe(2);
-    expect(screen.getAllByRole("button", { name: "Sign out" }).length).toBe(2);
+    expect(screen.getAllByRole("link", { name: "Settings" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Password" })).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Sign out" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "Account menu" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("img", { name: "Assistant avatar" }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Jobs")).toBeTruthy();
+    expect(screen.getByText("Account")).toBeTruthy();
+  });
+
+  it("shows owner jobs", () => {
+    renderShell("owner");
+
+    expect(screen.getByRole("link", { name: "Today" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Today's collections" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Clinic" })).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "Settings" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("img", { name: "Owner avatar" }).length).toBeGreaterThan(0);
+  });
+
+  it("shows the app version and a desktop collapse control", () => {
+    renderShell();
+
+    expect(screen.getByText("Version 0.1.0")).toBeTruthy();
+    expect(
+      screen.getAllByRole("button", { name: "Toggle sidebar" }).length
+    ).toBeGreaterThan(0);
+  });
+
+  it("collapses the desktop rail when the toggle is pressed", () => {
+    renderShell();
+
+    const trigger = document.querySelector('[data-slot="sidebar-trigger"]');
+    expect(trigger).toBeTruthy();
+    fireEvent.click(trigger as HTMLButtonElement);
+
+    expect(document.querySelector('[data-slot="sidebar"]')).toHaveAttribute(
+      "data-collapsible",
+      "icon"
+    );
   });
 });

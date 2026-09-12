@@ -30,6 +30,10 @@ import FieldError from "@/lib/forms/field-error";
 import { parseJson } from "@/lib/forms/parse-json";
 import { useClinicForm } from "@/lib/forms/use-clinic-form";
 
+type ClinicStaffProps = {
+  section: "staff" | "devices";
+};
+
 type PendingAction =
   | { kind: "remove"; userId: string }
   | { kind: "revoke"; sessionId: string }
@@ -59,7 +63,7 @@ const pendingCopy = (pending: PendingAction) => {
   };
 };
 
-const ClinicStaff = () => {
+const ClinicStaff = ({ section }: ClinicStaffProps) => {
   const [members, setMembers] = useState<StaffMember[]>([]);
   const [sessions, setSessions] = useState<StaffSession[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -204,87 +208,92 @@ const ClinicStaff = () => {
 
   return (
     <div className="flex flex-col gap-8">
-      <form
-        className="flex max-w-xl flex-col gap-4 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card p-4"
-        onSubmit={onInvite}
-      >
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="invite-email">Assistant email</Label>
-          <Input
-            aria-describedby={errors.email ? "invite-email-error" : undefined}
-            aria-invalid={Boolean(errors.email)}
-            autoComplete="email"
-            id="invite-email"
-            type="email"
-            {...register("email")}
-          />
-          <FieldError id="invite-email-error" message={errors.email?.message} />
-        </div>
-        {error ? <Alert title={error} variant="danger" /> : null}
-        {info ? <Alert title={info} variant="info" /> : null}
-        <Button disabled={isSubmitting} type="submit">
-          Add assistant
-        </Button>
-      </form>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Staff</h2>
-        <ul className="flex flex-col gap-2">
-          {members.map((member) => (
-            <li
-              className="flex min-w-0 flex-col gap-2 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-              key={member.userId}
-            >
-              <p className="min-w-0 break-all text-sm">
-                {staffMemberLabel(member.role, member.email)}
-              </p>
-              {member.role === "assistant" ? (
-                <Button
-                  onClick={() => setPending({ kind: "remove", userId: member.userId })}
-                  type="button"
-                  variant="outline"
-                >
-                  Remove
-                </Button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold">Devices</h2>
-          <Button
-            onClick={() => setPending({ kind: "revoke-others" })}
-            type="button"
-            variant="outline"
+      {section === "staff" ? (
+        <>
+          <form
+            className="flex max-w-xl flex-col gap-4 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card p-4"
+            onSubmit={onInvite}
           >
-            Revoke all other devices
-          </Button>
-        </div>
-        <ul className="flex flex-col gap-2">
-          {sessions.map((session) => (
-            <li
-              className="flex min-w-0 flex-col gap-2 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-              key={session.id}
-            >
-              <p className="min-w-0 break-all text-sm">
-                {deviceLabel(session.revokedAt, session.email, session.lastActiveAt)}
-              </p>
-              {!session.revokedAt ? (
-                <Button
-                  onClick={() => setPending({ kind: "revoke", sessionId: session.id })}
-                  type="button"
-                  variant="outline"
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="invite-email">Assistant email</Label>
+              <Input
+                aria-describedby={errors.email ? "invite-email-error" : undefined}
+                aria-invalid={Boolean(errors.email)}
+                autoComplete="email"
+                id="invite-email"
+                type="email"
+                {...register("email")}
+              />
+              <FieldError id="invite-email-error" message={errors.email?.message} />
+            </div>
+            {error ? <Alert title={error} variant="danger" /> : null}
+            {info ? <Alert title={info} variant="info" /> : null}
+            <Button disabled={isSubmitting} type="submit">
+              Add assistant
+            </Button>
+          </form>
+
+          <section className="flex flex-col gap-3">
+            <h2 className="text-lg font-semibold">Staff</h2>
+            <ul className="flex flex-col gap-2">
+              {members.map((member) => (
+                <li
+                  className="flex min-w-0 flex-col gap-2 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  key={member.userId}
                 >
-                  Revoke device
-                </Button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      </section>
+                  <p className="min-w-0 break-all text-sm">
+                    {staffMemberLabel(member.role, member.email)}
+                  </p>
+                  {member.role === "assistant" ? (
+                    <Button
+                      onClick={() => setPending({ kind: "remove", userId: member.userId })}
+                      type="button"
+                      variant="outline"
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
+      ) : (
+        <section className="flex flex-col gap-3">
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-lg font-semibold">Devices</h2>
+            <Button
+              onClick={() => setPending({ kind: "revoke-others" })}
+              type="button"
+              variant="outline"
+            >
+              Revoke all other devices
+            </Button>
+          </div>
+          {error ? <Alert title={error} variant="danger" /> : null}
+          <ul className="flex flex-col gap-2">
+            {sessions.map((session) => (
+              <li
+                className="flex min-w-0 flex-col gap-2 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                key={session.id}
+              >
+                <p className="min-w-0 break-all text-sm">
+                  {deviceLabel(session.revokedAt, session.email, session.lastActiveAt)}
+                </p>
+                {!session.revokedAt ? (
+                  <Button
+                    onClick={() => setPending({ kind: "revoke", sessionId: session.id })}
+                    type="button"
+                    variant="outline"
+                  >
+                    Revoke device
+                  </Button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <AlertDialog
         onOpenChange={(open) => {

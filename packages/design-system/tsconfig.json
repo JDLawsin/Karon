@@ -4,7 +4,14 @@
     "jsx": "react-jsx",
     "lib": ["dom", "dom.iterable", "esnext"],
     "module": "esnext",
-    "types": ["vitest/globals", "@testing-library/jest-dom"]
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
+    "paths": {
+      "@karon/design-system/hooks": ["./src/hooks/index.ts"],
+      "@karon/design-system/hooks/*": ["./src/hooks/*"],
+      "@karon/design-system/lib/*": ["./src/lib/*"],
+      "@karon/design-system/primitives": ["./src/primitives"],
+      "@karon/design-system/primitives/*": ["./src/primitives/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

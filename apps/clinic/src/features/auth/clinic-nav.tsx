@@ -1,10 +1,37 @@
 "use client";
 
-import { Button, KaronWordmark, ThemeToggle, cn } from "@karon/design-system";
-import { Building2, CalendarDays, Wallet } from "lucide-react";
+import {
+  cn,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  KaronMark,
+  KaronWordmark,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  ThemeToggle,
+  useSidebar,
+  useTheme,
+  type ThemePreference
+} from "@karon/design-system";
+import {
+  Building2,
+  CalendarDays,
+  ChevronRight,
+  LogOut,
+  Monitor,
+  Moon,
+  Settings,
+  Sun,
+  Wallet
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
+import ClinicStaffAvatar from "@/features/auth/clinic-staff-avatar";
 import type { ClinicRole } from "@/features/auth/resolve-auth-destination";
 
 type JobHref = "/today" | "/owner/today" | "/owner/clinic";
@@ -37,55 +64,97 @@ const JOBS: Record<JobHref, JobItem> = {
   }
 };
 
+const nextTheme: Record<ThemePreference, ThemePreference> = {
+  system: "light",
+  light: "dark",
+  dark: "system"
+};
+
+const themeLabel: Record<ThemePreference, string> = {
+  system: "System theme",
+  light: "Light theme",
+  dark: "Dark theme"
+};
+
+const themeIcon: Record<ThemePreference, ReactNode> = {
+  system: <Monitor aria-hidden className="size-5" />,
+  light: <Sun aria-hidden className="size-5" />,
+  dark: <Moon aria-hidden className="size-5" />
+};
+
 const jobsFor = (role: ClinicRole): JobItem[] =>
   role === "owner"
     ? [JOBS["/today"], JOBS["/owner/today"], JOBS["/owner/clinic"]]
     : [JOBS["/today"]];
 
-const isCurrentJob = (pathname: string, href: JobHref) => pathname === href;
-
-const jobClass = (active: boolean, stacked: boolean) =>
-  cn(
-    "inline-flex min-h-(--control-min-height) min-w-0 items-center rounded-md text-sm font-medium whitespace-nowrap transition-colors duration-(--motion-duration)",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-    stacked
-      ? "w-full flex-col justify-center gap-0.5 px-2 py-1"
-      : "gap-2 px-3",
-    active
-      ? "bg-accent text-accent-foreground"
-      : "text-foreground hover:bg-muted active:bg-muted"
-  );
+const isCurrentPath = (pathname: string, href: string) => pathname === href;
 
 type JobNavProps = {
   role: ClinicRole;
-  stacked?: boolean;
 };
 
-const ClinicJobNav = ({ role, stacked = false }: JobNavProps) => {
+const ClinicJobNav = ({ role }: JobNavProps) => {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
   const jobs = jobsFor(role);
 
   return (
-    <ul className={cn("flex min-w-0", stacked ? "w-full" : "flex-col gap-1")}>
+    <SidebarMenu>
       {jobs.map((job) => {
         const Icon = job.icon;
-        const active = isCurrentJob(pathname, job.href);
+        const active = isCurrentPath(pathname, job.href);
 
         return (
-          <li className={stacked ? "min-w-0 flex-1" : "min-w-0"} key={job.href}>
-            <Link
-              aria-current={active ? "page" : undefined}
-              aria-label={job.name}
-              className={jobClass(active, stacked)}
-              href={job.href}
-            >
-              <Icon aria-hidden className="size-5 shrink-0" />
-              <span className="min-w-0 truncate">{job.label}</span>
-            </Link>
-          </li>
+          <SidebarMenuItem key={job.href}>
+            <SidebarMenuButton asChild isActive={active} tooltip={job.name}>
+              <Link
+                aria-current={active ? "page" : undefined}
+                aria-label={job.name}
+                href={job.href}
+                onClick={() => {
+                  if (isMobile) {
+                    setOpenMobile(false);
+                  }
+                }}
+              >
+                <Icon aria-hidden />
+                <span className="group-data-[collapsible=icon]:hidden">
+                  {job.label}
+                </span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         );
       })}
-    </ul>
+    </SidebarMenu>
+  );
+};
+
+const ClinicAccountNav = () => {
+  const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const active = isCurrentPath(pathname, "/settings");
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton asChild isActive={active} tooltip="Settings">
+          <Link
+            aria-current={active ? "page" : undefined}
+            aria-label="Settings"
+            href="/settings"
+            onClick={() => {
+              if (isMobile) {
+                setOpenMobile(false);
+              }
+            }}
+          >
+            <Settings aria-hidden />
+            <span className="group-data-[collapsible=icon]:hidden">Settings</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 };
 
@@ -94,28 +163,118 @@ type UtilityNavProps = {
 };
 
 const ClinicUtilityNav = ({ onSignOut }: UtilityNavProps) => (
-  <div className="flex min-w-0 flex-wrap items-center gap-1 md:flex-col md:items-stretch">
+  <div className="flex min-w-0 flex-wrap items-center gap-1">
     <ThemeToggle />
-    <Link
-      className="inline-flex min-h-(--control-min-height) items-center rounded-md px-3 text-sm font-medium whitespace-nowrap text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      href="/update-password"
+    <SidebarMenuButton asChild className="w-auto" tooltip="Settings">
+      <Link aria-label="Settings" href="/settings">
+        <Settings aria-hidden />
+        <span>Settings</span>
+      </Link>
+    </SidebarMenuButton>
+    <SidebarMenuButton
+      aria-label="Sign out"
+      className="w-auto"
+      tooltip="Sign out"
+      type="button"
+      onClick={onSignOut}
     >
-      Password
-    </Link>
-    <Button onClick={onSignOut} type="button" variant="outline">
-      Sign out
-    </Button>
+      <LogOut aria-hidden />
+      <span>Sign out</span>
+    </SidebarMenuButton>
   </div>
 );
 
-const ClinicBrandLink = () => (
-  <Link
-    className="inline-flex min-h-(--control-min-height) items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    href="/today"
-  >
-    <KaronWordmark />
-  </Link>
-);
+type ClinicBrandLinkProps = {
+  className?: string;
+};
 
-export { ClinicBrandLink, ClinicJobNav, ClinicUtilityNav };
-export type { JobNavProps, UtilityNavProps };
+const ClinicBrandLink = ({ className }: ClinicBrandLinkProps) => {
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  return (
+    <Link
+      aria-label="Karon"
+      className={cn(
+        "inline-flex min-h-(--control-min-height) min-w-0 items-center justify-start overflow-hidden rounded-md px-2 group-data-[collapsible=icon]:w-(--control-min-height) group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+        className
+      )}
+      href="/today"
+      onClick={() => {
+        if (isMobile) {
+          setOpenMobile(false);
+        }
+      }}
+    >
+      <KaronWordmark className="group-data-[collapsible=icon]:hidden" />
+      <KaronMark
+        aria-hidden
+        className="hidden size-8 text-primary group-data-[collapsible=icon]:block"
+      />
+    </Link>
+  );
+};
+
+type AccountMenuProps = {
+  role: ClinicRole;
+  userId: string;
+  onSignOut: () => void;
+};
+
+const ClinicAccountMenu = ({ role, userId, onSignOut }: AccountMenuProps) => {
+  const { state } = useSidebar();
+  const { preference, setPreference } = useTheme();
+  const next = nextTheme[preference];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          aria-label="Account menu"
+          className="flex min-h-(--control-min-height) w-full min-w-0 items-center gap-2 overflow-hidden rounded-lg px-2 ring-1 ring-border group-data-[collapsible=icon]:size-(--control-min-height)! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:ring-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          type="button"
+        >
+          <ClinicStaffAvatar bare role={role} userId={userId} />
+          <ChevronRight
+            aria-hidden
+            className="ml-auto size-5 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden"
+          />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className={
+          state === "collapsed"
+            ? "w-48"
+            : "w-[calc(var(--sidebar-width)-1rem)] min-w-[calc(var(--sidebar-width)-1rem)]"
+        }
+        side={state === "collapsed" ? "right" : "top"}
+      >
+        <DropdownMenuItem
+          onSelect={() => {
+            setPreference(next);
+          }}
+        >
+          {themeIcon[preference]}
+          <span>{themeLabel[preference]}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() => {
+            void onSignOut();
+          }}
+        >
+          <LogOut aria-hidden />
+          <span>Sign out</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+export {
+  ClinicAccountMenu,
+  ClinicAccountNav,
+  ClinicBrandLink,
+  ClinicJobNav,
+  ClinicUtilityNav
+};
+export type { AccountMenuProps, JobNavProps, UtilityNavProps };
