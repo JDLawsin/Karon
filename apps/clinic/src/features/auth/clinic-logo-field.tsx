@@ -37,7 +37,7 @@ const ClinicLogoField = ({ id, file, remoteUrl, error, onFileChange }: Props) =>
           // eslint-disable-next-line @next/next/no-img-element
           <img
             alt="Clinic logo preview"
-            className="size-16 shrink-0 rounded-md border border-border object-cover"
+            className="size-16 shrink-0 rounded-md border-(length:var(--surface-border-width)) border-border object-cover"
             height={64}
             src={preview}
             width={64}
@@ -45,7 +45,7 @@ const ClinicLogoField = ({ id, file, remoteUrl, error, onFileChange }: Props) =>
         ) : (
           <div
             aria-hidden
-            className="size-16 shrink-0 rounded-md border border-dashed border-border bg-muted"
+            className="size-16 shrink-0 rounded-md border-(length:var(--surface-border-width)) border-dashed border-border bg-muted"
           />
         )}
         <div className="flex min-w-0 flex-col gap-2">

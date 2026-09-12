@@ -34,7 +34,7 @@ import { Button, KaronWordmark, ThemeProvider } from "@karon/design-system";
 ```
 
 - Clinic root layout already mounts `ThemeProvider` and `themeInitScript`. Feature UI uses semantic tokens (`bg-background`, `bg-primary`) so light/dark swap with `data-theme`. Do not add `next-themes`.
-- Feature files: semantic classes only. `bg-primary`, not `bg-[#1A5B7D]`, not `bg-sky-500`.
+- Feature files: semantic classes only. `bg-primary`, not `bg-[#2563EB]`, not `bg-sky-500`.
 - New primitive: `yarn dlx shadcn@latest add <name>` from `apps/clinic` so output lands in `packages/design-system`.
 - Clinic words (GCash, unpaid, odontogram) stay in `apps/clinic/src/features`. Shared chrome only in the package. `KaronMark` is brand, not clinic copy.
 - Change brand in `tokens.css` and keep `DESIGN.md` YAML in sync. Do not fork a theme in `globals.css`.
@@ -53,12 +53,12 @@ Cash / GCash = the word, not a fourth hue.
 
 ## Chair constraints
 
-- `data-density="clinic"` → controls ≥ 44px (`min-h-[var(--control-min-height)]`).
+- `data-density="clinic"` → controls 56px (`min-h-[var(--control-min-height)]`, still ≥ 44px).
 - Sentence case. Imperative: “Add patient”, “Save visit”, “Collect”. Not “Submit”.
 - One primary button per section.
 - Offline: `info`, copy like “Saved on this device. Will sync when online.”
 - Reminders / shareable toasts: clinic + time only — no diagnosis, no unpaid amount (NFR-14).
-- No extra webfonts. IBM Plex Sans is already on the layout. Peso/time: `tabular-nums`.
+- No extra webfonts. Outfit is already on the layout. Peso/time: `tabular-nums`.
 - No Framer Motion for V1 chrome. `transition-colors` is enough.
 - Responsive: 320px first; no horizontal page scroll.
 
@@ -70,4 +70,4 @@ AppShell, PageHeader, EmptyState, StatusBadge, StatCard, SyncBanner — build in
 
 - Recreate Button/Input from `DESIGN.md` YAML while the primitive exists.
 - Scaffold Storybook or `apps/marketing` to preview tokens.
-- Green primary, mint toothpaste brand, cream paper, pill CTAs, ALL CAPS eyebrows.
+- Green primary, mint toothpaste brand, cream paper, pill CTAs, ALL CAPS eyebrows, Chair Azure, IBM Plex.

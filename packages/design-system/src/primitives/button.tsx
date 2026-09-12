@@ -5,12 +5,13 @@ import type { ComponentProps } from "react";
 import { cn } from "../lib/cn";
 
 const buttonVariants = cva(
-  "inline-flex h-[var(--control-min-height)] min-h-[var(--control-min-height)] items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition-colors duration-[var(--motion-duration)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+  "inline-flex h-[var(--control-min-height)] min-h-[var(--control-min-height)] items-center justify-center gap-2 rounded-md px-4 text-sm font-medium shadow-none transition-[color,background-color,border-color,transform] duration-(--motion-duration) hover:scale-(--control-hover-scale) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary-hovered",
-        outline: "border border-border bg-background hover:bg-muted",
+        outline:
+          "border-(length:var(--control-outline-width)) border-primary bg-transparent text-primary hover:bg-primary hover:text-primary-foreground",
         ghost: "hover:bg-muted"
       },
       size: {

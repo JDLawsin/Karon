@@ -13,7 +13,7 @@ type Props = {
 const AuthShell = ({ title, children, wide = false }: Props) => (
   <main
     className={cn(
-      "grid min-h-screen min-w-0 bg-background",
+      "relative z-[1] grid min-h-screen min-w-0 bg-background",
       wide
         ? "auth-split:grid-cols-[minmax(0,40rem)_minmax(0,1fr)]"
         : "auth-split:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]"
@@ -35,8 +35,10 @@ const AuthShell = ({ title, children, wide = false }: Props) => (
         <ThemeToggle />
       </header>
       <div className="flex min-w-0 flex-col gap-6">
-        <h1 className="text-2xl font-semibold">{title}</h1>
-        <div className="min-w-0 rounded-md border border-border bg-card p-4 sm:p-6">
+        <h1 className="text-2xl tracking-(--heading-tracking) [font-weight:var(--heading-weight)]">
+          {title}
+        </h1>
+        <div className="min-w-0 rounded-md border-(length:var(--surface-border-width)) border-border bg-card p-4 sm:p-6">
           {children}
         </div>
       </div>

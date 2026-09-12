@@ -2,7 +2,7 @@
   {
     "date": "2026-09-12",
     "macrostructure": "Workbench",
-    "theme": "Chair Azure",
+    "theme": "Flat",
     "enrichment": "none",
     "brief": "Post-login clinic workbench — Today dashboard for assistant and owner",
     "scope": "app",

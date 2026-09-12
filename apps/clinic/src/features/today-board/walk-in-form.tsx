@@ -35,7 +35,7 @@ const WalkInForm = ({ isDuplicateMobile, onCancel, onSave }: Props) => {
 
   return (
     <form
-      className="flex max-w-xl flex-col gap-4 rounded-lg border border-border bg-card p-4"
+      className="flex max-w-xl flex-col gap-4 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card p-4"
       method="post"
       onSubmit={handleSubmit(async (draft) => {
         setError(null);

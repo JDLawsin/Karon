@@ -55,7 +55,7 @@ const TodayStatusGroup = ({ status, rows, onMark }: Props) => {
 
             return (
               <li
-                className="flex min-h-(--control-min-height) min-w-0 flex-wrap items-center gap-2 border-b border-border py-2 last:border-b-0 md:border-0 md:py-1"
+                className="flex min-h-(--control-min-height) min-w-0 flex-wrap items-center gap-2 border-b-(length:var(--surface-border-width)) border-border py-2 last:border-b-0 md:border-0 md:py-1"
                 key={row.visitId}
               >
                 <p className="shrink-0 tabular-nums text-sm text-muted-foreground">

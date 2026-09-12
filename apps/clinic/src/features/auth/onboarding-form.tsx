@@ -248,7 +248,7 @@ const OnboardingForm = () => {
                     active
                       ? "bg-primary text-primary-foreground"
                       : done
-                        ? "bg-accent text-foreground"
+                        ? "bg-accent text-accent-foreground"
                         : "bg-muted text-muted-foreground"
                   )}
                 >

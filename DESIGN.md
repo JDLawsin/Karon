@@ -2,71 +2,75 @@
 version: alpha
 name: Karon
 description: >-
-  Offline-first dental clinic PWA. Minimal product UI that feels trusted at the
-  chair — clinical blue for actions, green only for success, never spa mint.
+  Offline-first dental clinic PWA. Flat poster UI — paper white, action Blue 600,
+  Outfit, emerald only for success, never spa mint or Chair Azure.
 colors:
   # Neutrals — ~90% of the canvas
-  surface: "#FFFFFF"
-  surface-sunken: "#E7EEF0"
-  paper: "#F3F8FA"
-  text: "#1C2B32"
-  text-subtle: "#4C5B5F"
-  text-subtlest: "#5D6C70"
+  surface: "#F3F4F6"
+  surface-sunken: "#F3F4F6"
+  paper: "#FFFFFF"
+  text: "#111827"
+  text-subtle: "#4B5563"
+  text-subtlest: "#6B7280"
   text-inverse: "#FFFFFF"
-  border: "#D1D9DB"
-  border-input: "#6E7D82"
-  border-focused: "#1A5B7D"
+  border: "#E5E7EB"
+  border-input: "#E5E7EB"
+  border-focused: "#2563EB"
   # Semantic roles — meaning, not decoration
-  primary: "#1A5B7D"
-  primary-hovered: "#034D6E"
+  primary: "#2563EB"
+  primary-hovered: "#1D4ED8"
   primary-foreground: "#FFFFFF"
-  success: "#176540"
+  success: "#059669"
   success-foreground: "#FFFFFF"
-  success-subtle: "#DCF2E4"
-  warning: "#AA592C"
-  warning-foreground: "#722803"
-  warning-subtle: "#F9E8D9"
-  danger: "#AC3039"
+  success-subtle: "#D1FAE5"
+  warning: "#D97706"
+  warning-foreground: "#92400E"
+  warning-subtle: "#FEF3C7"
+  danger: "#DC2626"
   danger-foreground: "#FFFFFF"
-  danger-subtle: "#FFE4E2"
-  information: "#156163"
+  danger-subtle: "#FEE2E2"
+  information: "#0F766E"
   information-foreground: "#FFFFFF"
-  information-subtle: "#DDF0F0"
-  brand-subtle: "#E0EDF6"
-  link: "#1A5B7D"
+  information-subtle: "#CCFBF1"
+  brand-subtle: "#F3F4F6"
+  accent: "#F59E0B"
+  accent-foreground: "#111827"
+  link: "#2563EB"
 typography:
   family-sans:
-    fontFamily: '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif'
+    fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif'
   family-numeric:
-    fontFamily: '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif'
+    fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif'
     fontFeature: "tnum"
   display:
-    fontFamily: '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif'
+    fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif'
     fontSize: 1.5rem
-    fontWeight: 600
+    fontWeight: 800
+    letterSpacing: -0.02em
     lineHeight: 1.25
   heading:
-    fontFamily: '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif'
+    fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif'
     fontSize: 1.125rem
-    fontWeight: 600
+    fontWeight: 800
+    letterSpacing: -0.02em
     lineHeight: 1.35
   body:
-    fontFamily: '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif'
+    fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif'
     fontSize: 1rem
     fontWeight: 400
     lineHeight: 1.5
   body-small:
-    fontFamily: '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif'
+    fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif'
     fontSize: 0.875rem
     fontWeight: 400
     lineHeight: 1.4
   label:
-    fontFamily: '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif'
+    fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif'
     fontSize: 0.875rem
     fontWeight: 500
     lineHeight: 1.3
   button:
-    fontFamily: '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif'
+    fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif'
     fontSize: 0.875rem
     fontWeight: 500
     lineHeight: 1
@@ -91,7 +95,7 @@ components:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.primary-foreground}"
     rounded: "{rounded.md}"
-    height: 44px
+    height: 56px
     padding: 16px
     typography: "{typography.button}"
   button-primary-hover:
@@ -101,18 +105,18 @@ components:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.text}"
     rounded: "{rounded.md}"
-    height: 44px
+    height: 56px
     padding: 16px
   button-ghost:
     backgroundColor: transparent
     textColor: "{colors.text}"
     rounded: "{rounded.md}"
-    height: 44px
+    height: 56px
   textfield:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.text}"
     rounded: "{rounded.md}"
-    height: 44px
+    height: 56px
   status-success:
     backgroundColor: "{colors.success-subtle}"
     textColor: "{colors.success}"
@@ -151,10 +155,10 @@ Engineering spec (package tree, shadcn, density attribute): [`docs/design-system
 Agent workflow: `.cursor/skills/karon-design/`. Product locks: [ADR 0005](docs/adr/0005-design-system.md).
 
 Aligned with: [Atlassian Design System](https://atlassian.design/get-started) token
-roles, [DESIGN.md](https://github.com/google-labs-code/design.md) portability, IBM
-Carbon (quiet canvas), Linear (restraint). Not aligned with: default shadcn zinc
-dashboards, spa-mint dentistry Dribbbles, Material card theatre, Atlassian blue
-`#0C66E4` as a copy.
+roles, [DESIGN.md](https://github.com/google-labs-code/design.md) portability, Flat
+poster UI (color blocks, no shadow). Not aligned with: Chair Azure / IBM Plex,
+default shadcn zinc dashboards, spa-mint dentistry Dribbbles, Material card theatre,
+Atlassian blue `#0C66E4` as a copy, prompt Blue 500 on white text (fails WCAG AA).
 
 ---
 
@@ -169,30 +173,33 @@ unpaid → next visit.
 
 ### Atmosphere
 
-- MUST default to `paper` / `surface` for ~90% of the canvas. Clinics are already
-  visually noisy (lights, instruments, Messenger). The product is the quiet notebook.
+- MUST default to `paper` (`#FFFFFF`) for ~90% of the canvas. Clinics are already
+  visually noisy (lights, instruments, Messenger). The product is a quiet poster,
+  not a notebook with hairlines.
 - MUST treat color as meaning. Saturated fills are for **one** primary action per
   section, or for a status that also has a text label.
-- MUST NOT ship cream paper, terracotta accents, gradient heroes, glassmorphism,
-  or a dark “AI tool” theme. Those are generic generated-UI tells and they do not
-  belong at a Cebu chair.
-- SHOULD prefer whitespace and 1px `border` for grouping before elevation.
-- SHOULD feel closer to a well-printed chart than to a SaaS marketing site.
+- MUST group related blocks with `surface` / `muted` color fills, not 1px borders
+  as structure. `--surface-border-width` is `0`. `--shadow` is `none`.
+- MUST NOT ship Chair Azure, IBM Plex, cream paper, terracotta accents, Unsplash
+  auth heroes, glassmorphism, or Material elevation. Those are retired or generic
+  generated-UI tells.
+- SHOULD feel closer to a printed flat poster than to a SaaS marketing site.
 
 ### Brand vs product
 
-One type family everywhere in product chrome: IBM Plex Sans. No display serif, no
-second “marketing font” until `apps/marketing` exists — and even then the landing
-page SHOULD stay in the same family so clinic and brochure are one product.
+One type family everywhere in product chrome: Outfit. No display serif, no second
+“marketing font” until `apps/marketing` exists — and even then the landing page
+SHOULD stay in the same family so clinic and brochure are one product. MUST NOT
+load IBM Plex Sans.
 
-The **wordmark** is the word **Karon** in sentence case (IBM Plex Sans 600) beside
+The **wordmark** is the word **Karon** in sentence case (Outfit 600) beside
 the app mark. Import `KaronWordmark` from `@karon/design-system`.
 
 The **app mark** (`KaronMark`) is a geometric molar in profile that also reads as a
 dental chair facing right: two cusps (crown / backrest), an L-shaped seat, two
 root-legs, and a filled circle in the crook of the L — someone in the chair *now*
-(*karon*). In chrome it is `currentColor` / `text-primary`. PWA and favicon: Chair
-Azure square, white glyph, ~20% maskable inset (`apps/clinic/public/icons/karon.svg`).
+(*karon*). In chrome it is `currentColor` / `text-primary`. PWA and favicon: Blue 600
+`#2563EB` square, white glyph, ~20% maskable inset (`apps/clinic/public/icons/karon.svg`).
 Draft paths live in `packages/design-system/src/brand/`.
 
 MUST NOT use clip-art molars, gradients, a cavity-like knockout hole, or a tooth
@@ -227,29 +234,28 @@ Refer to tokens by YAML key in prose. In app code, emit the CSS variable
 
 | Token | Hex | Use |
 | --- | --- | --- |
-| `paper` | `#F3F8FA` | Page canvas. Cool, slightly blue. Not cream, not stark clinic-white. |
-| `surface` | `#FFFFFF` | Cards, fields, dialogs sitting on paper |
-| `surface-sunken` | `#E7EEF0` | Wells inside a page (today-board columns). Never the outermost canvas. |
-| `text` | `#1C2B32` | Body, headings, peso amounts |
-| `text-subtle` | `#4C5B5F` | Labels, metadata. Contrast ≥ 4.5:1 on paper. |
-| `text-subtlest` | `#5D6C70` | Placeholders only — not body copy |
-| `border` | `#D1D9DB` | Hairline grouping. Decorative; not the only selected-state cue |
-| `border-input` | `#6E7D82` | Resting field outline. ≥ 3:1 vs paper (WCAG 1.4.11) |
-| `border-focused` | `#1A5B7D` | Focus ring; same as brand |
+| `paper` | `#FFFFFF` | Page canvas. Stark white. Not cream, not Chair Azure cool paper. |
+| `surface` | `#F3F4F6` | Cards, wells, grouping fills on paper |
+| `surface-sunken` | `#F3F4F6` | Same as surface — wells inside a page. Never the outermost canvas. |
+| `text` | `#111827` | Body, headings, peso amounts |
+| `text-subtle` | `#4B5563` | Labels, metadata. Contrast ≥ 4.5:1 on paper. |
+| `text-subtlest` | `#6B7280` | Placeholders only — not body copy |
+| `border` | `#E5E7EB` | Residual outline token. Grouping uses fills, not hairlines. |
+| `border-input` | `#E5E7EB` | Fields use `--input-fill` (`#E5E7EB`) and `--input-border-width: 0`. |
+| `border-focused` | `#2563EB` | Focus ring; same as brand |
 
-MUST use `paper` as the page background. MUST NOT use `surface-sunken` as the page
-background to make white cards pop. That “grey page, floating cards” pattern is the
-common drift; the Karon pattern is **cool paper, bordered white surfaces, optional
-sunken wells inside**.
+MUST use `paper` as the page background. MUST NOT use hairline borders as the way
+to know a card exists. The Karon pattern is **white paper, gray color-block
+surfaces, no drop shadow**.
 
 ### Dark theme
 
 Same token **names**. Values live under `[data-theme="dark"]` in `tokens.css`. Paper
-is a blue-black (`#081318`), not `#000`. Brand, success, and danger **lighten** so
-`text-primary` still meets 4.5:1 on dark paper; filled buttons use the matching
-`*-foreground` (dark ink on the lighter fill). Preference: `system` (default),
-`light`, or `dark`, stored as `karon-theme`. Chair MAY force light. MUST NOT introduce
-a second hex palette in feature files for dark.
+is gray-900 (`#111827`), not `#000` and not Chair Azure blue-black. Fields use
+`--input-fill: #111827` so they contrast on `#1F2937` cards. Filled buttons use the
+matching `*-foreground`. Preference: `system` (default), `light`, or `dark`, stored
+as `karon-theme`. Chair MAY force light. MUST NOT introduce a second hex palette in
+feature files for dark. MUST NOT add a Chair vs Flat look switch (`data-look`).
 
 ### Semantic roles
 
@@ -257,16 +263,17 @@ These answer “what state is this?” Names are whole words.
 
 | Role | Hex | When |
 | --- | --- | --- |
-| `primary` (Chair Azure) | `#1A5B7D` | The one action: Save visit, Add patient, Collect. Links, focus. |
-| `success` | `#176540` | Paid, synced, done. Never the default button. |
-| `warning` | `#AA592C` | Late, past due, “ask before you do this”. |
-| `danger` | `#AC3039` | Unpaid, expired entitlement, destructive confirm. |
-| `information` | `#156163` | Teal. Queued / syncing / in progress / trial. The “dental water” hue. |
+| `primary` (Blue 600) | `#2563EB` | The one action: Save visit, Add patient, Collect. Links, focus. Hover `#1D4ED8`. Do not use Blue 500 — white-on-500 fails WCAG AA. |
+| `success` (emerald) | `#059669` | Paid, synced, done. Never the default button. |
+| `accent` (amber) | `#F59E0B` | Selected job / highlight. Ink is `accent-foreground` (`#111827`). |
+| `warning` | `#D97706` | Late, past due, “ask before you do this”. Pale fill + dark ink. |
+| `danger` | `#DC2626` | Unpaid, expired entitlement, destructive confirm. |
+| `information` | `#0F766E` | Teal. Queued / syncing / in progress / trial. |
 
-**Hue split is deliberate.** Brand sits at OKLCH hue ~240 (blue). Success sits at
-~155 (green). Information is teal (~200). Do not “make primary a bit greener” to feel
-more dental — that collapses brand and success for deuteranopia (~8% of men,
-including dentists).
+**Hue split is deliberate.** Brand is Blue 600. Success is emerald. Information is teal.
+Do not “make primary a bit greener” to feel more dental — that collapses brand and
+success for deuteranopia (~8% of men, including dentists). MUST NOT revive Chair Azure
+`#1A5B7D` as primary.
 
 - MUST treat `success` as a role, not a decorative mint accent.
 - MUST NOT use `success` for owner daily totals. Money is `text` with tabular figures.
@@ -316,14 +323,14 @@ Status is never color alone (WCAG 1.4.1). Pair **label + color**; icon when spac
 
 ### Family
 
-IBM Plex Sans is the product face: every screen, button, table, form, quote. It was
-chosen because it is **legible at arm’s length**, has proper figures for pesos, covers
-`latin-ext` (Ñ and Filipino names), and does not look like Geist / Inter defaults.
+Outfit is the product face: every screen, button, table, form, quote. It is geometric,
+legible at arm’s length, covers `latin-ext` (Ñ and Filipino names), and is already
+loaded on the clinic layout. MUST NOT load IBM Plex Sans.
 
-- MUST load it once via `next/font` in the app layout (`display: swap`, `latin` +
-  `latin-ext`). MUST NOT add a second webfont per page.
-- MUST NOT introduce Inter, Geist, Roboto, Plus Jakarta, or a display serif in clinic
-  chrome.
+- MUST load Outfit once via `next/font` in the app layout (`display: swap`, `latin` +
+  `latin-ext`, weights 400–800). MUST NOT add a second webfont per page.
+- MUST NOT introduce IBM Plex, Inter, Geist, Roboto, Plus Jakarta, or a display serif
+  in clinic chrome.
 - Peso amounts, GCash refs, and times MUST use `tabular-nums` (`font-variant-numeric:
   tabular-nums` / Tailwind `tabular-nums`) so ₱1,500 and ₱11,500 do not dance.
 
@@ -331,8 +338,8 @@ chosen because it is **legible at arm’s length**, has proper figures for pesos
 
 | Token | Size | Weight | Use |
 | --- | --- | --- | --- |
-| `display` | 1.5rem / 600 | Owner daily total, today heading | One `h1` per view |
-| `heading` | 1.125rem / 600 | Section titles, dialog titles | `h2` |
+| `display` | 1.5rem / 800 | Owner daily total, today heading | One `h1` per view. Tracking `-0.02em`. |
+| `heading` | 1.125rem / 800 | Section titles, dialog titles | `h2`. Tracking `-0.02em`. |
 | `body` | 1rem / 400 | Everything continuous | Default |
 | `body-small` | 0.875rem / 400 | Helper text, lozenge, table headers | Sparingly |
 | `label` | 0.875rem / 500 | Field labels, nav | |
@@ -341,7 +348,7 @@ chosen because it is **legible at arm’s length**, has proper figures for pesos
 Chair glare and cheap phones: MUST NOT set body below 16px (`1rem`) on clinic density.
 `body-small` is for secondary metadata, not the patient name.
 
-Post-login chrome is a **workbench** (Hallmark app family). One type family still holds: IBM Plex Sans is display and body. Do not add a marketing serif inside the PWA.
+Post-login chrome is a **workbench** (Hallmark app family). One type family still holds: Outfit is display and body. Do not add a marketing serif inside the PWA.
 
 ### Case and hierarchy
 
@@ -417,21 +424,24 @@ Phone                               Tablet+
 
 ## Elevation & Depth
 
-Three planes. Shadows are rare.
+Three planes. Shadows are forbidden on product chrome (`--shadow: none`).
 
 | Plane | Token | Use |
 | --- | --- | --- |
-| Default | `paper` | The canvas |
-| Resting surface | `surface` + `border` | Cards, fields, board columns |
+| Default | `paper` | The canvas (`#FFFFFF`) |
+| Resting surface | `surface` color block | Cards, fields, board columns — fill, not hairline |
 | Overlay | `surface` + dialog primitive | Modal, sheet, toast, select |
 
-- MUST prefer hairline `border` over drop shadow for in-page grouping.
-- MUST NOT put `box-shadow` on every card. Assistants do not need Material elevation
-  to know a row is tappable — they need 44px height and a clear name.
+- MUST group with color blocks (`bg-card` / `bg-muted`). MUST NOT use 1px `border` as
+  structure (`--surface-border-width: 0`).
+- MUST NOT put `box-shadow` on cards. Assistants do not need Material elevation
+  to know a row is tappable — they need 56px height and a clear name.
 - SHOULD use `surface-sunken` for today-board columns on wide screens (wells on paper),
   not a stack of raised cards.
 - Overlay (dialog / sheet) MAY use the shadcn overlay scrim. MUST keep the dialog
   titled (visible or `sr-only`).
+- Hover MAY scale (`--control-hover-scale: 1.05`, `--surface-hover-scale: 1.02`).
+  `prefers-reduced-motion: reduce` MUST set those scales to `1` and duration to `0`.
 
 ---
 
@@ -466,7 +476,7 @@ are not an invitation to hand-build a second Button.**
   (`yarn dlx shadcn@latest add …` from `apps/clinic`, aliases already point at the
   package). MUST NOT `shadcn add` into `apps/clinic/src/components/ui`.
 - If a primitive does not exist yet, add it to the package in the same change that
-  needs it — do not paste a one-off `<button className="bg-[#1A5B7D]">`.
+  needs it — do not paste a one-off `<button className="bg-[#2563EB]">`.
 
 ### Button
 
@@ -476,8 +486,9 @@ Appearances that exist today: `default` (primary), `outline`, `ghost`.
   MUST NOT use “Submit”, “OK”, or “Click here”.
 - MUST keep **one** primary button per section. A second action is `outline` or `ghost`.
 - MUST NOT paint Save as `success` or Collect as `warning`.
-- Clinic density: default height **44px** (`h-11` / `min-h-11`). Compact (`sm`) is for
-  marketing/admin later or dense tables — MUST NOT be the chair default.
+- Clinic density: default height **56px** (`h-14` / `--control-min-height: 3.5rem`).
+  That still meets the 44px glove/chair floor. Compact (`sm`) is for marketing/admin
+  later or dense tables — MUST NOT be the chair default.
 - Disabled is `opacity-50` plus `pointer-events-none`. MUST also set `disabled` on the
   element so assistive tech knows.
 
@@ -558,9 +569,9 @@ chrome. Brand is `KaronMark` / `KaronWordmark`, not a Lucide tooth.
 
 Motion-cut product. Assistants are working, not watching.
 
-- MAY use `transition-colors` on buttons (~150–180ms).
+- MAY use `transition-colors` and a short `transform` scale on controls (~200ms).
 - MUST animate only `opacity` and `transform` if something moves.
-- MUST honor `prefers-reduced-motion: reduce` (≤150ms opacity or none).
+- MUST honor `prefers-reduced-motion: reduce` (zero duration, hover scales = 1).
 - MUST NOT add page-load fade-up on every section, bounce, or confetti on Collect.
 - MUST NOT install Framer Motion / GSAP for V1 chrome.
 
@@ -591,9 +602,9 @@ MUST keep action names stable: the button “Collect” leads to a state “Coll
 Target WCAG 2.2 **AA**. Chair also has NFR-08 (gloves / one-hand). Lighthouse-minded
 90+ on Performance / a11y / best practices; SEO is low on the authenticated PWA.
 
-- Contrast: body `text` on `paper` ≥ 4.5:1 (this palette: ~13:1). UI components that
-  convey meaning ≥ 3:1 (`border-input` is the floor for fields).
-- Touch: clinic `data-density="clinic"` → controls **≥ 44px**.
+- Contrast: body `text` on `paper` ≥ 4.5:1 (this palette: ~16:1). White on `primary`
+  (`#2563EB`) meets AA; Blue 500 does not — do not “brighten” the brand fill.
+- Touch: clinic `data-density="clinic"` → controls **56px** (still ≥ 44px).
 - Keyboard: visible focus ring. Dialogs have a title. One `h1`.
 - Status: text + color. Prefer `role="status"` for sync/offline, not only a green dot.
 - MUST NOT rely on hover. The primary device is a phone.
@@ -613,7 +624,7 @@ then ~390, ~768, ~1280.
 | 768–1023 | Column wells | Two-pane if it still fits |
 | 1280+ | Same wells, not a new IA | Quote readable, not a dashboard wall |
 
-- MUST keep tap targets ≥ 44px at every width in clinic.
+- MUST keep tap targets ≥ 44px at every width in clinic (clinic default is 56px).
 - MUST account for long Filipino names wrapping; names MUST NOT overflow the row.
 - Landscape phone: the odontogram MAY scroll inside a bounded region; chrome MUST
   remain reachable.
@@ -637,4 +648,4 @@ token at once and tempts agents to redraw components. We follow that split:
 Before writing UI, list the tokens and primitives you will use (the `ads_plan` step).
 Then generate code that **imports** them.
 
-Dark theme is **on**: `data-theme="light" | "dark"` on `<html>`, `ThemeProvider` + `themeInitScript` in the clinic layout, preference in `localStorage` (`karon-theme`: light / dark / system). Prefer swapping tokens over `dark:` utilities. Chart ramps and a marketing display face remain omitted.
+Dark theme is **on**: `data-theme="light" | "dark"` on `<html>`, `ThemeProvider` + `themeInitScript` in the clinic layout, preference in `localStorage` (`karon-theme`: light / dark / system). Prefer swapping tokens over `dark:` utilities. There is **no** look switch and **no** `karon-look` key. Chart ramps and a marketing display face remain omitted. Chair Azure and IBM Plex MUST NOT return.

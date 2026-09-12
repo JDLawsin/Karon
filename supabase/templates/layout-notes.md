@@ -25,14 +25,14 @@ Email clients cannot use `tokens.css`. Inline hex only:
 
 | Role | Hex |
 | --- | --- |
-| Paper | `#F3F8FA` |
-| Card | `#FFFFFF` |
-| Text | `#1C2B32` |
-| Muted | `#4C5B5F` |
-| Border | `#D1D9DB` |
-| Primary CTA | `#1A5B7D` on `#FFFFFF` |
+| Paper | `#FFFFFF` |
+| Card | `#F3F4F6` |
+| Text | `#111827` |
+| Muted | `#4B5563` |
+| Border | `#E5E7EB` |
+| Primary CTA | `#2563EB` on `#FFFFFF` |
 
-Font stack: `"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif`. CTA min-height 44px, radius 8px.
+Font stack: `"Outfit", ui-sans-serif, system-ui, sans-serif`. CTA min-height 44px, radius 8px.
 
 ## Variables used
 

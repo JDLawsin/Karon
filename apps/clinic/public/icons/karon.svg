@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
   <!-- Keep paths in sync with packages/design-system/src/brand/karon-mark-paths.ts -->
-  <rect width="192" height="192" fill="#1A5B7D"/>
+  <rect width="192" height="192" fill="#2563EB"/>
   <g fill="#fff" transform="translate(48 48) scale(4)">
     <path d="M8 6.25c0-1.5 1.05-2.6 2.45-2.6.55 0 1.05.18 1.4.55.35-.37.85-.55 1.4-.55 1.4 0 2.45 1.1 2.45 2.6v6.1H8z"/>
     <path d="M8 12.15h11.1c1.15 0 2.1.9 2.1 2.05v.95c0 1.15-.95 2.05-2.1 2.05H8c-1.15 0-2.1-.9-2.1-2.05v-.95c0-1.15.95-2.05 2.1-2.05Z"/>

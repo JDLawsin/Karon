@@ -42,14 +42,14 @@ const ClinicShell = ({ membership, userId, children }: Props) => {
   return (
     <ClinicSessionProvider membership={membership} userId={userId}>
       <IdleLockGate membership={membership} userId={userId}>
-        <div className="flex min-h-dvh min-w-0 bg-background">
+        <div className="relative z-[1] flex min-h-dvh min-w-0 bg-background">
           <a
             className="sr-only focus:not-sr-only focus:absolute focus:z-(--z-sticky) focus:inline-flex focus:min-h-(--control-min-height) focus:items-center focus:rounded-md focus:bg-primary focus:px-4 focus:text-sm focus:font-medium focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             href="#clinic-main"
           >
             Skip to content
           </a>
-          <aside className="sticky top-0 hidden h-dvh w-(--sidebar-width) shrink-0 flex-col gap-6 border-r border-border bg-card px-3 py-4 md:flex">
+          <aside className="sticky top-0 hidden h-dvh w-(--sidebar-width) shrink-0 flex-col gap-6 border-r-(length:var(--surface-border-width)) border-border bg-card px-3 py-4 md:flex">
             <ClinicBrandLink />
             <nav aria-label="Clinic" className="min-w-0 flex-1">
               <ClinicJobNav role={role} />
@@ -57,7 +57,7 @@ const ClinicShell = ({ membership, userId, children }: Props) => {
             <ClinicUtilityNav onSignOut={signOut} />
           </aside>
           <div className="flex min-w-0 flex-1 flex-col">
-            <header className="flex min-w-0 flex-col gap-3 border-b border-border px-4 py-3 sm:px-6 md:hidden">
+            <header className="flex min-w-0 flex-col gap-3 border-b-(length:var(--surface-border-width)) border-border px-4 py-3 sm:px-6 md:hidden">
               <ClinicBrandLink />
               <ClinicUtilityNav onSignOut={signOut} />
             </header>
@@ -80,7 +80,7 @@ const ClinicShell = ({ membership, userId, children }: Props) => {
             {showJobBar ? (
               <nav
                 aria-label="Clinic"
-                className="fixed inset-x-0 bottom-0 z-(--z-sticky) border-t border-border bg-card px-2 pt-1 pb-[env(safe-area-inset-bottom,0px)] md:hidden"
+                className="fixed inset-x-0 bottom-0 z-(--z-sticky) border-t-(length:var(--surface-border-width)) border-border bg-card px-2 pt-1 pb-[env(safe-area-inset-bottom,0px)] md:hidden"
               >
                 <ClinicJobNav role={role} stacked />
               </nav>

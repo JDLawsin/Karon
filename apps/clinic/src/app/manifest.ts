@@ -6,8 +6,8 @@ const manifest = (): MetadataRoute.Manifest => ({
   description: "Offline-first clinic software for small dental practices.",
   start_url: "/",
   display: "standalone",
-  background_color: "#F3F8FA",
-  theme_color: "#1A5B7D",
+  background_color: "#FFFFFF",
+  theme_color: "#2563EB",
   icons: [
     {
       src: "/icons/karon.svg",

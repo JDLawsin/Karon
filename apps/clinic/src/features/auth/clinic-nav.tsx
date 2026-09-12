@@ -52,7 +52,7 @@ const jobClass = (active: boolean, stacked: boolean) =>
       ? "w-full flex-col justify-center gap-0.5 px-2 py-1"
       : "gap-2 px-3",
     active
-      ? "bg-accent text-foreground"
+      ? "bg-accent text-accent-foreground"
       : "text-foreground hover:bg-muted active:bg-muted"
   );
 

@@ -1,4 +1,4 @@
-/* Hallmark · component: badge · genre: modern-minimal · theme: Chair Azure
+/* Hallmark · component: badge · genre: modern-minimal · theme: Flat
  * states: default · hover · focus · active · disabled · loading · error · success
  * contrast: pass (46–50)
  */
@@ -14,7 +14,7 @@ const statusBadgeVariants = cva(
       tone: {
         neutral: "bg-muted text-foreground",
         info: "bg-info-subtle text-info",
-        primary: "bg-accent text-foreground",
+        primary: "bg-accent text-accent-foreground",
         warning: "bg-warning-subtle text-warning-foreground",
         success: "bg-success-subtle text-success",
         danger: "bg-destructive-subtle text-destructive"

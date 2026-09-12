@@ -205,7 +205,7 @@ const ClinicStaff = () => {
   return (
     <div className="flex flex-col gap-8">
       <form
-        className="flex max-w-xl flex-col gap-4 rounded-lg border border-border bg-card p-4"
+        className="flex max-w-xl flex-col gap-4 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card p-4"
         onSubmit={onInvite}
       >
         <div className="flex flex-col gap-2">
@@ -232,7 +232,7 @@ const ClinicStaff = () => {
         <ul className="flex flex-col gap-2">
           {members.map((member) => (
             <li
-              className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+              className="flex min-w-0 flex-col gap-2 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
               key={member.userId}
             >
               <p className="min-w-0 break-all text-sm">
@@ -266,7 +266,7 @@ const ClinicStaff = () => {
         <ul className="flex flex-col gap-2">
           {sessions.map((session) => (
             <li
-              className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+              className="flex min-w-0 flex-col gap-2 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
               key={session.id}
             >
               <p className="min-w-0 break-all text-sm">

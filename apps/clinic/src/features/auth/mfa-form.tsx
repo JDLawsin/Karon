@@ -219,7 +219,7 @@ const MfaForm = () => {
               <a href={uri}>Add to authenticator app</a>
             </Button>
           ) : null}
-          <details className="min-w-0 rounded-md border border-border px-3">
+          <details className="min-w-0 rounded-md border-(length:var(--surface-border-width)) border-border px-3">
             <summary className="flex min-h-(--control-min-height) cursor-pointer items-center text-sm font-medium">
               {"Can't scan?"}
             </summary>

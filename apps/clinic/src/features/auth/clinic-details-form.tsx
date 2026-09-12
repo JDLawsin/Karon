@@ -172,7 +172,7 @@ const ClinicDetailsForm = () => {
 
   return (
     <form
-      className="flex max-w-xl flex-col gap-4 rounded-lg border border-border bg-card p-4"
+      className="flex max-w-xl flex-col gap-4 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card p-4"
       method="post"
       onSubmit={(event) => {
         void onSubmit(event);

@@ -29,7 +29,7 @@ const AlertDialogContent = ({
     <AlertDialogOverlay />
     <AlertDialogPrimitive.Content
       className={cn(
-        "fixed top-1/2 left-1/2 z-50 w-[min(100%-2rem,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-6",
+        "fixed top-1/2 left-1/2 z-50 w-[min(100%-2rem,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card p-6 shadow-none",
         className
       )}
       {...props}

@@ -6,7 +6,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "../lib/cn";
 
 const alertVariants = cva(
-  "flex min-w-0 items-start gap-3 rounded-md border border-border p-3 sm:p-4",
+  "flex min-w-0 items-start gap-3 rounded-md border-(length:var(--surface-border-width)) border-border p-3 sm:p-4",
   {
     variants: {
       variant: {

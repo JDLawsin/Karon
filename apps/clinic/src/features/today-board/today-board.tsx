@@ -46,7 +46,7 @@ const TodayBoard = () => {
         <ul className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
           {BOARD_STATUSES.map((status) => (
             <li
-              className="min-w-0 rounded-lg border border-border bg-card px-3 py-3"
+              className="min-w-0 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3 transition-transform duration-(--motion-duration) hover:scale-(--surface-hover-scale)"
               key={status}
             >
               <p className="text-sm text-muted-foreground">

@@ -89,7 +89,7 @@ const ClinicServicesFields = ({ idPrefix, services, onChange, errors }: Props) =
         <ul className="flex flex-col gap-2">
           {services.map((service) => (
             <li
-              className="flex min-w-0 items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2"
+              className="flex min-w-0 items-center justify-between gap-2 rounded-md border-(length:var(--surface-border-width)) border-border bg-card px-3 py-2"
               key={service.id}
             >
               <span className="min-w-0 wrap-anywhere text-sm">{service.name}</span>

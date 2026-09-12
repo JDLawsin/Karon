@@ -17,3 +17,16 @@
     min-height: 100dvh;
   }
 }
+
+body::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  z-index: 0;
+  inset: auto -6rem -8rem auto;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 9999px;
+  background: var(--primary);
+  opacity: 0.06;
+}

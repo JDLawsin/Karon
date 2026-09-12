@@ -1,4 +1,4 @@
-/* Hallmark · component: page-header · genre: modern-minimal · theme: Chair Azure
+/* Hallmark · component: page-header · genre: modern-minimal · theme: Flat
  * states: default · hover · focus · active · disabled · loading · error · success
  * contrast: pass (title on paper)
  */
@@ -26,7 +26,7 @@ const PageHeader = ({
     )}
   >
     <div className="min-w-0">
-      <h1 className="wrap-anywhere text-2xl font-semibold tracking-tight">
+      <h1 className="wrap-anywhere text-2xl tracking-(--heading-tracking) [font-weight:var(--heading-weight)]">
         {title}
       </h1>
       {description ? (

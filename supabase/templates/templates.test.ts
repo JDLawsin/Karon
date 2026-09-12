@@ -24,6 +24,6 @@ describe("auth email templates", () => {
     expect(html).not.toContain("{{ .Token }}");
     expect(html).toContain('role="presentation"');
     expect(html).toContain('lang="en"');
-    expect(html).toContain("#1A5B7D");
+    expect(html).toContain("#2563EB");
   });
 });
