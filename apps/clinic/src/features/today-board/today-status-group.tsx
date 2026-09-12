@@ -1,14 +1,24 @@
 "use client";
 
-import { Button, StatusBadge, cn } from "@karon/design-system";
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  StatusBadge,
+  cn
+} from "@karon/design-system";
 
 import {
   BOARD_STATUS_LABEL,
+  VISIT_STATUS_LABEL,
   formatVisitTime,
   nextVisitStatus,
   type BoardStatus,
   type TodayBoardRow
 } from "@/features/today-board/project-today-board";
+import { transitionVisitStatus } from "@/features/today-board/visit-status";
 import type { VisitStatus } from "@/lib/sync/event-schema";
 
 type Props = {
@@ -18,10 +28,12 @@ type Props = {
 };
 
 const STATUS_TONE = {
-  booked: "neutral",
+  pending_review: "info",
+  confirmed: "neutral",
   waiting: "info",
   in_chair: "primary",
-  late: "warning"
+  late: "warning",
+  complete: "success"
 } as const;
 
 const TodayStatusGroup = ({ status, rows, onMark }: Props) => {
@@ -51,7 +63,11 @@ const TodayStatusGroup = ({ status, rows, onMark }: Props) => {
         <ul className="flex min-w-0 flex-col gap-1">
           {rows.map((row) => {
             const next = nextVisitStatus(row.status);
-            const nextLabel = next ? BOARD_STATUS_LABEL[next] : null;
+            const nextLabel = next ? VISIT_STATUS_LABEL[next] : null;
+            const canCancel =
+              transitionVisitStatus(row.storedStatus, "cancelled") !== null;
+            const canNoShow =
+              transitionVisitStatus(row.storedStatus, "no_show") !== null;
 
             return (
               <li
@@ -63,12 +79,19 @@ const TodayStatusGroup = ({ status, rows, onMark }: Props) => {
                 </p>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{row.name}</p>
-                  <StatusBadge
-                    className={row.status === "late" ? "text-warning-foreground" : undefined}
-                    tone={STATUS_TONE[row.status]}
-                  >
-                    {BOARD_STATUS_LABEL[row.status]}
-                  </StatusBadge>
+                  <div className="flex min-w-0 flex-wrap items-center gap-1">
+                    <StatusBadge
+                      className={
+                        row.status === "late" ? "text-warning-foreground" : undefined
+                      }
+                      tone={STATUS_TONE[row.status]}
+                    >
+                      {BOARD_STATUS_LABEL[row.status]}
+                    </StatusBadge>
+                    <StatusBadge tone={row.syncState === "local" ? "info" : "success"}>
+                      {row.syncState === "local" ? "On this device" : "Synced"}
+                    </StatusBadge>
+                  </div>
                 </div>
                 {next && nextLabel ? (
                   <Button
@@ -79,6 +102,35 @@ const TodayStatusGroup = ({ status, rows, onMark }: Props) => {
                   >
                     {nextLabel}
                   </Button>
+                ) : null}
+                {canCancel || canNoShow ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        aria-label={`More actions for ${row.name}`}
+                        type="button"
+                        variant="ghost"
+                      >
+                        More
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" collisionPadding={8}>
+                      {canCancel ? (
+                        <DropdownMenuItem
+                          onSelect={() => onMark(row.visitId, "cancelled")}
+                        >
+                          Cancel
+                        </DropdownMenuItem>
+                      ) : null}
+                      {canNoShow ? (
+                        <DropdownMenuItem
+                          onSelect={() => onMark(row.visitId, "no_show")}
+                        >
+                          No-show
+                        </DropdownMenuItem>
+                      ) : null}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 ) : null}
               </li>
             );

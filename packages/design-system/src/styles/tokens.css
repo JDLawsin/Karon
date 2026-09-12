@@ -40,6 +40,8 @@
   --radius: 0.5rem;
   --control-min-height: 3.5rem;
   --motion-duration: 200ms;
+  --overlay-duration: 450ms;
+  --drawer-duration: var(--overlay-duration);
   --sidebar-width: 14rem;
   --sidebar-width-icon: 4.5rem;
   --sidebar: var(--card);
@@ -115,6 +117,7 @@
     --motion-duration: 0s;
     --control-hover-scale: 1;
     --surface-hover-scale: 1;
+    /* overlay-duration stays — 0ms overlays read as a pop */
   }
 }
 
@@ -162,4 +165,9 @@
   --radius-md: var(--radius);
   --radius-lg: 0.75rem;
   --font-sans: var(--font-outfit, Outfit), ui-sans-serif, system-ui, sans-serif;
+  --duration-motion: var(--motion-duration);
+  --duration-overlay: var(--overlay-duration);
+  --duration-drawer: var(--drawer-duration);
+  --ease-drawer: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-drawer-overlay: cubic-bezier(0.32, 0.72, 0, 1);
 }

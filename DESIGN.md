@@ -79,6 +79,9 @@ rounded:
   md: 0.5rem
   lg: 0.75rem
   full: 9999px
+motion:
+  control: 200ms
+  overlay: 450ms
 spacing:
   0: 0
   1: 4px
@@ -406,9 +409,8 @@ Post-login is a dashboard work surface, not a wrapping header of every utility.
   Footer is a staff chip (avatar, name, email) that opens theme and sign out.
   Staff avatar is DiceBear Notionists Neutral, seeded by
   user id (stable per person, not reshuffled on login).
-- Phone: menu trigger + wordmark + avatar on top. Theme, Settings, and Sign out stay
-  visible in that header (not only inside a closed menu). Jobs open in a left sheet.
-- Settings and Sign out MUST stay visible at 320px (not inside a closed menu).
+- Phone: menu trigger on the left, wordmark centered. Jobs, Settings, theme, and
+  sign out live in the left sheet (same grouping as the tablet rail).
 - Sync stays an `information` banner above the canvas, never a toast.
 
 Today’s canvas: clinic date, live counts from the real board, then rows (phone) or
@@ -417,13 +419,13 @@ column wells (tablet+). MUST NOT invent marketing stats.
 ```
 Phone                               Tablet+
 ┌─────────────────────┐           ┌──────┬──────────────────┐
-│ ≡ Karon        [av] │           │Karon │ Today  12 Sep    │
-│ Theme Settings Out  │           │Today │ 2 waiting · 1 late│
-│ Today      [Add]    │           │Coll. │ [Add patient]    │
-│ 9:30 Maria  Waiting │           │Clinic│ Booked │ Waiting │
-│ …                   │           │Sett. │        │         │
-└─────────────────────┘           │av ▸  │        │         │
-  sheet: jobs                     │v0.1  └──────────────────┘
+│ ≡      Karon        │           │Karon │ Today  12 Sep    │
+│ Today      [Add]    │           │Today │ 2 waiting · 1 late│
+│ 9:30 Maria  Waiting │           │Coll. │ [Add patient]    │
+│ …                   │           │Clinic│ Booked │ Waiting │
+└─────────────────────┘           │Sett. │        │         │
+  sheet: jobs / account / av      │av ▸  │        │         │
+                                  │v0.1  └──────────────────┘
 ```
 
 ---
@@ -447,7 +449,7 @@ Three planes. Shadows are forbidden on product chrome (`--shadow: none`).
 - Overlay (dialog / sheet) MAY use the shadcn overlay scrim. MUST keep the dialog
   titled (visible or `sr-only`).
 - Hover MAY scale (`--control-hover-scale: 1.05`, `--surface-hover-scale: 1.02`).
-  `prefers-reduced-motion: reduce` MUST set those scales to `1` and duration to `0`.
+  `prefers-reduced-motion: reduce` MUST set those scales to `1` and `--motion-duration` to `0`. Overlay motion stays `--overlay-duration` (see Motion).
 
 ---
 
@@ -573,13 +575,21 @@ chrome. Brand is `KaronMark` / `KaronWordmark`, not a Lucide tooth.
 
 ## Motion
 
-Motion-cut product. Assistants are working, not watching.
+Motion-cut product. Assistants are working, not watching. Two clocks in
+`packages/design-system/src/styles/tokens.css` — not in `components.json` and not
+in a Tailwind JS config (this repo is Tailwind v4 `@theme`).
 
-- MAY use `transition-colors` and a short `transform` scale on controls (~200ms).
-- MUST animate only `opacity` and `transform` if something moves.
-- MUST honor `prefers-reduced-motion: reduce` (zero duration, hover scales = 1).
+| Token | Default | Job |
+| --- | --- | --- |
+| `--motion-duration` | 200ms | Control hover / color. Tailwind: `duration-motion`. |
+| `--overlay-duration` | 450ms | Drawer, sheet, dropdown, tooltip, alert-dialog. `--drawer-duration` aliases it. Tailwind: `duration-overlay`. |
+
+- Overlay CSS lives in `packages/design-system/src/styles/index.css`, keyed by `data-slot`. Feature files MUST import the primitive and MUST NOT add `animate-in`, `slide-in-from-*`, overlay keyframes, or a second duration.
+- New overlay primitive: set `data-slot` on overlay + content, then add the CSS block next to the existing overlay rules. Popovers MUST animate the CSS `scale` property (not `transform`) so Radix positioning `transform` is not overwritten.
+- Popovers next to a collapsed rail MUST leave collision detection on (never `avoidCollisions={false}`) with `collisionPadding` so every item stays in the viewport.
+- MUST honor `prefers-reduced-motion: reduce` for hover (`--motion-duration: 0`, scales = 1). Overlay duration is not zeroed — `0ms` overlays read as a pop.
 - MUST NOT add page-load fade-up on every section, bounce, or confetti on Collect.
-- MUST NOT install Framer Motion / GSAP for V1 chrome.
+- MUST NOT install Framer Motion, GSAP, or `tw-animate-css` (`animate-in` is not in this repo).
 
 ---
 

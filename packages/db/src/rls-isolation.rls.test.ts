@@ -671,4 +671,106 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(removed ?? []).toEqual([]);
     expect(deleteError?.code).toBe("42501");
   });
+
+  it("lets the owner update auto-confirm and hides it from writes by assistants", async () => {
+    const owner = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(owner.client);
+    const { error: ownerError } = await owner.client
+      .from("clinics")
+      .update({ auto_confirm_bookings: false })
+      .eq("id", clinicIds[0]);
+
+    expect(ownerError).toBeNull();
+
+    const assistant = await createAuthedClient(users[1]!.email);
+    const { data } = await assistant.client
+      .from("clinics")
+      .select("auto_confirm_bookings")
+      .eq("id", clinicIds[0])
+      .maybeSingle();
+
+    expect(data?.auto_confirm_bookings).toBe(false);
+
+    const { error: assistantError } = await assistant.client
+      .from("clinics")
+      .update({ auto_confirm_bookings: true })
+      .eq("id", clinicIds[0]);
+
+    expect(assistantError).toBeNull();
+
+    const { data: after } = await owner.client
+      .from("clinics")
+      .select("auto_confirm_bookings")
+      .eq("id", clinicIds[0])
+      .maybeSingle();
+
+    expect(after?.auto_confirm_bookings).toBe(false);
+  });
+
+  it("hides google calendar tokens from assistants and other clinics", async () => {
+    const connectionId = randomUUID();
+    const { error: insertError } = await admin.from("google_calendar_connections").insert({
+      id: connectionId,
+      tenant_id: clinicIds[0],
+      encrypted_refresh_token: "cipher",
+      calendar_id: "primary",
+      connected_by: users[0]!.id
+    });
+
+    expect(insertError).toBeNull();
+
+    const assistant = await createAuthedClient(users[1]!.email);
+    const { data: assistantRows } = await assistant.client
+      .from("google_calendar_connections")
+      .select("id");
+
+    expect(assistantRows ?? []).toEqual([]);
+
+    const owner = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(owner.client);
+    const { data: ownerRows, error: ownerError } = await owner.client
+      .from("google_calendar_connections")
+      .select("id, calendar_id");
+
+    expect(ownerError).toBeNull();
+    expect(ownerRows?.map((row) => row.id)).toEqual([connectionId]);
+
+    const { data: tokenColumn } = await owner.client
+      .from("google_calendar_connections")
+      .select("encrypted_refresh_token")
+      .eq("id", connectionId);
+
+    expect(tokenColumn ?? []).toEqual([]);
+  });
+
+  it("lets members read own calendar imports and hides other clinics", async () => {
+    const ownId = randomUUID();
+    const otherId = randomUUID();
+    const { error: insertError } = await admin.from("calendar_imports").insert([
+      {
+        id: ownId,
+        tenant_id: clinicIds[0],
+        google_event_id: `evt-${ownId}`,
+        attendee_name: "Pat Patient",
+        starts_at: new Date().toISOString(),
+        status: "unmatched"
+      },
+      {
+        id: otherId,
+        tenant_id: clinicIds[1],
+        google_event_id: `evt-${otherId}`,
+        attendee_name: "Other Patient",
+        starts_at: new Date().toISOString(),
+        status: "unmatched"
+      }
+    ]);
+
+    expect(insertError).toBeNull();
+
+    const assistant = await createAuthedClient(users[1]!.email);
+    const { data, error } = await assistant.client.from("calendar_imports").select("id");
+
+    expect(error).toBeNull();
+    expect(data?.map((row) => row.id)).toEqual([ownId]);
+  });
 });

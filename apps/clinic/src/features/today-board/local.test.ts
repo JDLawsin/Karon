@@ -18,7 +18,7 @@ afterEach(async () => {
 });
 
 describe("today-board local writes", () => {
-  it("records a walk-in as waiting on today's board", async () => {
+  it("records a walk-in as confirmed on today's board", async () => {
     const db = await openClinicDb(TENANT, DEK);
     const now = new Date("2026-09-12T04:00:00.000Z");
 
@@ -30,18 +30,62 @@ describe("today-board local writes", () => {
       now
     });
 
-    const rows = projectTodayBoard(await db.events.toArray(), now);
+    const huddle = projectTodayBoard(await db.events.toArray(), now);
 
-    expect(rows).toEqual([
+    expect(huddle.rows).toEqual([
       expect.objectContaining({
         name: "Ana Cruz",
-        status: "waiting"
+        status: "confirmed"
       })
     ]);
     expect(await db.outbox.count()).toBe(2);
   });
 
-  it("appends visit.status_changed when seating a walk-in", async () => {
+  it("records a walk-in as pending review when auto-confirm is off", async () => {
+    const db = await openClinicDb(TENANT, DEK);
+    const now = new Date("2026-09-12T04:00:00.000Z");
+
+    await addWalkIn(db, {
+      tenantId: TENANT,
+      actorUserId: ACTOR,
+      name: "Ana Cruz",
+      mobile: "09171234567",
+      autoConfirm: false,
+      now
+    });
+
+    const huddle = projectTodayBoard(await db.events.toArray(), now);
+
+    expect(huddle.rows[0]?.storedStatus).toBe("pending_review");
+  });
+
+  it("appends visit.status_changed when seating a confirmed booking", async () => {
+    const db = await openClinicDb(TENANT, DEK);
+    const now = new Date("2026-09-12T04:00:00.000Z");
+    const { visitId } = await addWalkIn(db, {
+      tenantId: TENANT,
+      actorUserId: ACTOR,
+      name: "Ana Cruz",
+      mobile: "09171234567",
+      now
+    });
+
+    await changeVisitStatus(db, {
+      tenantId: TENANT,
+      actorUserId: ACTOR,
+      visitId,
+      status: "waiting",
+      now: new Date("2026-09-12T04:05:00.000Z")
+    });
+
+    const huddle = projectTodayBoard(await db.events.toArray(), now);
+    const types = (await db.events.toArray()).map((row) => row.type);
+
+    expect(huddle.rows[0]?.status).toBe("waiting");
+    expect(types).toContain("visit.status_changed");
+  });
+
+  it("does not skip the waiting room from confirmed", async () => {
     const db = await openClinicDb(TENANT, DEK);
     const now = new Date("2026-09-12T04:00:00.000Z");
     const { visitId } = await addWalkIn(db, {
@@ -60,10 +104,8 @@ describe("today-board local writes", () => {
       now: new Date("2026-09-12T04:05:00.000Z")
     });
 
-    const rows = projectTodayBoard(await db.events.toArray(), now);
-    const types = (await db.events.toArray()).map((row) => row.type);
+    const huddle = projectTodayBoard(await db.events.toArray(), now);
 
-    expect(rows[0]?.status).toBe("in_chair");
-    expect(types).toContain("visit.status_changed");
+    expect(huddle.rows[0]?.storedStatus).toBe("confirmed");
   });
 });

@@ -5,47 +5,66 @@ import {
 } from "@/lib/sync/event-schema";
 import { recordClinicEvent, recordClinicEvents } from "@/lib/sync/sync-engine";
 
-type WalkInInput = {
+import {
+  patientForVisit,
+  visitFromEvents,
+  visitStatusFromEvents
+} from "./project-today-board";
+import { initialVisitStatus, transitionVisitStatus } from "./visit-status";
+
+const AUTO_CONFIRM_KEY = "autoConfirmBookings";
+
+type BookingInput = {
   tenantId: string;
   actorUserId: string;
   name: string;
   mobile: string;
+  email?: string;
+  patientId?: string;
+  startsAt?: string;
+  autoConfirm?: boolean;
+  googleEventId?: string;
   now?: Date;
 };
 
-const addWalkIn = async (db: ClinicDb, input: WalkInInput) => {
-  const patient = patientPayloadSchema.parse({
-    name: input.name,
-    mobile: input.mobile
-  });
-  const patientId = crypto.randomUUID();
-  const visitId = crypto.randomUUID();
+const addBooking = async (db: ClinicDb, input: BookingInput) => {
   const occurredAt = (input.now ?? new Date()).toISOString();
+  const patientId = input.patientId ?? crypto.randomUUID();
+  const visitId = crypto.randomUUID();
+  const events = [];
 
-  await recordClinicEvents(db, [
-    {
+  if (!input.patientId) {
+    events.push({
       id: crypto.randomUUID(),
       tenantId: input.tenantId,
       actorUserId: input.actorUserId,
       recordId: patientId,
       occurredAt,
-      type: "patient.created",
-      payload: patient
-    },
-    {
-      id: crypto.randomUUID(),
-      tenantId: input.tenantId,
-      actorUserId: input.actorUserId,
-      recordId: visitId,
-      occurredAt,
-      type: "appointment.set",
-      payload: {
-        patientId,
-        startsAt: occurredAt,
-        status: "waiting"
-      }
+      type: "patient.created" as const,
+      payload: patientPayloadSchema.parse({
+        name: input.name,
+        mobile: input.mobile,
+        ...(input.email ? { email: input.email } : {})
+      })
+    });
+  }
+
+  events.push({
+    id: crypto.randomUUID(),
+    tenantId: input.tenantId,
+    actorUserId: input.actorUserId,
+    recordId: visitId,
+    occurredAt,
+    type: "appointment.set" as const,
+    payload: {
+      patientId,
+      startsAt: input.startsAt ?? occurredAt,
+      status: initialVisitStatus(input.autoConfirm ?? true),
+      ...(input.googleEventId ? { googleEventId: input.googleEventId } : {})
     }
-  ]);
+  });
+
+  await recordClinicEvents(db, events);
 
   return { patientId, visitId };
 };
@@ -59,15 +78,68 @@ const changeVisitStatus = async (
     status: VisitStatus;
     now?: Date;
   }
-) =>
-  recordClinicEvent(db, {
+) => {
+  const events = await db.events.toArray();
+  const current = visitStatusFromEvents(events, input.visitId);
+  const next = current ? transitionVisitStatus(current, input.status) : null;
+
+  if (!next) {
+    return { googleEventId: undefined };
+  }
+
+  const visit = visitFromEvents(events, input.visitId);
+  const patient = patientForVisit(events, input.visitId);
+  const occurredAt = (input.now ?? new Date()).toISOString();
+
+  await recordClinicEvent(db, {
     id: crypto.randomUUID(),
     tenantId: input.tenantId,
     actorUserId: input.actorUserId,
     recordId: input.visitId,
-    occurredAt: (input.now ?? new Date()).toISOString(),
+    occurredAt,
     type: "visit.status_changed",
-    payload: { status: input.status }
+    payload: { status: next }
   });
 
-export { addWalkIn, changeVisitStatus };
+  if (next === "cancelled" && patient?.email) {
+    await recordClinicEvent(db, {
+      id: crypto.randomUUID(),
+      tenantId: input.tenantId,
+      actorUserId: input.actorUserId,
+      recordId: input.visitId,
+      occurredAt,
+      type: "reminder.queued",
+      payload: {
+        channel: "email",
+        template: "booking_cancelled",
+        visitId: input.visitId,
+        to: patient.email
+      }
+    });
+  }
+
+  return { googleEventId: visit?.googleEventId };
+};
+
+const readAutoConfirm = async (db: ClinicDb) => {
+  const row = await db.meta.get(AUTO_CONFIRM_KEY);
+
+  return row?.value !== "false";
+};
+
+const writeAutoConfirm = async (db: ClinicDb, autoConfirm: boolean) => {
+  await db.meta.put({
+    key: AUTO_CONFIRM_KEY,
+    value: autoConfirm ? "true" : "false"
+  });
+};
+
+export {
+  AUTO_CONFIRM_KEY,
+  addBooking,
+  addBooking as addWalkIn,
+  changeVisitStatus,
+  readAutoConfirm,
+  writeAutoConfirm
+};
+export type { BookingInput };

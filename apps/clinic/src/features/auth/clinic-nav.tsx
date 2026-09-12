@@ -11,7 +11,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  ThemeToggle,
   useSidebar,
   useTheme,
   type ThemePreference
@@ -118,9 +117,7 @@ const ClinicJobNav = ({ role }: JobNavProps) => {
                 }}
               >
                 <Icon aria-hidden />
-                <span className="group-data-[collapsible=icon]:hidden">
-                  {job.label}
-                </span>
+                <span>{job.label}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -150,39 +147,13 @@ const ClinicAccountNav = () => {
             }}
           >
             <Settings aria-hidden />
-            <span className="group-data-[collapsible=icon]:hidden">Settings</span>
+            <span>Settings</span>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
   );
 };
-
-type UtilityNavProps = {
-  onSignOut: () => void;
-};
-
-const ClinicUtilityNav = ({ onSignOut }: UtilityNavProps) => (
-  <div className="flex min-w-0 flex-wrap items-center gap-1">
-    <ThemeToggle />
-    <SidebarMenuButton asChild className="w-auto" tooltip="Settings">
-      <Link aria-label="Settings" href="/settings">
-        <Settings aria-hidden />
-        <span>Settings</span>
-      </Link>
-    </SidebarMenuButton>
-    <SidebarMenuButton
-      aria-label="Sign out"
-      className="w-auto"
-      tooltip="Sign out"
-      type="button"
-      onClick={onSignOut}
-    >
-      <LogOut aria-hidden />
-      <span>Sign out</span>
-    </SidebarMenuButton>
-  </div>
-);
 
 type ClinicBrandLinkProps = {
   className?: string;
@@ -221,9 +192,15 @@ type AccountMenuProps = {
 };
 
 const ClinicAccountMenu = ({ role, userId, onSignOut }: AccountMenuProps) => {
-  const { state } = useSidebar();
+  const { isMobile, state } = useSidebar();
   const { preference, setPreference } = useTheme();
   const next = nextTheme[preference];
+  const collapsed = !isMobile && state === "collapsed";
+  const menuWidth = collapsed
+    ? "w-48 min-w-48"
+    : isMobile
+      ? "w-[calc(18rem-1rem)] min-w-[calc(18rem-1rem)]"
+      : "w-[calc(14rem-1rem)] min-w-[calc(14rem-1rem)]";
 
   return (
     <DropdownMenu>
@@ -241,13 +218,11 @@ const ClinicAccountMenu = ({ role, userId, onSignOut }: AccountMenuProps) => {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        align="start"
-        className={
-          state === "collapsed"
-            ? "w-48"
-            : "w-[calc(var(--sidebar-width)-1rem)] min-w-[calc(var(--sidebar-width)-1rem)]"
-        }
-        side={state === "collapsed" ? "right" : "top"}
+        align={collapsed ? "end" : "start"}
+        className={menuWidth}
+        collisionPadding={8}
+        side={collapsed ? "right" : "top"}
+        sideOffset={8}
       >
         <DropdownMenuItem
           onSelect={() => {
@@ -274,7 +249,6 @@ export {
   ClinicAccountMenu,
   ClinicAccountNav,
   ClinicBrandLink,
-  ClinicJobNav,
-  ClinicUtilityNav
+  ClinicJobNav
 };
-export type { AccountMenuProps, JobNavProps, UtilityNavProps };
+export type { AccountMenuProps, JobNavProps };

@@ -17,9 +17,10 @@ const TooltipContent = ({
   <TooltipPrimitive.Portal>
     <TooltipPrimitive.Content
       className={cn(
-        "z-50 overflow-hidden rounded-md bg-foreground px-3 py-1.5 text-xs text-background shadow-none",
+        "z-50 origin-(--radix-tooltip-content-transform-origin) overflow-hidden rounded-md bg-foreground px-3 py-1.5 text-xs text-background shadow-none",
         className
       )}
+      data-slot="tooltip-content"
       sideOffset={sideOffset}
       {...props}
     />

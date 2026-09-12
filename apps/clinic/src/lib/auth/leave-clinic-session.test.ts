@@ -29,6 +29,8 @@ describe("leaveClinicSession", () => {
   it("revokes the clinic session before a local sign-out", async () => {
     const rpc = vi.fn(async () => ({ data: true, error: null }));
     const signOut = vi.fn(async () => ({ error: null }));
+    const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
 
     await leaveClinicSession({
       rpc,
@@ -37,9 +39,14 @@ describe("leaveClinicSession", () => {
 
     expect(rpc).toHaveBeenCalledWith("revoke_my_session");
     expect(dropClinicStores).toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith("/api/google-calendar/connect", {
+      method: "DELETE",
+      credentials: "include"
+    });
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
     expect(rpc.mock.invocationCallOrder[0]).toBeLessThan(
       signOut.mock.invocationCallOrder[0]!
     );
+    vi.unstubAllGlobals();
   });
 });

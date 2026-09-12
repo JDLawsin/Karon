@@ -59,7 +59,7 @@ Cash / GCash = the word, not a fourth hue.
 - Offline: `info`, copy like “Saved on this device. Will sync when online.”
 - Reminders / shareable toasts: clinic + time only — no diagnosis, no unpaid amount (NFR-14).
 - No extra webfonts. Outfit is already on the layout. Peso/time: `tabular-nums`.
-- No Framer Motion for V1 chrome. `transition-colors` is enough.
+- Overlay motion: `--overlay-duration` (450ms) in `tokens.css`, CSS in `packages/design-system/src/styles/index.css` keyed by `data-slot`. Feature files import the primitive — they do not add `animate-in` or overlay keyframes. Hover stays `--motion-duration` (200ms). No Framer Motion, GSAP, or `tw-animate-css`.
 - Responsive: 320px first; no horizontal page scroll.
 
 ## If you need a pattern

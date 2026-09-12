@@ -27,6 +27,19 @@ export {
   CollapsibleTrigger
 } from "./primitives/collapsible";
 export {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerPortal,
+  DrawerSwipeHandle,
+  DrawerTitle,
+  DrawerTrigger
+} from "./primitives/drawer";
+export {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,

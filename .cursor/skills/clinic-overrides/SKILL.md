@@ -26,7 +26,7 @@ Visual language: `DESIGN.md` + `docs/design-system.md`. UI skill: `.cursor/skill
 3. **supabase-js + user JWT** for PWA sync. **No service-role** in the client (NFR-11).
 4. **Drizzle** only on the server, clinic SQL inside `db.rls()`. Admin client for PayMongo webhook / ops only.
 5. **`apps/clinic/src/app` is routing.** Domain in `src/features/`. Engines in `src/lib/` (Dexie, sync).
-6. **Tokens + a11y:** `@karon/design-system` only. No `shadcn add` inside an app. Semantic tokens, not `bg-sky-500`. Aim Lighthouse-minded 90+ (`.cursor/rules/lighthouse-quality.mdc`); do not run Chrome DevTools unless asked. SEO is secondary on clinic/admin.
+6. **Tokens + a11y:** `@karon/design-system` only. No `shadcn add` inside an app. Semantic tokens, not `bg-sky-500`. Overlay motion is `--overlay-duration` + `data-slot` CSS (`.cursor/rules/overlay-motion.mdc`), not `animate-in` in a feature file. Aim Lighthouse-minded 90+ (`.cursor/rules/lighthouse-quality.mdc`); do not run Chrome DevTools unless asked. SEO is secondary on clinic/admin.
 7. **TanStack Query** = network only. **useState** = chrome. No Zustand as a data store.
 8. **PayMongo** = dentist → us (F-17). Patient GCash = record only (F-08).
 9. **Do not scaffold** empty `apps/marketing` or `apps/admin` until asked.

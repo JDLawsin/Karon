@@ -17,15 +17,14 @@ import {
 import { useIsMobile } from "../hooks/use-mobile";
 import { cn } from "../lib/cn";
 import { Button } from "./button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle
+} from "./drawer";
 import { Input } from "./input";
 import { Separator } from "./separator";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle
-} from "./sheet";
 import {
   Tooltip,
   TooltipContent,
@@ -194,22 +193,25 @@ const Sidebar = ({
 
   if (isMobile) {
     return (
-      <Sheet onOpenChange={setOpenMobile} open={openMobile}>
-        <SheetContent
-          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+      <Drawer
+        onOpenChange={setOpenMobile}
+        open={openMobile}
+        showSwipeHandle
+        swipeDirection={side === "right" ? "right" : "left"}
+      >
+        <DrawerContent
+          className="h-svh max-h-none w-(--sidebar-width) rounded-none bg-sidebar p-0 text-sidebar-foreground data-[swipe-axis=x]:w-(--sidebar-width) data-[swipe-axis=x]:[--drawer-content-width:var(--sidebar-width)] data-[swipe-axis=x]:sm:w-(--sidebar-width) data-[swipe-axis=x]:sm:[--drawer-content-width:var(--sidebar-width)]"
           data-mobile="true"
           data-sidebar="sidebar"
-          data-slot="sidebar"
-          side={side}
           style={{ "--sidebar-width": SIDEBAR_WIDTH_MOBILE } as CSSProperties}
         >
-          <SheetHeader className="sr-only">
-            <SheetTitle>Sidebar</SheetTitle>
-            <SheetDescription>Clinic navigation</SheetDescription>
-          </SheetHeader>
+          <DrawerTitle className="sr-only">Sidebar</DrawerTitle>
+          <DrawerDescription className="sr-only">
+            Clinic navigation
+          </DrawerDescription>
           <div className="flex h-full min-h-0 w-full flex-col">{children}</div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
     );
   }
 
@@ -224,7 +226,7 @@ const Sidebar = ({
     >
       <div
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-(--motion-duration) ease-linear",
+          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-overlay ease-drawer",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
@@ -235,7 +237,7 @@ const Sidebar = ({
       />
       <div
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-(--motion-duration) ease-linear md:flex",
+          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-overlay ease-drawer md:flex",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:-left-(--sidebar-width)"
             : "right-0 group-data-[collapsible=offcanvas]:-right-(--sidebar-width)",
@@ -394,7 +396,7 @@ const SidebarGroupLabel = ({
   return (
     <Comp
       className={cn(
-        "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 ring-sidebar-ring outline-none transition-[margin,opacity] duration-(--motion-duration) ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 ring-sidebar-ring outline-none transition-[margin,opacity] duration-overlay ease-drawer group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         className
       )}
       data-sidebar="group-label"
@@ -430,7 +432,7 @@ const SidebarMenu = ({ className, ...props }: ComponentProps<"ul">) => (
 
 const SidebarMenuItem = ({ className, ...props }: ComponentProps<"li">) => (
   <li
-    className={cn("group/menu-item relative", className)}
+    className={cn("group/menu-item relative w-full", className)}
     data-sidebar="menu-item"
     data-slot="sidebar-menu-item"
     {...props}
@@ -438,7 +440,7 @@ const SidebarMenuItem = ({ className, ...props }: ComponentProps<"li">) => (
 );
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex min-h-(--control-min-height) w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm font-medium ring-sidebar-ring outline-none transition-[width,height,padding,color,background-color] duration-(--motion-duration) group-data-[collapsible=icon]:size-(--control-min-height)! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2! group-data-[collapsible=icon]:[&>span]:hidden hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0",
+  "peer/menu-button flex min-h-(--control-min-height) w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm leading-none font-medium ring-sidebar-ring outline-none transition-[width,height,padding,gap,color,background-color] duration-overlay ease-drawer group-data-[collapsible=icon]:size-(--control-min-height)! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0",
   {
     variants: {
       variant: {

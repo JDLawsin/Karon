@@ -27,6 +27,30 @@ const interceptEmptyBoard = async (page: Page) => {
 
     await route.continue();
   });
+  await page.route("**/rest/v1/calendar_imports**", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]"
+      });
+      return;
+    }
+
+    await route.continue();
+  });
+  await page.route("**/rest/v1/clinics**", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ auto_confirm_bookings: true })
+      });
+      return;
+    }
+
+    await route.continue();
+  });
 };
 
 test.describe("today board", { tag: "@assistant" }, () => {
@@ -43,13 +67,15 @@ test.describe("today board", { tag: "@assistant" }, () => {
     await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
   });
 
-  test("adds a walk-in to waiting", { tag: "@integration" }, async ({ page }) => {
+  test("adds a walk-in as confirmed", { tag: "@integration" }, async ({ page }) => {
     const today = new TodayBoardPage(page);
     const person = fakeWalkIn();
     await today.goto();
     await today.addWalkIn(person.name, person.mobile);
 
-    await expect(today.row(person.name).getByText("Waiting")).toBeVisible();
+    await expect(
+      today.row(person.name).getByText(/Confirmed|Late/)
+    ).toBeVisible();
   });
 
   test("marks a walk-in in chair", { tag: "@integration" }, async ({ page }) => {
@@ -57,6 +83,9 @@ test.describe("today board", { tag: "@assistant" }, () => {
     const person = fakeWalkIn();
     await today.goto();
     await today.addWalkIn(person.name, person.mobile);
+
+    await page.getByRole("button", { name: `Mark ${person.name} waiting` }).click();
+    await expect(today.row(person.name).getByText("Waiting")).toBeVisible();
 
     await page.getByRole("button", { name: `Mark ${person.name} in chair` }).click();
     await expect(today.row(person.name).getByText("In chair")).toBeVisible();

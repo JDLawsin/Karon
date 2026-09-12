@@ -124,4 +124,34 @@ describe("clinic event schema", () => {
       }).success
     ).toBe(false);
   });
+
+  it("parses reminder.queued only with a matching cancelled-mail payload", () => {
+    const visitId = randomUUID();
+
+    expect(
+      clinicEventSchema.safeParse({
+        ...makeEvent("reminder.queued", visitId),
+        payload: {
+          channel: "email",
+          template: "booking_cancelled",
+          visitId,
+          to: "ana@example.com"
+        }
+      }).success
+    ).toBe(true);
+    expect(clinicEventSchema.safeParse(makeEvent("reminder.queued")).success).toBe(
+      false
+    );
+    expect(
+      clinicEventSchema.safeParse({
+        ...makeEvent("reminder.queued", visitId),
+        payload: {
+          channel: "email",
+          template: "booking_cancelled",
+          visitId: randomUUID(),
+          to: "ana@example.com"
+        }
+      }).success
+    ).toBe(false);
+  });
 });

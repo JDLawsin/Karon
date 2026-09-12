@@ -11,6 +11,7 @@
   }
 
   body {
+    position: relative;
     background: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
@@ -29,4 +30,344 @@ body::before {
   border-radius: 9999px;
   background: var(--primary);
   opacity: 0.06;
+}
+
+/* Base UI starting/ending styles. Unlayered so they beat Tailwind's always-on transform/opacity utilities. */
+[data-slot="drawer-popup"] {
+  transition-property: transform, height, opacity, filter;
+  transition-duration: var(--drawer-duration);
+  transition-timing-function: var(--ease-drawer, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+[data-slot="drawer-popup"][data-swipe-direction="down"] {
+  --closed-transform: translate3d(
+    0,
+    calc(100% + var(--drawer-inset, 0px) + 2px),
+    0
+  );
+}
+
+[data-slot="drawer-popup"][data-swipe-direction="up"] {
+  --closed-transform: translate3d(
+    0,
+    calc(-100% - var(--drawer-inset, 0px) - 2px),
+    0
+  );
+}
+
+[data-slot="drawer-popup"][data-swipe-direction="left"] {
+  --closed-transform: translate3d(
+    calc(-100% - var(--drawer-inset, 0px) - 2px),
+    0,
+    0
+  );
+}
+
+[data-slot="drawer-popup"][data-swipe-direction="right"] {
+  --closed-transform: translate3d(
+    calc(100% + var(--drawer-inset, 0px) + 2px),
+    0,
+    0
+  );
+}
+
+[data-slot="drawer-popup"][data-starting-style],
+[data-slot="drawer-popup"][data-ending-style] {
+  transform: var(--closed-transform);
+}
+
+[data-slot="drawer-popup"][data-ending-style] {
+  opacity: 0.9999;
+  transition-duration: calc(var(--drawer-swipe-strength, 1) * var(--drawer-duration));
+}
+
+[data-slot="drawer-popup"][data-swiping] {
+  transition-duration: 0s;
+}
+
+[data-slot="drawer-overlay"] {
+  transition-property: opacity;
+  transition-duration: var(--drawer-duration);
+  transition-timing-function: var(
+    --ease-drawer-overlay,
+    cubic-bezier(0.32, 0.72, 0, 1)
+  );
+}
+
+[data-slot="drawer-overlay"][data-starting-style],
+[data-slot="drawer-overlay"][data-ending-style] {
+  opacity: 0;
+}
+
+[data-slot="drawer-overlay"][data-ending-style] {
+  pointer-events: none;
+  transition-duration: calc(var(--drawer-swipe-strength, 1) * var(--drawer-duration));
+}
+
+[data-slot="drawer-overlay"][data-swiping] {
+  transition-duration: 0s;
+}
+
+[data-slot="sidebar-gap"] {
+  transition-property: width;
+  transition-duration: var(--drawer-duration);
+  transition-timing-function: var(--ease-drawer, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+[data-slot="sidebar-container"] {
+  transition-property: left, right, width, transform;
+  transition-duration: var(--drawer-duration);
+  transition-timing-function: var(--ease-drawer, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+[data-slot="sidebar-group-label"] {
+  transition-property: margin, opacity;
+  transition-duration: var(--drawer-duration);
+  transition-timing-function: var(--ease-drawer, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+[data-slot="sidebar-menu-button"] {
+  box-sizing: border-box;
+  transition-property: width, height, min-width, max-width, min-height,
+    max-height, padding, gap, color, background-color, margin;
+  transition-duration: var(--drawer-duration);
+  transition-timing-function: var(--ease-drawer, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] {
+  width: var(--control-min-height) !important;
+  min-width: var(--control-min-height) !important;
+  max-width: var(--control-min-height) !important;
+  height: var(--control-min-height) !important;
+  min-height: var(--control-min-height) !important;
+  max-height: var(--control-min-height) !important;
+  aspect-ratio: 1 / 1;
+  margin-inline: auto;
+  justify-content: center;
+  gap: 0;
+  padding: 0.5rem;
+}
+
+[data-slot="sidebar-menu-button"] > span {
+  min-width: 0;
+  max-width: 12rem;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 1;
+  transition-property: max-width, opacity, margin, flex-basis;
+  transition-duration: var(--drawer-duration);
+  transition-timing-function: var(--ease-drawer, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span {
+  flex: 0 0 0;
+  width: 0;
+  min-width: 0;
+  max-width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-slot="sheet-overlay"][data-state="open"] {
+  animation: karon-fade-in var(--drawer-duration)
+    var(--ease-drawer-overlay, cubic-bezier(0.32, 0.72, 0, 1));
+}
+
+[data-slot="sheet-overlay"][data-state="closed"] {
+  animation: karon-fade-out var(--drawer-duration)
+    var(--ease-drawer-overlay, cubic-bezier(0.32, 0.72, 0, 1));
+}
+
+[data-slot="sheet-content"][data-side="left"][data-state="open"] {
+  animation: karon-slide-in-left var(--drawer-duration)
+    var(--ease-drawer, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+[data-slot="sheet-content"][data-side="left"][data-state="closed"] {
+  animation: karon-slide-out-left var(--drawer-duration)
+    var(--ease-drawer-overlay, cubic-bezier(0.32, 0.72, 0, 1));
+}
+
+[data-slot="sheet-content"][data-side="right"][data-state="open"] {
+  animation: karon-slide-in-right var(--drawer-duration)
+    var(--ease-drawer, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+[data-slot="sheet-content"][data-side="right"][data-state="closed"] {
+  animation: karon-slide-out-right var(--drawer-duration)
+    var(--ease-drawer-overlay, cubic-bezier(0.32, 0.72, 0, 1));
+}
+
+[data-slot="sheet-content"][data-side="top"][data-state="open"] {
+  animation: karon-slide-in-top var(--drawer-duration)
+    var(--ease-drawer, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+[data-slot="sheet-content"][data-side="top"][data-state="closed"] {
+  animation: karon-slide-out-top var(--drawer-duration)
+    var(--ease-drawer-overlay, cubic-bezier(0.32, 0.72, 0, 1));
+}
+
+[data-slot="sheet-content"][data-side="bottom"][data-state="open"] {
+  animation: karon-slide-in-bottom var(--drawer-duration)
+    var(--ease-drawer, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+[data-slot="sheet-content"][data-side="bottom"][data-state="closed"] {
+  animation: karon-slide-out-bottom var(--drawer-duration)
+    var(--ease-drawer-overlay, cubic-bezier(0.32, 0.72, 0, 1));
+}
+
+@keyframes karon-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes karon-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes karon-slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes karon-slide-out-left {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes karon-slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes karon-slide-out-right {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes karon-slide-in-top {
+  from {
+    transform: translateY(-100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes karon-slide-out-top {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes karon-slide-in-bottom {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes karon-slide-out-bottom {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* Independent `scale` so this does not fight Radix inline `transform`. */
+@keyframes karon-popover-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes karon-popover-out {
+  from {
+    opacity: 1;
+    scale: 1;
+  }
+
+  to {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+[data-slot="dropdown-menu-content"][data-state="open"],
+[data-slot="tooltip-content"][data-state="delayed-open"],
+[data-slot="tooltip-content"][data-state="instant-open"],
+[data-slot="alert-dialog-content"][data-state="open"] {
+  animation: karon-popover-in var(--overlay-duration, var(--drawer-duration))
+    var(--ease-drawer, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+
+[data-slot="dropdown-menu-content"][data-state="closed"],
+[data-slot="tooltip-content"][data-state="closed"],
+[data-slot="alert-dialog-content"][data-state="closed"] {
+  animation: karon-popover-out var(--overlay-duration, var(--drawer-duration))
+    var(--ease-drawer-overlay, cubic-bezier(0.32, 0.72, 0, 1)) both;
+}
+
+[data-slot="alert-dialog-overlay"][data-state="open"] {
+  animation: karon-fade-in var(--overlay-duration, var(--drawer-duration))
+    var(--ease-drawer-overlay, cubic-bezier(0.32, 0.72, 0, 1)) both;
+}
+
+[data-slot="alert-dialog-overlay"][data-state="closed"] {
+  animation: karon-fade-out var(--overlay-duration, var(--drawer-duration))
+    var(--ease-drawer-overlay, cubic-bezier(0.32, 0.72, 0, 1)) both;
 }

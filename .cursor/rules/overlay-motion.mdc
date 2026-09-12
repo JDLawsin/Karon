@@ -1,0 +1,29 @@
+---
+description: >-
+  Keep drawer, sheet, dropdown, tooltip, and dialog motion on the design-system
+  overlay tokens. Use when adding shadcn overlays, animation classes, or
+  popovers next to the collapsed sidebar.
+globs: "{packages/design-system,apps/clinic}/**/*.{tsx,css}"
+alwaysApply: false
+---
+
+# Overlay motion
+
+Clock: `--overlay-duration` (450ms) in `packages/design-system/src/styles/tokens.css`. `--drawer-duration` aliases it. Tailwind class: `duration-overlay`. Hover stays `--motion-duration` / `duration-motion`.
+
+CSS: `packages/design-system/src/styles/index.css`, keyed by `data-slot`. Not `components.json`. Not a Tailwind JS config. `tw-animate-css` is not installed — `animate-in` / `slide-in-from-*` do nothing.
+
+## Feature files
+
+Import `Drawer`, `Sheet`, `DropdownMenu`, `Tooltip`, `AlertDialog` from `@karon/design-system`. Do not add overlay keyframes, `animate-in`, or a second duration in `apps/clinic`.
+
+## New overlay primitive
+
+1. `shadcn add` into `packages/design-system`.
+2. Strip `animate-in` / `slide-in-from-*`.
+3. Set `data-slot` on overlay and content.
+4. Add the enter/exit block next to the existing overlay rules. Popovers animate the CSS `scale` property, not `transform` (Radix positioning uses `transform`).
+
+## Collapsed rail
+
+Leave collision detection on. Never `avoidCollisions={false}`. Use `collisionPadding` so every menu item stays in the viewport.

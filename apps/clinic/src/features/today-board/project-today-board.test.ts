@@ -35,10 +35,10 @@ const manilaNoon = new Date("2026-09-12T04:00:00.000Z");
 
 describe("projectTodayBoard", () => {
   it("returns no rows for an empty morning", () => {
-    expect(projectTodayBoard([], manilaNoon)).toEqual([]);
+    expect(projectTodayBoard([], manilaNoon).rows).toEqual([]);
   });
 
-  it("puts a walk-in in waiting", () => {
+  it("puts a confirmed booking on today's board", () => {
     const rows = projectTodayBoard(
       [
         event("patient.created", { name: "Ana Cruz", mobile: "09171234567" }),
@@ -46,26 +46,27 @@ describe("projectTodayBoard", () => {
           "appointment.set",
           {
             patientId: PATIENT,
-            startsAt: "2026-09-12T04:00:00.000Z",
-            status: "waiting"
+            startsAt: "2026-09-12T06:00:00.000Z",
+            status: "confirmed"
           },
           { recordId: VISIT, occurredAt: "2026-09-12T04:00:00.000Z" }
         )
       ],
       manilaNoon
-    );
+    ).rows;
 
     expect(rows).toEqual([
       expect.objectContaining({
         visitId: VISIT,
         name: "Ana Cruz",
-        status: "waiting",
-        storedStatus: "waiting"
+        status: "confirmed",
+        storedStatus: "confirmed",
+        syncState: "synced"
       })
     ]);
   });
 
-  it("shows booked as late after the start time", () => {
+  it("shows confirmed as late after the start time", () => {
     const rows = projectTodayBoard(
       [
         event("patient.created", { name: "Ana Cruz", mobile: "09171234567" }),
@@ -76,10 +77,30 @@ describe("projectTodayBoard", () => {
         )
       ],
       manilaNoon
-    );
+    ).rows;
 
     expect(rows[0]?.status).toBe("late");
-    expect(rows[0]?.storedStatus).toBe("booked");
+    expect(rows[0]?.storedStatus).toBe("confirmed");
+  });
+
+  it("coerces a legacy booked payload to confirmed", () => {
+    const rows = projectTodayBoard(
+      [
+        event("patient.created", { name: "Ana Cruz", mobile: "09171234567" }),
+        event(
+          "appointment.set",
+          {
+            patientId: PATIENT,
+            startsAt: "2026-09-12T06:00:00.000Z",
+            status: "booked"
+          },
+          { recordId: VISIT }
+        )
+      ],
+      manilaNoon
+    ).rows;
+
+    expect(rows[0]?.storedStatus).toBe("confirmed");
   });
 
   it("applies visit.status_changed after appointment.set", () => {
@@ -98,7 +119,7 @@ describe("projectTodayBoard", () => {
         )
       ],
       manilaNoon
-    );
+    ).rows;
 
     expect(rows[0]?.status).toBe("in_chair");
   });
@@ -118,9 +139,57 @@ describe("projectTodayBoard", () => {
         )
       ],
       manilaNoon
-    );
+    ).rows;
 
     expect(rows).toEqual([]);
+  });
+
+  it("rolls yesterday's unfinished visit into carryover", () => {
+    const huddle = projectTodayBoard(
+      [
+        event("patient.created", { name: "Ana Cruz", mobile: "09171234567" }),
+        event(
+          "appointment.set",
+          {
+            patientId: PATIENT,
+            startsAt: "2026-09-11T04:00:00.000Z",
+            status: "waiting"
+          },
+          { recordId: VISIT }
+        )
+      ],
+      manilaNoon
+    );
+
+    expect(huddle.carryover).toEqual([
+      expect.objectContaining({
+        visitId: VISIT,
+        storedStatus: "waiting"
+      })
+    ]);
+  });
+
+  it("marks a visit local-only while its event is still in the outbox", () => {
+    const appointmentId = randomUUID();
+    const huddle = projectTodayBoard(
+      [
+        event("patient.created", { name: "Ana Cruz", mobile: "09171234567" }),
+        event(
+          "appointment.set",
+          {
+            patientId: PATIENT,
+            startsAt: "2026-09-12T06:00:00.000Z",
+            status: "confirmed"
+          },
+          { id: appointmentId, recordId: VISIT }
+        )
+      ],
+      manilaNoon,
+      undefined,
+      new Set([appointmentId])
+    );
+
+    expect(huddle.rows[0]?.syncState).toBe("local");
   });
 });
 
@@ -137,17 +206,19 @@ describe("hasDuplicateMobile", () => {
 });
 
 describe("nextVisitStatus", () => {
-  it("moves booked and late to waiting, then in chair", () => {
-    expect(nextVisitStatus("booked")).toBe("waiting");
+  it("moves confirmed and late to waiting, then in chair, then complete", () => {
+    expect(nextVisitStatus("confirmed")).toBe("waiting");
     expect(nextVisitStatus("late")).toBe("waiting");
+    expect(nextVisitStatus("pending_review")).toBe("waiting");
     expect(nextVisitStatus("waiting")).toBe("in_chair");
-    expect(nextVisitStatus("in_chair")).toBeNull();
+    expect(nextVisitStatus("in_chair")).toBe("complete");
+    expect(nextVisitStatus("complete")).toBeNull();
   });
 });
 
 describe("countByBoardStatus", () => {
   it("counts live board rows", () => {
-    const rows = projectTodayBoard(
+    const huddle = projectTodayBoard(
       [
         event("patient.created", { name: "Ana Cruz", mobile: "09171234567" }),
         event(
@@ -163,11 +234,18 @@ describe("countByBoardStatus", () => {
       manilaNoon
     );
 
-    expect(countByBoardStatus(rows)).toEqual({
-      booked: 0,
+    expect(countByBoardStatus(huddle.rows)).toEqual({
+      pending_review: 0,
+      confirmed: 0,
+      late: 0,
       waiting: 1,
       in_chair: 0,
-      late: 0
+      complete: 0
+    });
+    expect(huddle.snapshot).toEqual({
+      patientsToday: 1,
+      arrived: 1,
+      outstandingPhp: 0
     });
   });
 });

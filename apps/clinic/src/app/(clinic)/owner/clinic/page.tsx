@@ -1,6 +1,7 @@
 import { PageHeader } from "@karon/design-system";
 
 import ClinicDetailsForm from "@/features/auth/clinic-details-form";
+import ClinicBookingSettings from "@/features/google-calendar/clinic-booking-settings";
 import ClinicStaff from "@/features/staff/clinic-staff";
 
 export const metadata = {
@@ -14,6 +15,7 @@ const OwnerClinicPage = () => (
       title="Clinic"
     />
     <ClinicDetailsForm />
+    <ClinicBookingSettings />
     <ClinicStaff section="staff" />
   </section>
 );

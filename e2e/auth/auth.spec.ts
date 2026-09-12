@@ -60,6 +60,20 @@ test("password login lands an assistant on today", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
 });
 
+test("collapsed rail keeps account menu items in view", async ({ page }) => {
+  const login = new LoginPage(page);
+  await login.goto();
+  await login.submitPassword(identities().assistant.email, identities().password);
+  await expect(page).toHaveURL(/\/today$/);
+  await page.getByRole("button", { name: "Toggle sidebar", expanded: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Toggle sidebar", expanded: false })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Account menu" }).click();
+  await expect(page.getByRole("menuitem", { name: "System theme" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
+});
+
 test("magic-link start asks the user to check email", async ({ page }) => {
   await page.route("**/auth/v1/otp**", async (route) => {
     await route.fulfill({
@@ -383,13 +397,12 @@ test.describe("owner", { tag: "@owner" }, () => {
     await page.goto("/owner/clinic");
     await expect(page.getByRole("heading", { name: "Clinic" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Add assistant" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
     await page.getByRole("button", { name: "Toggle sidebar" }).click();
+    await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Account menu" })).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Today's collections" })
     ).toBeVisible();
-    await page.keyboard.press("Escape");
     await page.getByRole("link", { name: "Settings" }).click();
     await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
     await expect(page.getByLabel("Current password")).toBeVisible();

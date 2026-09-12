@@ -10,9 +10,10 @@ class TodayBoardPage {
 
   async addWalkIn(name: string, mobile: string) {
     await this.page.getByRole("button", { name: "Add patient" }).click();
-    await this.page.getByLabel("Name").fill(name);
-    await this.page.getByLabel("Mobile").fill(mobile);
-    await this.page.getByRole("button", { name: "Add patient" }).click();
+    const drawer = this.page.getByRole("dialog", { name: "Add patient" });
+    await drawer.getByLabel("Name").fill(name);
+    await drawer.getByLabel("Mobile").fill(mobile);
+    await drawer.getByRole("button", { name: "Add patient" }).click();
     await this.page.getByText(name, { exact: true }).waitFor();
   }
 

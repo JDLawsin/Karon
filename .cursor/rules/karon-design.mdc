@@ -13,5 +13,6 @@ Canonical: `DESIGN.md`, `docs/design-system.md`, `packages/design-system/src/sty
 - Import chrome from `@karon/design-system`. Do not `shadcn add` into an app.
 - Semantic classes only: `bg-background`, `bg-primary`, `text-muted-foreground`. Raw palette (`bg-sky-500`, hex in className) is a bug. Light/dark comes from `data-theme`, not from `dark:bg-*` in features.
 - Clinic: `data-density="clinic"`, tap ≥ 44px. One primary per section. Sentence case.
+- Overlay motion is `--overlay-duration` + `data-slot` CSS in `packages/design-system/src/styles/index.css`. Do not add `animate-in` in features. Details: `.cursor/rules/overlay-motion.mdc`.
 - Status = label + role color. Green is paid/synced, not the default button and not owner totals.
 - Offline is information, not an error. Reminders: clinic + time only (NFR-14).

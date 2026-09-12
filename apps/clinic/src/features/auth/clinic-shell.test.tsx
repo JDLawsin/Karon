@@ -112,11 +112,10 @@ describe("ClinicShell", () => {
     expect(screen.getByRole("link", { name: "Today" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Today's collections" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Clinic" })).toBeNull();
-    expect(screen.getAllByRole("link", { name: "Settings" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Password" })).toBeNull();
-    expect(screen.getAllByRole("button", { name: "Sign out" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("button", { name: "Account menu" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("img", { name: "Assistant avatar" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Account menu" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Assistant avatar" })).toBeTruthy();
     expect(screen.getByText("Jobs")).toBeTruthy();
     expect(screen.getByText("Account")).toBeTruthy();
   });
@@ -127,8 +126,14 @@ describe("ClinicShell", () => {
     expect(screen.getByRole("link", { name: "Today" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Today's collections" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Clinic" })).toBeTruthy();
-    expect(screen.getAllByRole("link", { name: "Settings" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("img", { name: "Owner avatar" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Owner avatar" })).toBeTruthy();
+  });
+
+  it("reserves a phone chrome action slot", () => {
+    renderShell();
+
+    expect(document.getElementById("clinic-chrome-actions")).toBeTruthy();
   });
 
   it("shows the app version and a desktop collapse control", () => {

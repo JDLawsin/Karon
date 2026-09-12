@@ -16,6 +16,7 @@ const AlertDialogOverlay = ({
 }: ComponentProps<typeof AlertDialogPrimitive.Overlay>) => (
   <AlertDialogPrimitive.Overlay
     className={cn("fixed inset-0 z-50 bg-background/80", className)}
+    data-slot="alert-dialog-overlay"
     {...props}
   />
 );
@@ -32,6 +33,7 @@ const AlertDialogContent = ({
         "fixed top-1/2 left-1/2 z-50 w-[min(100%-2rem,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card p-6 shadow-none",
         className
       )}
+      data-slot="alert-dialog-content"
       {...props}
     >
       {children}

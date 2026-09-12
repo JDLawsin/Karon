@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   foreignKey,
   index,
@@ -56,6 +57,7 @@ export const clinics = pgTable(
       .notNull()
       .default(sql`'[]'::jsonb`),
     logoPath: text("logo_path"),
+    autoConfirmBookings: boolean("auto_confirm_bookings").notNull().default(true),
     trialStartedAt: timestamptz("trial_started_at").defaultNow().notNull(),
     createdAt: timestamptz("created_at").defaultNow().notNull(),
     updatedAt: timestamptz("updated_at").defaultNow().notNull()
@@ -228,6 +230,73 @@ export const clinicEvents = pgTable(
       )`
     )
   ]
+).enableRLS();
+
+export const calendarImportStatusEnum = pgEnum("calendar_import_status", [
+  "unmatched",
+  "matched",
+  "cancelled_on_google",
+  "cancel_pending"
+]);
+
+export const googleCalendarConnections = pgTable(
+  "google_calendar_connections",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => clinics.id, { onDelete: "cascade" }),
+    encryptedRefreshToken: text("encrypted_refresh_token").notNull(),
+    calendarId: text("calendar_id").notNull().default("primary"),
+    syncToken: text("sync_token"),
+    connectedBy: uuid("connected_by").notNull(),
+    createdAt: timestamptz("created_at").defaultNow().notNull(),
+    updatedAt: timestamptz("updated_at").defaultNow().notNull()
+  },
+  (table) => [
+    uniqueIndex("google_calendar_connections_tenant_idx").on(table.tenantId),
+    foreignKey({
+      columns: [table.connectedBy],
+      foreignColumns: [authUsers.id],
+      name: "google_calendar_connections_connected_by_fk"
+    }).onDelete("cascade")
+  ]
+).enableRLS();
+
+export const calendarImports = pgTable(
+  "calendar_imports",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => clinics.id, { onDelete: "cascade" }),
+    googleEventId: text("google_event_id").notNull(),
+    attendeeName: text("attendee_name").notNull(),
+    attendeeEmail: text("attendee_email"),
+    startsAt: timestamptz("starts_at").notNull(),
+    description: text("description"),
+    status: calendarImportStatusEnum("status").notNull().default("unmatched"),
+    visitId: uuid("visit_id"),
+    createdAt: timestamptz("created_at").defaultNow().notNull(),
+    updatedAt: timestamptz("updated_at").defaultNow().notNull()
+  },
+  (table) => [
+    uniqueIndex("calendar_imports_tenant_event_idx").on(
+      table.tenantId,
+      table.googleEventId
+    ),
+    index("calendar_imports_tenant_status_idx").on(table.tenantId, table.status)
+  ]
+).enableRLS();
+
+export const reminderSends = pgTable(
+  "reminder_sends",
+  {
+    eventId: uuid("event_id")
+      .primaryKey()
+      .references(() => clinicEvents.id, { onDelete: "cascade" }),
+    sentAt: timestamptz("sent_at").defaultNow().notNull()
+  }
 ).enableRLS();
 
 export type Clinic = typeof clinics.$inferSelect;

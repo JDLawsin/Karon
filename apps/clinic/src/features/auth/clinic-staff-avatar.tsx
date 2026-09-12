@@ -13,14 +13,12 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 type Props = {
   userId: string;
   role: ClinicRole;
-  compact?: boolean;
   bare?: boolean;
 };
 
 const ClinicStaffAvatar = ({
   userId,
   role,
-  compact = false,
   bare = false
 }: Props) => {
   const src = useMemo(() => staffAvatarDataUri(userId), [userId]);
@@ -57,10 +55,6 @@ const ClinicStaffAvatar = ({
       cancelled = true;
     };
   }, []);
-
-  if (compact) {
-    return avatar;
-  }
 
   return (
     <div

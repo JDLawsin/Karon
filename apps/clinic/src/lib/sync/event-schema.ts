@@ -11,22 +11,43 @@ const CLINIC_EVENT_TYPES = [
   "reminder.queued"
 ] as const;
 
-const VISIT_STATUSES = ["booked", "waiting", "in_chair"] as const;
+const VISIT_STATUSES = [
+  "confirmed",
+  "pending_review",
+  "waiting",
+  "in_chair",
+  "complete",
+  "cancelled",
+  "no_show"
+] as const;
+
+const visitStatusSchema = z
+  .enum([...VISIT_STATUSES, "booked"])
+  .transform((status) => (status === "booked" ? "confirmed" : status));
 
 const patientPayloadSchema = z.object({
   name: z.string().trim().min(1),
   mobile: z.string().trim().min(1),
-  birthday: z.string().optional()
+  birthday: z.string().optional(),
+  email: z.string().trim().email().optional()
 });
 
 const appointmentSetPayloadSchema = z.object({
   patientId: z.uuid(),
   startsAt: z.string().min(1),
-  status: z.enum(VISIT_STATUSES).optional()
+  status: visitStatusSchema.optional(),
+  googleEventId: z.string().min(1).optional()
 });
 
 const visitStatusChangedPayloadSchema = z.object({
-  status: z.enum(VISIT_STATUSES)
+  status: visitStatusSchema
+});
+
+const reminderQueuedPayloadSchema = z.object({
+  channel: z.literal("email"),
+  template: z.literal("booking_cancelled"),
+  visitId: z.uuid(),
+  to: z.string().trim().email()
 });
 
 const payloadIssue = (ctx: z.RefinementCtx, message: string) => {
@@ -69,6 +90,16 @@ const clinicEventSchema = z
       if (!visitStatusChangedPayloadSchema.safeParse(value.payload).success) {
         payloadIssue(ctx, "Invalid visit status payload");
       }
+
+      return;
+    }
+
+    if (value.type === "reminder.queued") {
+      const parsed = reminderQueuedPayloadSchema.safeParse(value.payload);
+
+      if (!parsed.success || parsed.data.visitId !== value.recordId) {
+        payloadIssue(ctx, "Invalid reminder payload");
+      }
     }
   });
 
@@ -105,7 +136,9 @@ export {
   clinicEventRowSchema,
   clinicEventSchema,
   patientPayloadSchema,
+  reminderQueuedPayloadSchema,
   toClinicEvent,
-  visitStatusChangedPayloadSchema
+  visitStatusChangedPayloadSchema,
+  visitStatusSchema
 };
 export type { ClinicEvent, ClinicEventType, VisitStatus };

@@ -6,11 +6,15 @@ export { decodeJwtClaims, sessionRoleForClaims } from "./claims";
 export type { JwtClaims } from "./claims";
 export {
   auditEvents,
+  calendarImportStatusEnum,
+  calendarImports,
   clinicEvents,
   clinicMembers,
   clinicRoleEnum,
   clinicSessions,
   clinics,
+  googleCalendarConnections,
+  reminderSends,
   trustedDevices
 } from "./schema";
 export type {
