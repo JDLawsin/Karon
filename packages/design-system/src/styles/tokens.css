@@ -1,5 +1,10 @@
 :root {
-  /* Locked 2026-09-10. Intent: DESIGN.md. Do not put hex in feature files. */
+  /* Hallmark · genre: modern-minimal · macrostructure: Workbench · tone: utilitarian
+   * theme: Chair Azure (DESIGN.md) · nav: N3 side-rail · mobile: C4 job bar
+   * enrichment: none · design-system: DESIGN.md · designed-as-app
+   * pre-emit critique: P4 H4 E4 S4 R4 V4
+   * Locked 2026-09-10; app chrome amended 2026-09-12. Do not put hex in feature files.
+   */
   color-scheme: light;
   --background: oklch(0.977 0.006 220);
   --foreground: oklch(0.28 0.025 230);
@@ -35,8 +40,12 @@
   --radius: 0.5rem;
   --control-min-height: 2.5rem;
   --motion-duration: 150ms;
+  --sidebar-width: 14rem;
+  --z-sticky: 200;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --font-sans: var(--font-ibm-plex-sans, "IBM Plex Sans"), ui-sans-serif, system-ui,
     sans-serif;
+  --font-display: var(--font-sans);
 
   --odon-background: var(--background);
   --odon-foreground: var(--foreground);

@@ -1,0 +1,14 @@
+[
+  {
+    "date": "2026-09-12",
+    "macrostructure": "Workbench",
+    "theme": "Chair Azure",
+    "enrichment": "none",
+    "brief": "Post-login clinic workbench — Today dashboard for assistant and owner",
+    "scope": "app",
+    "genre": "modern-minimal",
+    "tone": "utilitarian",
+    "nav": "N3 side-rail",
+    "mobile": "C4 job bar"
+  }
+]

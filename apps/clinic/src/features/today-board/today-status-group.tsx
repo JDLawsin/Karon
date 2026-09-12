@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, cn } from "@karon/design-system";
+import { Button, StatusBadge, cn } from "@karon/design-system";
 
 import {
   BOARD_STATUS_LABEL,
@@ -17,6 +17,13 @@ type Props = {
   onMark: (visitId: string, status: VisitStatus) => void;
 };
 
+const STATUS_TONE = {
+  booked: "neutral",
+  waiting: "info",
+  in_chair: "primary",
+  late: "warning"
+} as const;
+
 const TodayStatusGroup = ({ status, rows, onMark }: Props) => {
   const headingId = `today-${status}`;
 
@@ -31,13 +38,14 @@ const TodayStatusGroup = ({ status, rows, onMark }: Props) => {
     >
       <h2
         className={cn(
-          "text-sm font-medium text-foreground",
+          "flex min-w-0 items-baseline justify-between gap-2 text-sm font-medium text-foreground",
           status === "late" && "text-warning",
           rows.length === 0 && "max-md:sr-only"
         )}
         id={headingId}
       >
-        {BOARD_STATUS_LABEL[status]}
+        <span>{BOARD_STATUS_LABEL[status]}</span>
+        <span className="tabular-nums text-muted-foreground">{rows.length}</span>
       </h2>
       {rows.length > 0 ? (
         <ul className="flex min-w-0 flex-col gap-1">
@@ -50,22 +58,17 @@ const TodayStatusGroup = ({ status, rows, onMark }: Props) => {
                 className="flex min-h-(--control-min-height) min-w-0 flex-wrap items-center gap-2 border-b border-border py-2 last:border-b-0 md:border-0 md:py-1"
                 key={row.visitId}
               >
+                <p className="shrink-0 tabular-nums text-sm text-muted-foreground">
+                  {formatVisitTime(row.startsAt)}
+                </p>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{row.name}</p>
-                  <p
-                    className={cn(
-                      "text-sm",
-                      row.status === "late"
-                        ? "text-warning"
-                        : "text-muted-foreground"
-                    )}
+                  <StatusBadge
+                    className={row.status === "late" ? "text-warning-foreground" : undefined}
+                    tone={STATUS_TONE[row.status]}
                   >
                     {BOARD_STATUS_LABEL[row.status]}
-                    <span className="tabular-nums">
-                      {" "}
-                      · {formatVisitTime(row.startsAt)}
-                    </span>
-                  </p>
+                  </StatusBadge>
                 </div>
                 {next && nextLabel ? (
                   <Button

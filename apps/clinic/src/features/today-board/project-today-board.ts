@@ -45,6 +45,29 @@ const formatVisitTime = (iso: string, timeZone = CLINIC_TZ) =>
     minute: "2-digit"
   }).format(new Date(iso));
 
+const formatClinicDate = (now: Date, timeZone = CLINIC_TZ) =>
+  new Intl.DateTimeFormat("en-PH", {
+    timeZone,
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  }).format(now);
+
+const countByBoardStatus = (rows: TodayBoardRow[]) => {
+  const counts = {
+    booked: 0,
+    waiting: 0,
+    in_chair: 0,
+    late: 0
+  } satisfies Record<BoardStatus, number>;
+
+  for (const row of rows) {
+    counts[row.status] += 1;
+  }
+
+  return counts;
+};
+
 const compareEvents = (left: ClinicEvent, right: ClinicEvent) => {
   const byTime = left.occurredAt.localeCompare(right.occurredAt);
 
@@ -177,6 +200,8 @@ export {
   BOARD_STATUS_LABEL,
   CLINIC_TZ,
   calendarDateInClinic,
+  countByBoardStatus,
+  formatClinicDate,
   formatVisitTime,
   hasDuplicateMobile,
   nextVisitStatus,

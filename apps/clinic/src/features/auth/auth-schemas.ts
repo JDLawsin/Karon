@@ -36,10 +36,6 @@ const signupCredentialsSchema = z.object({
   password: passwordSchema
 });
 
-const clinicOnboardingSchema = z.object({
-  name: clinicNameSchema
-});
-
 const forgotPasswordSchema = z.object({
   email: emailSchema
 });
@@ -86,7 +82,6 @@ const emailOtpTypeSchema = z.enum([
 
 type LoginCredentials = z.infer<typeof loginCredentialsSchema>;
 type SignupCredentials = z.infer<typeof signupCredentialsSchema>;
-type ClinicOnboarding = z.infer<typeof clinicOnboardingSchema>;
 type TotpValues = z.infer<typeof totpSchema>;
 type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
 type UpdatePasswordValues = z.infer<typeof updatePasswordSchema>;
@@ -96,7 +91,6 @@ export {
   PASSWORD_HINT,
   changePasswordSchema,
   clinicNameSchema,
-  clinicOnboardingSchema,
   emailOtpTypeSchema,
   emailSchema,
   forgotPasswordSchema,
@@ -109,7 +103,6 @@ export {
 };
 export type {
   ChangePasswordValues,
-  ClinicOnboarding,
   ForgotPasswordValues,
   LoginCredentials,
   SignupCredentials,

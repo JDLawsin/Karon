@@ -258,6 +258,16 @@ test("new owner onboards a clinic", async ({ page }) => {
   // Native GET would skip create_clinic before React attaches.
   await page.locator("form[data-hydrated=true]").waitFor();
   await page.getByLabel("Clinic name").fill("Onboarded Clinic");
+  await page.getByLabel("Clinic phone").fill("09171234567");
+  await page.getByLabel("Clinic email").fill(email);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByText(/step 2 of 5/i)).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByText(/step 3 of 5/i)).toBeVisible();
+  await page.getByRole("button", { name: "Skip" }).click();
+  await expect(page.getByText(/step 4 of 5/i)).toBeVisible();
+  await page.getByRole("button", { name: "Skip" }).click();
+  await expect(page.getByRole("button", { name: "Create clinic" })).toBeVisible();
   await page.getByRole("button", { name: "Create clinic" }).click();
   await expect(page).toHaveURL(/\/today$/);
   await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();

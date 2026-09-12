@@ -93,7 +93,7 @@ const useTodayBoard = () => {
     });
   };
 
-  return { rows, ready, isDuplicateMobile, addWalkInPatient, markVisit };
+  return { rows, ready, now, isDuplicateMobile, addWalkInPatient, markVisit };
 };
 
 export { useTodayBoard };

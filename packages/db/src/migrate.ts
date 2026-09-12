@@ -17,7 +17,9 @@ const files = [
   "packages/db/drizzle/0008_revoke_anon_grants.sql",
   "packages/db/drizzle/0009_audit_session_search_path.sql",
   "packages/db/drizzle/0010_clinic_events.sql",
-  "packages/db/drizzle/0011_clinic_events_payment_select.sql"
+  "packages/db/drizzle/0011_clinic_events_payment_select.sql",
+  "packages/db/drizzle/0012_clinic_profile.sql",
+  "packages/db/drizzle/0013_clinic_branding_mfa.sql"
 ];
 
 const splitSql = (contents: string) => {

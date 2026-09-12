@@ -1,4 +1,4 @@
-import { Button, KaronWordmark, ThemeToggle } from "@karon/design-system";
+import { Button, cn, KaronWordmark, ThemeToggle } from "@karon/design-system";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -7,11 +7,24 @@ import AuthHeroPanel from "@/features/auth/auth-hero-panel";
 type Props = {
   title: string;
   children: ReactNode;
+  wide?: boolean;
 };
 
-const AuthShell = ({ title, children }: Props) => (
-  <main className="grid min-h-screen min-w-0 bg-background md:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] lg:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]">
-    <div className="mx-auto flex w-full min-w-0 max-w-md flex-col gap-8 bg-background px-4 py-8 sm:px-6 sm:py-16 md:mx-0 md:max-w-none md:justify-center md:px-8 md:py-12 lg:px-12 lg:py-16">
+const AuthShell = ({ title, children, wide = false }: Props) => (
+  <main
+    className={cn(
+      "grid min-h-screen min-w-0 bg-background",
+      wide
+        ? "auth-split:grid-cols-[minmax(0,40rem)_minmax(0,1fr)]"
+        : "auth-split:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]"
+    )}
+  >
+    <div
+      className={cn(
+        "mx-auto flex w-full min-w-0 flex-col gap-8 bg-background px-4 py-8 sm:px-6 sm:py-16 auth-split:mx-0 auth-split:max-w-none auth-split:justify-center auth-split:px-12 auth-split:py-16",
+        wide ? "max-w-lg" : "max-w-md"
+      )}
+    >
       <header className="flex w-full min-w-0 items-center justify-between gap-4">
         <Link
           href="/login"
@@ -33,7 +46,7 @@ const AuthShell = ({ title, children }: Props) => (
         </Button>
       </p>
     </div>
-    <AuthHeroPanel className="hidden min-h-svh min-w-0 md:block" />
+    <AuthHeroPanel className="hidden min-h-svh min-w-0 auth-split:block" />
   </main>
 );
 

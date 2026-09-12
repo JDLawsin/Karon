@@ -341,6 +341,8 @@ chosen because it is **legible at arm’s length**, has proper figures for pesos
 Chair glare and cheap phones: MUST NOT set body below 16px (`1rem`) on clinic density.
 `body-small` is for secondary metadata, not the patient name.
 
+Post-login chrome is a **workbench** (Hallmark app family). One type family still holds: IBM Plex Sans is display and body. Do not add a marketing serif inside the PWA.
+
 ### Case and hierarchy
 
 - MUST use **sentence case** for every user-visible string: titles, buttons, tabs,
@@ -373,10 +375,11 @@ reads as an 8px rhythm: `2, 4, 6, 8` (8 / 16 / 24 / 32).
 
 ### Page padding
 
-- Phone: `16px` (`space-4`) inset, plus safe-area.
-- Tablet / desktop: `24px` (`space-6`).
+- Phone: `16px` (`space-4`) inset, plus safe-area. Owner job bar sits in the
+  bottom safe area; main canvas MUST pad above it.
+- Tablet / desktop: rail `14rem` + canvas `24px` (`space-6`).
 - Max readable measure for helper prose: ~40rem. The today board MAY use the full
-  width; quotes and settings SHOULD NOT stretch a 12-word sentence across a 1440px
+  canvas; quotes and settings SHOULD NOT stretch a 12-word sentence across a 1440px
   monitor.
 
 ### Alignment
@@ -384,14 +387,30 @@ reads as an 8px rhythm: `2, 4, 6, 8` (8 / 16 / 24 / 32).
 Product UI is **left-aligned** in LTR. MUST NOT center the chair loop. Sign-in MAY
 center a single card on large screens; the card contents stay left-aligned.
 
+### App chrome (workbench)
+
+Post-login is a dashboard work surface, not a wrapping header of every utility.
+
+- Tablet+: left **rail** — jobs first (Today; owner also Collections and Clinic),
+  utilities last (theme, password, sign out). Active job uses `accent`, not a new hue.
+- Phone: wordmark + utilities on top. Owner jobs in a **bottom bar** (C4). Assistant
+  has only Today, so no bottom bar — the wordmark is home.
+- Password and Sign out MUST stay visible at 320px (not inside a closed menu).
+- Sync stays an `information` banner above the canvas, never a toast.
+
+Today’s canvas: clinic date, live counts from the real board, then rows (phone) or
+column wells (tablet+). MUST NOT invent marketing stats.
+
 ```
-Phone today board                 Tablet+
-┌─────────────────────┐         ┌─────────┬─────────┬─────────┐
-│ Today        [Add]  │         │ Booked  │ Waiting │ In chair│
-│ ○ Maria  waiting    │         │ …       │ …       │ …       │
-│ ○ Juan   in chair    │         └─────────┴─────────┴─────────┘
-│ ○ Ana    late        │
-└─────────────────────┘
+Phone                               Tablet+
+┌─────────────────────┐           ┌──────┬──────────────────┐
+│ Karon     [theme]   │           │Karon │ Today  12 Sep    │
+│ Password  Sign out  │           │Today │ 2 waiting · 1 late│
+│ Today      [Add]    │           │Coll. │ [Add patient]    │
+│ 9:30 Maria  Waiting │           │Clinic│ Booked │ Waiting │
+│ …                   │           │      │        │         │
+│ [Today|Coll.|Clinic]│ owner     │Pass  │        │         │
+└─────────────────────┘           │Out   └──────────────────┘
 ```
 
 ---

@@ -5,9 +5,15 @@
     border-color: var(--border);
   }
 
+  html,
+  body {
+    overflow-x: clip;
+  }
+
   body {
     background: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
+    min-height: 100dvh;
   }
 }

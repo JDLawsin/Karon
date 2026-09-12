@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { ClinicEvent } from "@/lib/sync/event-schema";
 
 import {
+  countByBoardStatus,
   hasDuplicateMobile,
   nextVisitStatus,
   projectTodayBoard
@@ -141,5 +142,32 @@ describe("nextVisitStatus", () => {
     expect(nextVisitStatus("late")).toBe("waiting");
     expect(nextVisitStatus("waiting")).toBe("in_chair");
     expect(nextVisitStatus("in_chair")).toBeNull();
+  });
+});
+
+describe("countByBoardStatus", () => {
+  it("counts live board rows", () => {
+    const rows = projectTodayBoard(
+      [
+        event("patient.created", { name: "Ana Cruz", mobile: "09171234567" }),
+        event(
+          "appointment.set",
+          {
+            patientId: PATIENT,
+            startsAt: "2026-09-12T04:00:00.000Z",
+            status: "waiting"
+          },
+          { recordId: VISIT, occurredAt: "2026-09-12T04:00:00.000Z" }
+        )
+      ],
+      manilaNoon
+    );
+
+    expect(countByBoardStatus(rows)).toEqual({
+      booked: 0,
+      waiting: 1,
+      in_chair: 0,
+      late: 0
+    });
   });
 });

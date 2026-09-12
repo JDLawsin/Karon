@@ -22,7 +22,7 @@ const AuthHeroPanel = ({ className }: Props) => (
         className="object-cover object-center"
         fill
         priority
-        sizes="(min-width: 1024px) calc(100vw - 32rem), (min-width: 768px) calc(100vw - 28rem), 0px"
+        sizes="(min-width: 80rem) and (pointer: fine) calc(100vw - 32rem), 0px"
         src={AUTH_HERO.src}
       />
       <div

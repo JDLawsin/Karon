@@ -6,10 +6,10 @@ type EmptyStateProps = {
 };
 
 const EmptyState = ({ title, children }: EmptyStateProps) => (
-  <section className="flex flex-col gap-3">
-    <h1 className="text-2xl font-semibold">{title}</h1>
+  <section className="flex max-w-xl flex-col gap-2 rounded-lg border border-border bg-card px-4 py-6">
+    <h2 className="text-lg font-semibold">{title}</h2>
     {children ? (
-      <p className="max-w-xl text-muted-foreground">{children}</p>
+      <p className="text-muted-foreground">{children}</p>
     ) : null}
   </section>
 );

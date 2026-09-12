@@ -1,8 +1,11 @@
 @import "tailwindcss";
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+/* Form-only below 1280px and on coarse pointers (iPad / Android tablets). */
+@custom-variant auth-split (@media (min-width: 80rem) and (pointer: fine));
 @import "@karon/design-system/styles.css";
 @source "../../../../packages/design-system/src";
 
-body {
-  min-height: 100vh;
-}
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench · tone: utilitarian
+ * theme: Chair Azure (DESIGN.md) · nav: N3 side-rail · mobile: C4 job bar
+ * enrichment: none · design-system: DESIGN.md · designed-as-app
+ */

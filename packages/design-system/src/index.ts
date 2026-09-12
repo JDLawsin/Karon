@@ -2,6 +2,10 @@ export { default as KaronMark } from "./brand/karon-mark";
 export { default as KaronWordmark } from "./brand/karon-wordmark";
 export { EmptyState } from "./patterns/empty-state";
 export type { EmptyStateProps } from "./patterns/empty-state";
+export { PageHeader } from "./patterns/page-header";
+export type { PageHeaderProps } from "./patterns/page-header";
+export { StatusBadge, statusBadgeVariants } from "./patterns/status-badge";
+export type { StatusBadgeProps } from "./patterns/status-badge";
 export { Alert, alertVariants } from "./primitives/alert";
 export type { AlertProps } from "./primitives/alert";
 export {

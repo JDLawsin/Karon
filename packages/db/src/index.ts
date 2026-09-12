@@ -16,8 +16,11 @@ export {
 export type {
   AuditEvent,
   Clinic,
+  ClinicAddress,
   ClinicEvent,
+  ClinicHours,
   ClinicMember,
+  ClinicService,
   ClinicSession,
   TrustedDevice
 } from "./schema";

@@ -18,12 +18,44 @@ const timestamptz = (name: string) =>
 
 export const clinicRoleEnum = pgEnum("clinic_role", ["owner", "assistant"]);
 
+export type ClinicAddress = {
+  line1?: string;
+  barangay?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+};
+
+export type ClinicHours = {
+  days: number[];
+  open: string;
+  close: string;
+};
+
+export type ClinicService = {
+  id: string;
+  name: string;
+};
+
 export const clinics = pgTable(
   "clinics",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
     region: text("region").notNull().default("ph"),
+    timezone: text("timezone").notNull().default("Asia/Manila"),
+    phone: text("phone"),
+    email: text("email"),
+    address: jsonb("address")
+      .$type<ClinicAddress>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    hours: jsonb("hours").$type<ClinicHours>(),
+    services: jsonb("services")
+      .$type<ClinicService[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    logoPath: text("logo_path"),
     trialStartedAt: timestamptz("trial_started_at").defaultNow().notNull(),
     createdAt: timestamptz("created_at").defaultNow().notNull(),
     updatedAt: timestamptz("updated_at").defaultNow().notNull()
@@ -32,6 +64,10 @@ export const clinics = pgTable(
     check(
       "clinics_name_length",
       sql`char_length(btrim(${table.name})) between 2 and 80`
+    ),
+    check(
+      "clinics_timezone_length",
+      sql`char_length(btrim(${table.timezone})) between 1 and 64`
     )
   ]
 ).enableRLS();

@@ -1,28 +1,37 @@
 "use client";
 
-import { Button } from "@karon/design-system";
-import { useState } from "react";
+import { Button, PageHeader } from "@karon/design-system";
+import { useMemo, useState } from "react";
 
-import { BOARD_STATUSES } from "@/features/today-board/project-today-board";
+import {
+  BOARD_STATUSES,
+  BOARD_STATUS_LABEL,
+  countByBoardStatus,
+  formatClinicDate
+} from "@/features/today-board/project-today-board";
 import TodayStatusGroup from "@/features/today-board/today-status-group";
 import { useTodayBoard } from "@/features/today-board/use-today-board";
 import WalkInForm from "@/features/today-board/walk-in-form";
 
 const TodayBoard = () => {
-  const { rows, ready, isDuplicateMobile, addWalkInPatient, markVisit } =
+  const { rows, ready, now, isDuplicateMobile, addWalkInPatient, markVisit } =
     useTodayBoard();
   const [adding, setAdding] = useState(false);
+  const counts = useMemo(() => countByBoardStatus(rows), [rows]);
+  const todayLabel = formatClinicDate(now);
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <h1 className="text-2xl font-semibold">Today</h1>
+      <PageHeader
+        description={todayLabel}
+        title="Today"
+      >
         {adding ? null : (
           <Button onClick={() => setAdding(true)} type="button">
             Add patient
           </Button>
         )}
-      </div>
+      </PageHeader>
       {adding ? (
         <WalkInForm
           isDuplicateMobile={isDuplicateMobile}
@@ -32,6 +41,23 @@ const TodayBoard = () => {
             setAdding(false);
           }}
         />
+      ) : null}
+      {rows.length > 0 ? (
+        <ul className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
+          {BOARD_STATUSES.map((status) => (
+            <li
+              className="min-w-0 rounded-lg border border-border bg-card px-3 py-3"
+              key={status}
+            >
+              <p className="text-sm text-muted-foreground">
+                {BOARD_STATUS_LABEL[status]}
+              </p>
+              <p className="text-2xl font-semibold tabular-nums">
+                {counts[status]}
+              </p>
+            </li>
+          ))}
+        </ul>
       ) : null}
       {ready && !adding && rows.length === 0 ? (
         <p className="text-muted-foreground">No patients today</p>

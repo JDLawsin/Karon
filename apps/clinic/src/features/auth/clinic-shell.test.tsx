@@ -7,17 +7,23 @@ const sync = vi.hoisted(() => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() })
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => "/today"
 }));
 
 vi.mock("next/link", () => ({
   default: ({
     children,
-    href
+    href,
+    ...props
   }: {
     children: React.ReactNode;
     href: string;
-  }) => <a href={href}>{children}</a>
+  } & React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  )
 }));
 
 vi.mock("@/lib/supabase/browser", () => ({
@@ -88,5 +94,15 @@ describe("ClinicShell", () => {
     renderShell();
 
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("keeps owner jobs off the assistant shell", () => {
+    renderShell();
+
+    expect(screen.getByRole("link", { name: "Today" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Today's collections" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Clinic" })).toBeNull();
+    expect(screen.getAllByRole("link", { name: "Password" }).length).toBe(2);
+    expect(screen.getAllByRole("button", { name: "Sign out" }).length).toBe(2);
   });
 });

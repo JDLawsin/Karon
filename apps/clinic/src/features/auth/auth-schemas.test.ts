@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   changePasswordSchema,
-  clinicOnboardingSchema,
   forgotPasswordSchema,
   loginCredentialsSchema,
   passwordSchema,
@@ -40,15 +39,6 @@ describe("credentials schemas", () => {
         password: "12345678"
       }).success
     ).toBe(false);
-  });
-});
-
-describe("clinicOnboardingSchema", () => {
-  it("trims and bounds clinic names", () => {
-    expect(clinicOnboardingSchema.safeParse({ name: "  Ab  " }).data).toEqual({
-      name: "Ab"
-    });
-    expect(clinicOnboardingSchema.safeParse({ name: "A" }).success).toBe(false);
   });
 });
 

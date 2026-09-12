@@ -3,14 +3,14 @@ import OnboardingForm from "@/features/auth/onboarding-form";
 import { redirectForPath } from "@/lib/auth/redirect-for-path";
 
 export const metadata = {
-  title: "Create clinic"
+  title: "Set up your clinic"
 };
 
 const OnboardingPage = async () => {
   await redirectForPath("/onboarding");
 
   return (
-    <AuthShell title="Create clinic">
+    <AuthShell title="Set up your clinic" wide>
       <OnboardingForm />
     </AuthShell>
   );

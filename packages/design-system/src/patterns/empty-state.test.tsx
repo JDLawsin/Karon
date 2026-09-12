@@ -9,7 +9,7 @@ describe("EmptyState", () => {
       <EmptyState title="Today">Today&apos;s board is next.</EmptyState>
     );
 
-    expect(screen.getByRole("heading", { level: 1, name: "Today" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Today" })).toBeTruthy();
     expect(screen.getByText("Today's board is next.")).toBeTruthy();
   });
 });
