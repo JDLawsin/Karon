@@ -180,9 +180,12 @@ unpaid → next visit.
   section, or for a status that also has a text label.
 - MUST group related blocks with `surface` / `muted` color fills, not 1px borders
   as structure. `--surface-border-width` is `0`. `--shadow` is `none`.
-- MUST NOT ship Chair Azure, IBM Plex, cream paper, terracotta accents, Unsplash
-  auth heroes, glassmorphism, or Material elevation. Those are retired or generic
-  generated-UI tells.
+- MUST NOT ship Chair Azure, IBM Plex, cream paper, terracotta accents,
+  glassmorphism, or Material elevation.
+- Auth split MAY place licensed clinic photos as small rotated paper cards
+  (`bg-background`, `rounded-lg`) on the primary color-block. The photo inside
+  stays square (`rounded-none`). MUST NOT full-bleed photos or put them on chair
+  screens. Inventory: [`docs/attributions.md`](docs/attributions.md).
 - SHOULD feel closer to a printed flat poster than to a SaaS marketing site.
 
 ### Brand vs product

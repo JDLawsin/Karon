@@ -31,6 +31,6 @@ yarn test:e2e
 - `apps/clinic` — chair PWA
 - `packages/design-system` — tokens and UI primitives
 - `packages/db` — Drizzle schema (server-only)
-- `docs/` — product and architecture
+- `docs/` — product and architecture ([attributions](docs/attributions.md) for stock photos)
 
 Start in [docs/README.md](docs/README.md).
