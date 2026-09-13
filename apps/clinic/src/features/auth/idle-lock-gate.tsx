@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Alert,
   AlertDialog,
   AlertDialogAction,
   AlertDialogContent,
@@ -8,14 +9,19 @@ import {
   AlertDialogTitle,
   Button
 } from "@karon/design-system";
+import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import {
   activityResetsIdle,
   clearStoredLastActive,
+  IDLE_HEARTBEAT_MS,
+  IDLE_LOCK_ENABLED_EVENT,
   idlePhase,
+  parseIdleLockEnabled,
   readStoredLastActive,
-  writeStoredLastActive
+  writeStoredLastActive,
+  type IdlePhase
 } from "@/features/auth/idle-lock";
 import type { Membership } from "@/features/auth/resolve-auth-destination";
 import { writeAuditEvent } from "@/lib/auth/audit";
@@ -36,27 +42,70 @@ const IdleLockGate = ({
   children
 }: Props) => {
   const lastActiveRef = useRef(0);
-  const phaseRef = useRef<"ok" | "warn" | "lock">(sessionActive ? "ok" : "lock");
-  const [phase, setPhase] = useState<"ok" | "warn" | "lock">(
-    sessionActive ? "ok" : "lock"
-  );
+  const phaseRef = useRef<IdlePhase>(sessionActive ? "ok" : "lock");
+  const wasDisabledRef = useRef(false);
+  const [phase, setPhase] = useState<IdlePhase>(sessionActive ? "ok" : "lock");
+  const [idleLockEnabled, setIdleLockEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const setNextPhase = (next: "ok" | "warn" | "lock") => {
+    let cancelled = false;
+
+    void createBrowserSupabase()
+      .auth.getUser()
+      .then(({ data }) => {
+        if (cancelled) {
+          return;
+        }
+
+        setIdleLockEnabled(
+          parseIdleLockEnabled(data.user?.user_metadata?.idle_lock_enabled)
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIdleLockEnabled(true);
+        }
+      });
+
+    const onPref = (event: Event) => {
+      if (!(event instanceof CustomEvent) || typeof event.detail !== "boolean") {
+        return;
+      }
+
+      setIdleLockEnabled(event.detail);
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== IDLE_LOCK_ENABLED_EVENT || event.newValue == null) {
+        return;
+      }
+
+      setIdleLockEnabled(event.newValue === "1");
+    };
+
+    window.addEventListener(IDLE_LOCK_ENABLED_EVENT, onPref);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener(IDLE_LOCK_ENABLED_EVENT, onPref);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    const setNextPhase = (next: IdlePhase) => {
       phaseRef.current = next;
       setPhase(next);
     };
 
     if (!sessionActive) {
       setNextPhase("lock");
-    } else {
-      const stored = readStoredLastActive(userId);
-      lastActiveRef.current = stored ?? Date.now();
-      if (stored == null) {
-        writeStoredLastActive(userId, lastActiveRef.current);
-      }
-      setNextPhase(idlePhase(Date.now(), lastActiveRef.current));
+      return;
     }
+
+    const touchSession = () => {
+      void createBrowserSupabase().rpc("touch_my_session");
+    };
 
     const markActive = () => {
       if (!sessionActive || !activityResetsIdle(phaseRef.current)) {
@@ -65,9 +114,57 @@ const IdleLockGate = ({
 
       lastActiveRef.current = Date.now();
       writeStoredLastActive(userId, lastActiveRef.current);
-      setNextPhase("ok");
-      void createBrowserSupabase().rpc("touch_my_session");
+      if (idleLockEnabled === true) {
+        setNextPhase("ok");
+      }
+      touchSession();
     };
+
+    if (idleLockEnabled == null) {
+      const stored = readStoredLastActive(userId);
+      lastActiveRef.current = stored ?? Date.now();
+      if (stored == null) {
+        writeStoredLastActive(userId, lastActiveRef.current);
+      }
+
+      window.addEventListener("pointerdown", markActive);
+      window.addEventListener("keydown", markActive);
+      touchSession();
+      const heartbeat = window.setInterval(touchSession, IDLE_HEARTBEAT_MS);
+
+      return () => {
+        window.removeEventListener("pointerdown", markActive);
+        window.removeEventListener("keydown", markActive);
+        window.clearInterval(heartbeat);
+      };
+    }
+
+    if (!idleLockEnabled) {
+      wasDisabledRef.current = true;
+      lastActiveRef.current = Date.now();
+      writeStoredLastActive(userId, lastActiveRef.current);
+      setNextPhase("ok");
+      touchSession();
+      const heartbeat = window.setInterval(touchSession, IDLE_HEARTBEAT_MS);
+
+      return () => {
+        window.clearInterval(heartbeat);
+      };
+    }
+
+    if (wasDisabledRef.current) {
+      lastActiveRef.current = Date.now();
+      writeStoredLastActive(userId, lastActiveRef.current);
+      wasDisabledRef.current = false;
+    } else {
+      const stored = readStoredLastActive(userId);
+      lastActiveRef.current = stored ?? Date.now();
+      if (stored == null) {
+        writeStoredLastActive(userId, lastActiveRef.current);
+      }
+    }
+
+    setNextPhase(idlePhase(Date.now(), lastActiveRef.current));
 
     window.addEventListener("pointerdown", markActive);
     window.addEventListener("keydown", markActive);
@@ -81,6 +178,14 @@ const IdleLockGate = ({
     };
 
     document.addEventListener("visibilitychange", onVisibility);
+    touchSession();
+    const heartbeat = window.setInterval(() => {
+      if (phaseRef.current === "lock" || !sessionActive) {
+        return;
+      }
+
+      touchSession();
+    }, IDLE_HEARTBEAT_MS);
 
     const timer = window.setInterval(() => {
       if (phaseRef.current === "lock" || !sessionActive) {
@@ -94,12 +199,17 @@ const IdleLockGate = ({
       window.removeEventListener("pointerdown", markActive);
       window.removeEventListener("keydown", markActive);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.clearInterval(heartbeat);
       window.clearInterval(timer);
     };
-  }, [sessionActive, userId]);
+  }, [idleLockEnabled, sessionActive, userId]);
 
   useEffect(() => {
     if (phase !== "lock") {
+      return;
+    }
+
+    if (idleLockEnabled === false && sessionActive) {
       return;
     }
 
@@ -115,7 +225,7 @@ const IdleLockGate = ({
     };
 
     void lock();
-  }, [membership.tenantId, phase, sessionActive, userId]);
+  }, [idleLockEnabled, membership.tenantId, phase, sessionActive, userId]);
 
   const staySignedIn = () => {
     lastActiveRef.current = Date.now();
@@ -138,6 +248,16 @@ const IdleLockGate = ({
           <AlertDialogDescription>
             Your session will lock in 5 minutes. Stay signed in to keep working.
           </AlertDialogDescription>
+          <Alert className="mt-4" title="Don't want this security feature?" variant="info">
+            You can turn it off in{" "}
+            <Link
+              className="text-primary underline-offset-4 hover:underline"
+              href="/settings"
+            >
+              Settings
+            </Link>
+            , on the Account tab.
+          </Alert>
           <Button className="mt-6 w-full" onClick={staySignedIn} type="button">
             Stay signed in
           </Button>

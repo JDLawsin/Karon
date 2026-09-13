@@ -730,10 +730,11 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     await verifyOwnerTotp(owner.client);
     const { data: ownerRows, error: ownerError } = await owner.client
       .from("google_calendar_connections")
-      .select("id, calendar_id");
+      .select("id, calendar_id, booking_pages");
 
     expect(ownerError).toBeNull();
     expect(ownerRows?.map((row) => row.id)).toEqual([connectionId]);
+    expect(ownerRows?.[0]?.booking_pages).toEqual([]);
 
     const { data: tokenColumn } = await owner.client
       .from("google_calendar_connections")

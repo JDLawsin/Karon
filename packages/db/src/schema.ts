@@ -239,6 +239,12 @@ export const calendarImportStatusEnum = pgEnum("calendar_import_status", [
   "cancel_pending"
 ]);
 
+export type GoogleBookingPage = {
+  name: string;
+  url: string;
+  scheduleKey: string;
+};
+
 export const googleCalendarConnections = pgTable(
   "google_calendar_connections",
   {
@@ -248,6 +254,10 @@ export const googleCalendarConnections = pgTable(
       .references(() => clinics.id, { onDelete: "cascade" }),
     encryptedRefreshToken: text("encrypted_refresh_token").notNull(),
     calendarId: text("calendar_id").notNull().default("primary"),
+    bookingPages: jsonb("booking_pages")
+      .$type<GoogleBookingPage[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     syncToken: text("sync_token"),
     connectedBy: uuid("connected_by").notNull(),
     createdAt: timestamptz("created_at").defaultNow().notNull(),

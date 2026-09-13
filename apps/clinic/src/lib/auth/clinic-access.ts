@@ -33,7 +33,8 @@ const getClinicAccess = async () => {
     await Promise.all([
       supabase.rpc("current_membership"),
       supabase.rpc("has_active_session"),
-      supabase.rpc("session_mfa_ok")
+      supabase.rpc("session_mfa_ok"),
+      supabase.rpc("touch_my_session")
     ]);
   const row = Array.isArray(rows) ? rows[0] : rows;
   const sessionMfaOk = mfaOk === true;

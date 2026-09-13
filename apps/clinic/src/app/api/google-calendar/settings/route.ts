@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 
 import { authorizeOwnerAction } from "@/features/staff/authorize-owner";
 import { getClinicAccess } from "@/lib/auth/clinic-access";
+import { saveCalendarSettings } from "@/lib/google-calendar/calendar-sync";
 
-export const POST = async () => {
+export const POST = async (request: Request) => {
   const access = await getClinicAccess();
   const authz = authorizeOwnerAction({
     userId: access.userId,
@@ -19,14 +20,19 @@ export const POST = async () => {
     );
   }
 
-  const { error } = await access.supabase
-    .from("google_calendar_connections")
-    .delete()
-    .eq("tenant_id", access.membership.tenantId);
+  const body: unknown = await request.json().catch(() => null);
+  const result = await saveCalendarSettings(access.membership.tenantId, body);
 
-  if (error) {
-    return NextResponse.json({ error: "Could not disconnect." }, { status: 400 });
+  if (!result.ok) {
+    return NextResponse.json(
+      { error: result.status === 404 ? "Not connected." : "Invalid booking settings." },
+      { status: result.status }
+    );
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    calendarId: result.calendarId,
+    bookingPages: result.bookingPages
+  });
 };

@@ -28,7 +28,7 @@ export const GET = async () => {
     mfaOk: access.mfaOk
   });
 
-  if (!authz.ok || !access.userId || !access.membership) {
+  if (!authz.ok || !access.userId || !access.membership || !access.sessionActive) {
     return NextResponse.redirect(clinicAppUrl("/settings?tab=integrations"));
   }
 

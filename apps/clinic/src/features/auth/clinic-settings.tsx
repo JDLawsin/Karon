@@ -24,6 +24,7 @@ import ClinicDetailsForm, {
   type ClinicDetailsSaveState
 } from "@/features/auth/clinic-details-form";
 import ClinicStaffAvatar from "@/features/auth/clinic-staff-avatar";
+import IdleLockSettings from "@/features/auth/idle-lock-settings";
 import UpdatePasswordForm from "@/features/auth/update-password-form";
 import ClinicBookingSettings from "@/features/google-calendar/clinic-booking-settings";
 import ClinicStaff from "@/features/staff/clinic-staff";
@@ -63,15 +64,18 @@ const ClinicSettings = () => {
   );
 
   const accountLeft = (
-    <Card className="gap-3">
-      <ClinicStaffAvatar
-        bare
-        editable
-        inlineEmail
-        role={membership.role}
-        userId={userId}
-      />
-    </Card>
+    <div className="flex min-w-0 flex-col gap-3">
+      <Card className="gap-3">
+        <ClinicStaffAvatar
+          bare
+          editable
+          inlineEmail
+          role={membership.role}
+          userId={userId}
+        />
+      </Card>
+      <IdleLockSettings />
+    </div>
   );
 
   const accountPanel = isOwner ? (

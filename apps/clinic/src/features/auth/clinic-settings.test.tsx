@@ -76,6 +76,10 @@ describe("ClinicSettings", () => {
     expect(screen.queryByRole("tab", { name: "Integrations" })).toBeNull();
     expect(screen.queryByRole("tab", { name: "Members" })).toBeNull();
     expect(screen.getByRole("button", { name: "Change password" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Session lock" })).toBeTruthy();
+    expect(
+      screen.getByRole("switch", { name: "Lock after 30 minutes idle" })
+    ).toBeTruthy();
     expect(screen.queryByText("Password form")).toBeNull();
     expect(screen.queryByText("Clinic details")).toBeNull();
   });
@@ -88,6 +92,10 @@ describe("ClinicSettings", () => {
     expect(screen.getByRole("tab", { name: "Integrations" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Members" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Change password" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Session lock" })).toBeTruthy();
+    expect(
+      screen.getByRole("switch", { name: "Lock after 30 minutes idle" })
+    ).toBeTruthy();
     expect(screen.queryByText("Password form")).toBeNull();
   });
 

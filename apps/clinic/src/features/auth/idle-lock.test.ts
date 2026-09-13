@@ -4,7 +4,8 @@ import {
   IDLE_LOCK_MS,
   IDLE_WARN_MS,
   activityResetsIdle,
-  idlePhase
+  idlePhase,
+  parseIdleLockEnabled
 } from "./idle-lock";
 
 describe("idlePhase", () => {
@@ -22,5 +23,14 @@ describe("activityResetsIdle", () => {
     expect(activityResetsIdle("ok")).toBe(true);
     expect(activityResetsIdle("warn")).toBe(true);
     expect(activityResetsIdle("lock")).toBe(false);
+  });
+});
+
+describe("parseIdleLockEnabled", () => {
+  it("defaults to on unless metadata is explicitly false", () => {
+    expect(parseIdleLockEnabled(undefined)).toBe(true);
+    expect(parseIdleLockEnabled(true)).toBe(true);
+    expect(parseIdleLockEnabled("0")).toBe(true);
+    expect(parseIdleLockEnabled(false)).toBe(false);
   });
 });

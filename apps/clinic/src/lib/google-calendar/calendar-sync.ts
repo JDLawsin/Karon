@@ -2,6 +2,8 @@ import "server-only";
 
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
+import { z } from "zod";
+
 import { log } from "@/lib/logger/server";
 import { clinicAppUrl } from "@/lib/server-env";
 import { createAdminSupabase } from "@/lib/supabase/admin";
@@ -13,15 +15,25 @@ import {
   type ClinicEvent
 } from "@/lib/sync/event-schema";
 
+import {
+  parseBookingPageUrl,
+  parseBookingPages,
+  shouldImportGoogleEvent,
+  type BookingPage
+} from "./booking-page";
+import { nextConnectionRow } from "./calendar-connection";
 import { cancelMailTo } from "./cancel-mail";
-import { guestAttendees, isGoogleBookingEvent } from "./google-booking-event";
+import { guestAttendees } from "./google-booking-event";
 import { readGoogleOauthState, signGoogleOauthState } from "./oauth-state";
 
 const OAUTH_STATE_COOKIE = "karon_gcal_oauth";
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+const CALENDAR_LIST_SCOPE =
+  "https://www.googleapis.com/auth/calendar.calendarlist.readonly";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars";
+const CALENDAR_LIST_URL = "https://www.googleapis.com/calendar/v3/users/me/calendarList";
 
 type GoogleEvent = {
   id?: string;
@@ -109,7 +121,7 @@ const googleOAuthAuthorizeUrl = (state: string) => {
   url.searchParams.set("client_id", env.clientId);
   url.searchParams.set("redirect_uri", redirectUri());
   url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", CALENDAR_SCOPE);
+  url.searchParams.set("scope", `${CALENDAR_SCOPE} ${CALENDAR_LIST_SCOPE}`);
   url.searchParams.set("access_type", "offline");
   url.searchParams.set("prompt", "consent");
   url.searchParams.set("state", state);
@@ -357,12 +369,56 @@ const deleteCalendarEvent = async (
   return response.ok || response.status === 404 || response.status === 410;
 };
 
+type GoogleCalendarOption = {
+  id: string;
+  summary: string;
+  primary: boolean;
+};
+
+const listGoogleCalendars = async (accessToken: string) => {
+  const response = await fetch(CALENDAR_LIST_URL, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+
+  if (!response.ok) {
+    log.withMetadata({ status: response.status }).error("gcal.calendar_list_failed");
+    return null;
+  }
+
+  const json = (await response.json()) as {
+    items?: {
+      id?: string;
+      summary?: string;
+      primary?: boolean;
+      accessRole?: string;
+    }[];
+  };
+
+  return (json.items ?? []).flatMap((item) => {
+    if (!item.id) {
+      return [];
+    }
+
+    if (item.accessRole !== "owner" && item.accessRole !== "writer") {
+      return [];
+    }
+
+    return [
+      {
+        id: item.id,
+        summary: item.summary?.trim() || item.id,
+        primary: Boolean(item.primary)
+      } satisfies GoogleCalendarOption
+    ];
+  });
+};
+
 const accessTokenForTenant = async (tenantId: string) => {
   const env = googleCalendarEnv();
   const admin = createAdminSupabase();
   const { data: connection } = await admin
     .from("google_calendar_connections")
-    .select("encrypted_refresh_token, calendar_id, sync_token, connected_by")
+    .select("encrypted_refresh_token, calendar_id, booking_pages, sync_token, connected_by")
     .eq("tenant_id", tenantId)
     .maybeSingle();
 
@@ -381,6 +437,7 @@ const accessTokenForTenant = async (tenantId: string) => {
     admin,
     accessToken,
     calendarId: connection.calendar_id as string,
+    bookingPages: parseBookingPages(connection.booking_pages),
     syncToken: (connection.sync_token as string | null) ?? null,
     connectedBy: connection.connected_by as string
   };
@@ -449,6 +506,10 @@ const pollTenant = async (tenantId: string, fullSync = false) => {
     return;
   }
 
+  if (session.bookingPages.length === 0) {
+    return;
+  }
+
   let listed = await listGoogleEvents(
     session.accessToken,
     session.calendarId,
@@ -470,7 +531,7 @@ const pollTenant = async (tenantId: string, fullSync = false) => {
       continue;
     }
 
-    if (!isGoogleBookingEvent(event)) {
+    if (!shouldImportGoogleEvent(event, session.bookingPages)) {
       nonBookingEventIds.push(event.id);
       continue;
     }
@@ -678,15 +739,25 @@ const storeConnection = async (tenantId: string, userId: string, refreshToken: s
   const encrypted = encryptToken(refreshToken, env.tokenKey);
   const { data: existing } = await admin
     .from("google_calendar_connections")
-    .select("id")
+    .select("id, calendar_id, booking_pages")
     .eq("tenant_id", tenantId)
     .maybeSingle();
+  const fields = nextConnectionRow(
+    existing
+      ? {
+          calendar_id: existing.calendar_id as string,
+          booking_pages: parseBookingPages(existing.booking_pages)
+        }
+      : null,
+    {
+      refreshToken: encrypted,
+      userId,
+      updatedAt: new Date().toISOString()
+    }
+  );
   const row = {
     tenant_id: tenantId,
-    encrypted_refresh_token: encrypted,
-    calendar_id: "primary",
-    connected_by: userId,
-    updated_at: new Date().toISOString()
+    ...fields
   };
   const { error } = existing
     ? await admin.from("google_calendar_connections").update(row).eq("id", existing.id)
@@ -698,6 +769,162 @@ const storeConnection = async (tenantId: string, userId: string, refreshToken: s
   }
 
   return true;
+};
+
+const calendarSettingsBodySchema = z.object({
+  calendarId: z.string().trim().min(1).max(256),
+  bookingPages: z
+    .array(
+      z.object({
+        name: z.string().trim().max(80),
+        url: z.string().trim().min(1).max(2000)
+      })
+    )
+    .max(20)
+});
+
+const resolveBookingPageInput = async (raw: string) => {
+  const trimmed = raw.trim();
+  const direct = parseBookingPageUrl(trimmed);
+
+  if (direct) {
+    return direct;
+  }
+
+  let parsed: URL;
+
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+
+  if (parsed.protocol !== "https:" || parsed.hostname !== "calendar.app.google") {
+    return null;
+  }
+
+  try {
+    const response = await fetch(parsed.toString(), { redirect: "follow" });
+    return parseBookingPageUrl(response.url);
+  } catch {
+    return null;
+  }
+};
+
+const saveCalendarSettings = async (tenantId: string, body: unknown) => {
+  const parsed = calendarSettingsBodySchema.safeParse(body);
+
+  if (!parsed.success) {
+    return { ok: false as const, status: 400 as const };
+  }
+
+  const pages: BookingPage[] = [];
+  const seen = new Set<string>();
+
+  for (const row of parsed.data.bookingPages) {
+    const page = await resolveBookingPageInput(row.url);
+
+    if (!page) {
+      return { ok: false as const, status: 400 as const };
+    }
+
+    if (seen.has(page.scheduleKey)) {
+      continue;
+    }
+
+    seen.add(page.scheduleKey);
+    pages.push({
+      name: row.name || "Booking page",
+      url: page.url,
+      scheduleKey: page.scheduleKey
+    });
+  }
+
+  const admin = createAdminSupabase();
+  const { data: existing } = await admin
+    .from("google_calendar_connections")
+    .select("id, calendar_id")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  if (!existing) {
+    return { ok: false as const, status: 404 as const };
+  }
+
+  const calendarChanged = existing.calendar_id !== parsed.data.calendarId;
+  const { error } = await admin
+    .from("google_calendar_connections")
+    .update({
+      calendar_id: parsed.data.calendarId,
+      booking_pages: pages,
+      ...(calendarChanged ? { sync_token: null } : {}),
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", existing.id);
+
+  if (error) {
+    log.withMetadata({ type: "gcal.settings" }).error("gcal.settings_save_failed");
+    return { ok: false as const, status: 400 as const };
+  }
+
+  return {
+    ok: true as const,
+    calendarId: parsed.data.calendarId,
+    bookingPages: pages
+  };
+};
+
+const googleCalendarStatus = async (tenantId: string) => {
+  const configured = googleCalendarConfigured();
+  const admin = createAdminSupabase();
+  const { data: connection } = await admin
+    .from("google_calendar_connections")
+    .select("encrypted_refresh_token, calendar_id, booking_pages")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  if (!connection) {
+    return {
+      configured,
+      connected: false,
+      calendarId: null as string | null,
+      bookingPages: [] as BookingPage[],
+      calendars: [] as GoogleCalendarOption[],
+      reconnect: false
+    };
+  }
+
+  const bookingPages = parseBookingPages(connection.booking_pages);
+  const env = googleCalendarEnv();
+  let calendars: GoogleCalendarOption[] = [];
+  let reconnect = !env;
+
+  if (env) {
+    try {
+      const accessToken = await refreshAccessToken(
+        decryptToken(connection.encrypted_refresh_token, env.tokenKey)
+      );
+
+      if (!accessToken) {
+        reconnect = true;
+      } else {
+        const listed = await listGoogleCalendars(accessToken);
+        reconnect = listed === null;
+        calendars = listed ?? [];
+      }
+    } catch {
+      reconnect = true;
+    }
+  }
+
+  return {
+    configured,
+    connected: true,
+    calendarId: connection.calendar_id as string,
+    bookingPages,
+    calendars,
+    reconnect
+  };
 };
 
 const runCalendarCron = async (options?: { fullSync?: boolean }) => {
@@ -719,10 +946,12 @@ export {
   cancelGoogleEvent,
   exchangeCode,
   googleCalendarConfigured,
+  googleCalendarStatus,
   googleOAuthAuthorizeUrl,
   oauthCookieOptions,
   readBoundOauthState,
   runCalendarCron,
+  saveCalendarSettings,
   signBoundOauthState,
   storeConnection
 };

@@ -1,8 +1,10 @@
 type GoogleBookingEvent = {
   eventType?: string;
+  status?: string;
   description?: string;
   attendees?: {
     email?: string;
+    displayName?: string;
     organizer?: boolean;
     self?: boolean;
   }[];
