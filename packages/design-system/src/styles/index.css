@@ -371,3 +371,31 @@ body::before {
   animation: karon-fade-out var(--overlay-duration, var(--drawer-duration))
     var(--ease-drawer-overlay, cubic-bezier(0.32, 0.72, 0, 1)) both;
 }
+
+[data-sonner-toaster] {
+  z-index: calc(var(--z-sticky) + 100);
+  font-family: var(--font-sans);
+}
+
+[data-sonner-toaster][data-y-position="top"] {
+  top: max(var(--toast-offset), env(safe-area-inset-top, 0px));
+}
+
+[data-sonner-toaster][data-x-position="right"] {
+  right: max(var(--toast-offset), env(safe-area-inset-right, 0px));
+}
+
+[data-sonner-toaster] [data-sonner-toast] {
+  width: var(--toast-width);
+}
+
+[data-sonner-toaster] [data-close-button] {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+}
+
+[data-sonner-toaster] [data-close-button]:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}

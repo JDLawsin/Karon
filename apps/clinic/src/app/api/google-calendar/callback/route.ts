@@ -13,7 +13,9 @@ import {
 } from "@/lib/google-calendar/calendar-sync";
 
 const redirectHome = () => {
-  const response = NextResponse.redirect(clinicAppUrl("/owner/clinic"));
+  const response = NextResponse.redirect(
+    clinicAppUrl("/settings?tab=integrations")
+  );
   response.cookies.set(OAUTH_STATE_COOKIE, "", {
     ...oauthCookieOptions(),
     maxAge: 0

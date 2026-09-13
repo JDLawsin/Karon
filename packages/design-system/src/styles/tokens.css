@@ -65,6 +65,8 @@
   --input-border-width: 0px;
   --heading-weight: 800;
   --heading-tracking: -0.02em;
+  --toast-width: min(100vw - 2rem, 24rem);
+  --toast-offset: 1rem;
 
   --odon-background: var(--background);
   --odon-foreground: var(--foreground);

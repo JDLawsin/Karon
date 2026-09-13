@@ -29,7 +29,7 @@ export const GET = async () => {
   });
 
   if (!authz.ok || !access.userId || !access.membership) {
-    return NextResponse.redirect(clinicAppUrl("/owner/clinic"));
+    return NextResponse.redirect(clinicAppUrl("/settings?tab=integrations"));
   }
 
   const state = signBoundOauthState(access.userId, access.membership.tenantId);

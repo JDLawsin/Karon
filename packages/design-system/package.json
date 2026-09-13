@@ -8,7 +8,7 @@
     "./styles.css": "./src/styles/index.css",
     "./theme": "./src/theme/theme.ts",
     "./primitives/*": "./src/primitives/*.tsx",
-    "./lib/*": "./src/lib/*.ts",
+    "./lib/*": "./src/lib/*",
     "./hooks": "./src/hooks/index.ts",
     "./hooks/*": "./src/hooks/*.ts"
   },
@@ -33,6 +33,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.43.0",
+    "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {

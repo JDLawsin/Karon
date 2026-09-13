@@ -1,13 +1,14 @@
 "use client";
 
-import { Alert, Button } from "@karon/design-system";
-import { useEffect, useState, type FormEvent } from "react";
+import { Alert, Card, cn, showErrorToast, showSuccessToast, Skeleton } from "@karon/design-system";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { FieldPath } from "react-hook-form";
 import type { z } from "zod";
 
 import ClinicHoursFields from "@/features/auth/clinic-hours-fields";
 import ClinicIdentityFields from "@/features/auth/clinic-identity-fields";
 import ClinicLogoField from "@/features/auth/clinic-logo-field";
+import ClinicTimezoneField from "@/features/auth/clinic-timezone-field";
 import {
   clinicLogoPreviewUrl,
   removeClinicLogo,
@@ -25,11 +26,21 @@ import { useClinicSession } from "@/lib/auth/clinic-session";
 import { markHydrated, useClinicForm } from "@/lib/forms/use-clinic-form";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
-const ClinicDetailsForm = () => {
+const clinicDetailsFormId = "clinic-details-form";
+
+type ClinicDetailsSaveState = {
+  canSave: boolean;
+  saving: boolean;
+};
+
+type Props = {
+  onSaveStateChange?: (state: ClinicDetailsSaveState) => void;
+};
+
+const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
   const { membership } = useClinicSession();
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [remoteLogoUrl, setRemoteLogoUrl] = useState<string | null>(null);
@@ -43,34 +54,43 @@ const ClinicDetailsForm = () => {
     setError: setFieldError,
     reset,
     watch,
-    formState: { errors }
+    formState: { errors, isDirty }
   } = useClinicForm(clinicOnboardingSchema, {
     defaultValues: defaultOnboardingValues()
   });
   const values = watch();
+  const canSave = isDirty || logoFile !== null || logoCleared;
+
+  useEffect(() => {
+    onSaveStateChange?.({ canSave: !loading && canSave, saving: pending });
+  }, [canSave, loading, onSaveStateChange, pending]);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
       void (async () => {
-        const supabase = createBrowserSupabase();
-        const { data, error } = await supabase
-          .from("clinics")
-          .select(
-            "name, timezone, phone, email, address, hours, services, logo_path"
-          )
-          .eq("id", membership.tenantId)
-          .maybeSingle();
+        try {
+          const supabase = createBrowserSupabase();
+          const { data, error } = await supabase
+            .from("clinics")
+            .select(
+              "name, timezone, phone, email, address, hours, services, logo_path"
+            )
+            .eq("id", membership.tenantId)
+            .maybeSingle();
 
-        if (error || !data) {
-          setLoadError("Could not load clinic details.");
-          return;
+          if (error || !data) {
+            setLoadError("Could not load clinic details.");
+            return;
+          }
+
+          reset(fromClinicRow(data));
+          const path =
+            typeof data.logo_path === "string" ? data.logo_path : null;
+          setLogoPath(path);
+          setRemoteLogoUrl(await clinicLogoPreviewUrl(supabase, path));
+        } finally {
+          setLoading(false);
         }
-
-        reset(fromClinicRow(data));
-        const path =
-          typeof data.logo_path === "string" ? data.logo_path : null;
-        setLogoPath(path);
-        setRemoteLogoUrl(await clinicLogoPreviewUrl(supabase, path));
       })();
     }, 0);
 
@@ -88,8 +108,6 @@ const ClinicDetailsForm = () => {
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSaveError(null);
-    setInfo(null);
     const parsed = clinicOnboardingSchema.safeParse(getValues());
 
     if (!parsed.success) {
@@ -117,7 +135,7 @@ const ClinicDetailsForm = () => {
         .eq("id", membership.tenantId);
 
       if (error) {
-        setSaveError("Could not save clinic details.");
+        showErrorToast("Could not save clinic details.");
         return;
       }
 
@@ -158,76 +176,124 @@ const ClinicDetailsForm = () => {
         logoFailed = true;
       }
 
+      reset(parsed.data);
+
       if (logoFailed) {
-        setInfo("Clinic details saved. Could not update the logo.");
+        showSuccessToast("Clinic details saved. Could not update the logo.");
       } else {
-        setInfo("Clinic details saved.");
+        showSuccessToast("Clinic details saved.");
       }
     } catch {
-      setSaveError("Could not save clinic details.");
+      showErrorToast("Could not save clinic details.");
     } finally {
       setPending(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div
+        aria-busy
+        aria-label="Loading clinic details"
+        className="grid w-full min-w-0 grid-cols-1 gap-3 lg:grid-cols-2 lg:items-start"
+      >
+        <Skeleton className="min-h-96 w-full min-w-0 rounded-lg lg:row-span-4" />
+        <Skeleton className="min-h-28 w-full min-w-0 rounded-lg" />
+        <Skeleton className="min-h-36 w-full min-w-0 rounded-lg" />
+        <Skeleton className="min-h-52 w-full min-w-0 rounded-lg" />
+        <Skeleton className="min-h-40 w-full min-w-0 rounded-lg" />
+      </div>
+    );
+  }
+
   return (
     <form
-      className="flex max-w-xl flex-col gap-4 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card p-4"
+      className="flex min-w-0 w-full flex-col gap-3"
+      id={clinicDetailsFormId}
       method="post"
       onSubmit={(event) => {
         void onSubmit(event);
       }}
       ref={markHydrated}
     >
-      <h2 className="text-lg font-semibold">Clinic details</h2>
       {loadError ? <Alert title={loadError} variant="danger" /> : null}
-      <ClinicIdentityFields
-        errors={errors}
-        idPrefix="clinic"
-        register={register}
-      />
-      <ClinicLogoField
-        error={logoError}
-        file={logoFile}
-        id="clinic-logo"
-        onFileChange={(nextFile, nextError) => {
-          setLogoFile(nextFile);
-          setLogoError(nextError);
+      <div className="grid w-full min-w-0 grid-cols-1 gap-3 lg:grid-cols-2 lg:items-start">
+        <SettingsCard className="min-w-0 lg:row-span-4" title="Clinic details">
+          <ClinicIdentityFields
+            errors={errors}
+            idPrefix="clinic"
+            register={register}
+          />
+        </SettingsCard>
+        <SettingsCard className="min-w-0" title="Timezone">
+          <ClinicTimezoneField
+            errors={errors}
+            hideLabel
+            idPrefix="clinic"
+            register={register}
+          />
+        </SettingsCard>
+        <SettingsCard className="min-w-0" title="Logo">
+          <ClinicLogoField
+            error={logoError}
+            file={logoFile}
+            id="clinic-logo"
+            onFileChange={(nextFile, nextError) => {
+              setLogoFile(nextFile);
+              setLogoError(nextError);
 
-          if (nextError) {
-            return;
-          }
+              if (nextError) {
+                return;
+              }
 
-          if (!nextFile) {
-            setRemoteLogoUrl(null);
-            setLogoCleared(true);
-            return;
-          }
+              if (!nextFile) {
+                setRemoteLogoUrl(null);
+                setLogoCleared(true);
+                return;
+              }
 
-          setLogoCleared(false);
-        }}
-        remoteUrl={remoteLogoUrl}
-      />
-      <ClinicHoursFields
-        errors={errors}
-        idPrefix="clinic"
-        register={register}
-        setValue={setValue}
-        watch={watch}
-      />
-      <ClinicServicesFields
-        errors={errors}
-        idPrefix="clinic"
-        onChange={(services) => setValue("services", services)}
-        services={values.services ?? []}
-      />
-      {saveError ? <Alert title={saveError} variant="danger" /> : null}
-      {info ? <Alert title={info} variant="info" /> : null}
-      <Button disabled={pending} type="submit">
-        Save clinic details
-      </Button>
+              setLogoCleared(false);
+            }}
+            remoteUrl={remoteLogoUrl}
+          />
+        </SettingsCard>
+        <SettingsCard className="min-w-0" title="Opens">
+          <ClinicHoursFields
+            errors={errors}
+            idPrefix="clinic"
+            register={register}
+            setValue={setValue}
+            watch={watch}
+          />
+        </SettingsCard>
+        <SettingsCard className="min-w-0" title="Service name">
+          <ClinicServicesFields
+            errors={errors}
+            idPrefix="clinic"
+            onChange={(services) =>
+              setValue("services", services, { shouldDirty: true })
+            }
+            services={values.services ?? []}
+          />
+        </SettingsCard>
+      </div>
     </form>
   );
 };
 
+type SettingsCardProps = {
+  title: string;
+  children: ReactNode;
+  className?: string;
+};
+
+const SettingsCard = ({ title, children, className }: SettingsCardProps) => (
+  <Card className={cn("min-w-0 gap-3", className)}>
+    <h2 className="text-lg font-semibold">{title}</h2>
+    {children}
+  </Card>
+);
+
 export default ClinicDetailsForm;
+export { clinicDetailsFormId };
+export type { ClinicDetailsSaveState };

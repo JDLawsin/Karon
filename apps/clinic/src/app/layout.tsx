@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import { SerwistProvider } from "@serwist/next/react";
-import { ThemeProvider } from "@karon/design-system";
+import { ThemeProvider, Toaster } from "@karon/design-system";
 import { themeInitScript } from "@karon/design-system/theme";
 import type { ReactNode } from "react";
 
@@ -51,6 +51,7 @@ const RootLayout = ({ children }: RootLayoutProps) => {
           >
             {children}
           </SerwistProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

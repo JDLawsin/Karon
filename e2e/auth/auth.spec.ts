@@ -363,8 +363,10 @@ test.describe("owner", { tag: "@owner" }, () => {
   });
 
   test("invites and removes an assistant", async ({ page }) => {
-    await page.goto("/owner/clinic");
-    await expect(page.getByRole("heading", { name: "Clinic" })).toBeVisible();
+    await page.goto("/settings?tab=members");
+    await expect(page).toHaveURL(/\/settings\?tab=members/);
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Members" })).toBeVisible();
     const email = `karon-e2e-invite-${Date.now()}@example.com`;
     await page.getByLabel("Assistant email").fill(email);
     const [response] = await Promise.all([
@@ -382,7 +384,7 @@ test.describe("owner", { tag: "@owner" }, () => {
       )
     });
     const userId = (payload as { userId: string }).userId;
-    await expect(page.getByRole("status")).toContainText(/invite sent/i);
+    await expect(page.getByText(/invite sent/i)).toBeVisible();
     await expect(page.getByText(userId)).toBeVisible();
     await page
       .getByRole("listitem")
@@ -395,10 +397,15 @@ test.describe("owner", { tag: "@owner" }, () => {
   test("clinic staff is usable at 320px", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto("/owner/clinic");
-    await expect(page.getByRole("heading", { name: "Clinic" })).toBeVisible();
+    await expect(page).toHaveURL(/\/settings\?tab=clinic/);
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Clinic" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Integrations" })).toBeVisible();
+    await page.getByRole("tab", { name: "Members" }).click();
     await expect(page.getByRole("button", { name: "Add assistant" })).toBeVisible();
     await page.getByRole("button", { name: "Toggle sidebar" }).click();
     await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Clinic" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Account menu" })).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Today's collections" })
@@ -509,8 +516,9 @@ test.describe("other clinic", { tag: "@owner" }, () => {
   test.use({ storageState: "e2e/.auth/other-owner.json" });
 
   test("does not list the first clinic owner as staff", async ({ page }) => {
-    await page.goto("/owner/clinic");
-    await expect(page.getByRole("heading", { name: "Clinic" })).toBeVisible();
+    await page.goto("/settings?tab=members");
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Staff" })).toBeVisible();
     await expect(page.getByText(identities().owner.id)).toHaveCount(0);
   });
 });

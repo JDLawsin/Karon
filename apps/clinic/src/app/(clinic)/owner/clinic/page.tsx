@@ -1,23 +1,11 @@
-import { PageHeader } from "@karon/design-system";
-
-import ClinicDetailsForm from "@/features/auth/clinic-details-form";
-import ClinicBookingSettings from "@/features/google-calendar/clinic-booking-settings";
-import ClinicStaff from "@/features/staff/clinic-staff";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Clinic"
 };
 
-const OwnerClinicPage = () => (
-  <section className="flex min-w-0 flex-col gap-6">
-    <PageHeader
-      description="Clinic details and staff."
-      title="Clinic"
-    />
-    <ClinicDetailsForm />
-    <ClinicBookingSettings />
-    <ClinicStaff section="staff" />
-  </section>
-);
+const OwnerClinicPage = () => {
+  redirect("/settings?tab=clinic");
+};
 
 export default OwnerClinicPage;

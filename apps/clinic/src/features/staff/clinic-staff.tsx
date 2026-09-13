@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Alert,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -10,8 +9,12 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
   Button,
+  Card,
   Input,
-  Label
+  Label,
+  showErrorToast,
+  showSuccessToast,
+  Skeleton
 } from "@karon/design-system";
 import { useEffect, useState } from "react";
 
@@ -66,8 +69,7 @@ const pendingCopy = (pending: PendingAction) => {
 const ClinicStaff = ({ section }: ClinicStaffProps) => {
   const [members, setMembers] = useState<StaffMember[]>([]);
   const [sessions, setSessions] = useState<StaffSession[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<PendingAction | null>(null);
   const {
     register,
@@ -79,18 +81,22 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
   });
 
   const load = async () => {
-    const response = await fetch("/api/members");
-    const json: unknown = await response.json().catch(() => null);
-    const directory = staffDirectorySchema.safeParse(json);
+    try {
+      const response = await fetch("/api/members");
+      const json: unknown = await response.json().catch(() => null);
+      const directory = staffDirectorySchema.safeParse(json);
 
-    if (!response.ok || !directory.success) {
-      const failed = apiErrorSchema.safeParse(json);
-      setError(failed.success ? failed.data.error : "Could not load staff.");
-      return;
+      if (!response.ok || !directory.success) {
+        const failed = apiErrorSchema.safeParse(json);
+        showErrorToast(failed.success ? failed.data.error : "Could not load staff.");
+        return;
+      }
+
+      setMembers(directory.data.members);
+      setSessions(directory.data.sessions);
+    } finally {
+      setLoading(false);
     }
-
-    setMembers(directory.data.members);
-    setSessions(directory.data.sessions);
   };
 
   useEffect(() => {
@@ -102,8 +108,6 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
   }, []);
 
   const onInvite = handleSubmit(async ({ email }) => {
-    setError(null);
-    setInfo(null);
     const response = await fetch("/api/members", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -114,17 +118,18 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
 
     if (!response.ok || !ok.success) {
       const failed = apiErrorSchema.safeParse(json);
-      setError(failed.success ? failed.data.error : "Could not invite that assistant.");
+      showErrorToast(
+        failed.success ? failed.data.error : "Could not invite that assistant."
+      );
       return;
     }
 
     reset({ email: "" });
-    setInfo("Invite sent.");
+    showSuccessToast("Invite sent.");
     await load();
   });
 
   const removeMember = async (userId: string) => {
-    setError(null);
     const body = memberUserSchema.parse({ userId });
     const response = await fetch("/api/members", {
       method: "DELETE",
@@ -134,7 +139,7 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
 
     if (!response.ok) {
       const failed = await parseJson(response, apiErrorSchema);
-      setError(
+      showErrorToast(
         failed.success ? failed.data.error : "Could not remove that assistant."
       );
       return;
@@ -144,7 +149,6 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
   };
 
   const revokeSession = async (sessionId: string) => {
-    setError(null);
     const body = sessionBodySchema.parse({ sessionId });
     const response = await fetch("/api/sessions", {
       method: "POST",
@@ -154,7 +158,7 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
 
     if (!response.ok) {
       const failed = await parseJson(response, apiErrorSchema);
-      setError(
+      showErrorToast(
         failed.success ? failed.data.error : "Could not revoke that device."
       );
       return;
@@ -164,7 +168,6 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
   };
 
   const revokeOthers = async () => {
-    setError(null);
     const body = sessionBodySchema.parse({ others: true });
     const response = await fetch("/api/sessions", {
       method: "POST",
@@ -174,7 +177,7 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
 
     if (!response.ok) {
       const failed = await parseJson(response, apiErrorSchema);
-      setError(
+      showErrorToast(
         failed.success ? failed.data.error : "Could not revoke other devices."
       );
       return;
@@ -207,59 +210,72 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
   const copy = pending ? pendingCopy(pending) : null;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex min-w-0 w-full flex-col gap-3">
       {section === "staff" ? (
-        <>
-          <form
-            className="flex max-w-xl flex-col gap-4 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card p-4"
-            onSubmit={onInvite}
-          >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-email">Assistant email</Label>
-              <Input
-                aria-describedby={errors.email ? "invite-email-error" : undefined}
-                aria-invalid={Boolean(errors.email)}
-                autoComplete="email"
-                id="invite-email"
-                type="email"
-                {...register("email")}
-              />
-              <FieldError id="invite-email-error" message={errors.email?.message} />
-            </div>
-            {error ? <Alert title={error} variant="danger" /> : null}
-            {info ? <Alert title={info} variant="info" /> : null}
-            <Button disabled={isSubmitting} type="submit">
-              Add assistant
-            </Button>
-          </form>
+        <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-start">
+          <Card className="min-w-0 gap-3">
+            <form className="flex flex-col gap-3" onSubmit={onInvite}>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="invite-email">Assistant email</Label>
+                <Input
+                  aria-describedby={errors.email ? "invite-email-error" : undefined}
+                  aria-invalid={Boolean(errors.email)}
+                  autoComplete="email"
+                  id="invite-email"
+                  type="email"
+                  {...register("email")}
+                />
+                <FieldError id="invite-email-error" message={errors.email?.message} />
+              </div>
+              <Button disabled={isSubmitting} type="submit">
+                Add assistant
+              </Button>
+            </form>
+          </Card>
 
-          <section className="flex flex-col gap-3">
-            <h2 className="text-lg font-semibold">Staff</h2>
-            <ul className="flex flex-col gap-2">
-              {members.map((member) => (
-                <li
-                  className="flex min-w-0 flex-col gap-2 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-                  key={member.userId}
-                >
-                  <p className="min-w-0 break-all text-sm">
-                    {staffMemberLabel(member.role, member.email)}
-                  </p>
-                  {member.role === "assistant" ? (
-                    <Button
-                      onClick={() => setPending({ kind: "remove", userId: member.userId })}
-                      type="button"
-                      variant="outline"
-                    >
-                      Remove
-                    </Button>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </section>
-        </>
+          {loading ? (
+            <Skeleton
+              aria-busy
+              aria-label="Loading staff"
+              className="min-h-52 w-full min-w-0 rounded-lg"
+            />
+          ) : (
+            <Card className="min-w-0 gap-3">
+              <h2 className="text-lg font-semibold">Staff</h2>
+              <ul className="flex flex-col gap-2">
+                {members.map((member) => (
+                  <li
+                    className="flex min-w-0 flex-col gap-2 rounded-lg bg-background px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                    key={member.userId}
+                  >
+                    <p className="min-w-0 break-all text-sm">
+                      {staffMemberLabel(member.role, member.email)}
+                    </p>
+                    {member.role === "assistant" ? (
+                      <Button
+                        onClick={() =>
+                          setPending({ kind: "remove", userId: member.userId })
+                        }
+                        type="button"
+                        variant="outline"
+                      >
+                        Remove
+                      </Button>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+        </div>
+      ) : loading ? (
+        <Skeleton
+          aria-busy
+          aria-label="Loading devices"
+          className="min-h-52 w-full min-w-0 rounded-lg"
+        />
       ) : (
-        <section className="flex flex-col gap-3">
+        <Card className="min-w-0 gap-3">
           <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold">Devices</h2>
             <Button
@@ -270,11 +286,10 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
               Revoke all other devices
             </Button>
           </div>
-          {error ? <Alert title={error} variant="danger" /> : null}
           <ul className="flex flex-col gap-2">
             {sessions.map((session) => (
               <li
-                className="flex min-w-0 flex-col gap-2 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                className="flex min-w-0 flex-col gap-2 rounded-lg bg-background px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
                 key={session.id}
               >
                 <p className="min-w-0 break-all text-sm">
@@ -292,7 +307,7 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
               </li>
             ))}
           </ul>
-        </section>
+        </Card>
       )}
 
       <AlertDialog

@@ -1,5 +1,16 @@
 [
   {
+    "date": "2026-09-13",
+    "macrostructure": "Workbench",
+    "theme": "Flat",
+    "enrichment": "none",
+    "brief": "Settings Account and Clinic tabs; Clinic left the Jobs rail",
+    "scope": "app",
+    "genre": "modern-minimal",
+    "tone": "utilitarian",
+    "nav": "N3 side-rail"
+  },
+  {
     "date": "2026-09-12",
     "macrostructure": "Workbench",
     "theme": "Flat",

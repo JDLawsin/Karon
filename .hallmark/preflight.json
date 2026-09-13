@@ -15,7 +15,7 @@
   "postLoginSurfaces": [
     "/today",
     "/owner/today",
-    "/owner/clinic",
+    "/settings",
     "ClinicShell chrome"
   ]
 }

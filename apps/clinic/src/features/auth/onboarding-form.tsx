@@ -11,6 +11,7 @@ import { tenantIdSchema } from "@/features/auth/auth-schemas";
 import ClinicHoursFields from "@/features/auth/clinic-hours-fields";
 import ClinicIdentityFields from "@/features/auth/clinic-identity-fields";
 import ClinicLogoField from "@/features/auth/clinic-logo-field";
+import ClinicTimezoneField from "@/features/auth/clinic-timezone-field";
 import { uploadClinicLogo } from "@/features/auth/clinic-logo";
 import ClinicServicesFields from "@/features/auth/clinic-services-fields";
 import { completeSignIn } from "@/features/auth/complete-sign-in";
@@ -297,13 +298,20 @@ const OnboardingForm = () => {
       ) : null}
 
       {step === 1 ? (
-        <ClinicHoursFields
-          errors={errors}
-          idPrefix="onboarding"
-          register={register}
-          setValue={setValue}
-          watch={watch}
-        />
+        <div className="flex flex-col gap-4">
+          <ClinicTimezoneField
+            errors={errors}
+            idPrefix="onboarding"
+            register={register}
+          />
+          <ClinicHoursFields
+            errors={errors}
+            idPrefix="onboarding"
+            register={register}
+            setValue={setValue}
+            watch={watch}
+          />
+        </div>
       ) : null}
 
       {step === 2 ? (

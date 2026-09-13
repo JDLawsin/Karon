@@ -125,7 +125,7 @@ describe("ClinicShell", () => {
 
     expect(screen.getByRole("link", { name: "Today" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Today's collections" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Clinic" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Clinic" })).toBeNull();
     expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
     expect(screen.getByRole("img", { name: "Owner avatar" })).toBeTruthy();
   });

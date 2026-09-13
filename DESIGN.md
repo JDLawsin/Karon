@@ -403,8 +403,10 @@ center a single card on large screens; the card contents stay left-aligned.
 
 Post-login is a dashboard work surface, not a wrapping header of every utility.
 
-- Tablet+: left **rail** — Jobs (Today; owner also Collections and Clinic), then
-  Account (Settings). Settings holds password and signed-in devices. Active job uses
+- Tablet+: left **rail** — Jobs (Today; owner also Collections), then
+  Account (Settings). Settings holds Account (password and signed-in devices) and,
+  for owners, Clinic (details), Integrations (bookings), and Members (staff).
+  Active job uses
   `accent`, not a new hue. Header has a collapse control; collapsed rail is icons only.
   Footer is a staff chip (avatar, name, email) that opens theme and sign out.
   Staff avatar is DiceBear Notionists Neutral, seeded by
@@ -422,8 +424,8 @@ Phone                               Tablet+
 │ ≡      Karon        │           │Karon │ Today  12 Sep    │
 │ Today      [Add]    │           │Today │ 2 waiting · 1 late│
 │ 9:30 Maria  Waiting │           │Coll. │ [Add patient]    │
-│ …                   │           │Clinic│ Booked │ Waiting │
-└─────────────────────┘           │Sett. │        │         │
+│ …                   │           │Sett. │ Booked │ Waiting │
+└─────────────────────┘           │      │        │         │
   sheet: jobs / account / av      │av ▸  │        │         │
                                   │v0.1  └──────────────────┘
 ```
