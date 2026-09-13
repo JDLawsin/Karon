@@ -38,9 +38,7 @@ const AuthShell = ({ title, children, wide = false }: Props) => (
         <h1 className="text-2xl tracking-(--heading-tracking) [font-weight:var(--heading-weight)]">
           {title}
         </h1>
-        <div className="min-w-0 rounded-md border-(length:var(--surface-border-width)) border-border bg-card p-4 sm:p-6">
-          {children}
-        </div>
+        <div className="min-w-0">{children}</div>
       </div>
       <p className="text-sm text-muted-foreground">
         <Button asChild variant="ghost" className="h-11 px-0">

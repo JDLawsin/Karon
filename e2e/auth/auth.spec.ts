@@ -215,6 +215,7 @@ test("a signed-in assistant can change their password", async ({ page }) => {
   await page.getByRole("link", { name: "Settings" }).click();
   await expect(page).toHaveURL(/\/settings$/);
   const update = new UpdatePasswordPage(page);
+  await update.openFromSettings();
   await update.submitChange(identities().password, NEW_PASSWORD);
   await expect(page).toHaveURL(/\/today$/, { timeout: 30_000 });
   await page.getByRole("button", { name: "Account menu" }).click();
@@ -396,8 +397,7 @@ test.describe("owner", { tag: "@owner" }, () => {
 
   test("clinic staff is usable at 320px", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
-    await page.goto("/owner/clinic");
-    await expect(page).toHaveURL(/\/settings\?tab=clinic/);
+    await page.goto("/settings?tab=clinic");
     await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Clinic" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Integrations" })).toBeVisible();
@@ -419,55 +419,46 @@ test.describe("owner", { tag: "@owner" }, () => {
   });
 
   test("revokes a listed device", async ({ page }) => {
-    const { data, error } = await adminClient()
-      .from("clinic_sessions")
-      .insert({
-        tenant_id: identities().clinicA,
-        user_id: identities().owner.id,
-        session_id: randomUUID()
-      })
-      .select("id")
-      .single();
+    const { error } = await adminClient().from("clinic_sessions").insert({
+      tenant_id: identities().clinicA,
+      user_id: identities().owner.id,
+      session_id: randomUUID()
+    });
 
     expect(error).toBeNull();
-    expect(data?.id).toBeTruthy();
 
     await page.goto("/settings");
-    await expect(page.getByText(data!.id)).toBeVisible();
-    await page
-      .getByRole("listitem")
-      .filter({ hasText: data!.id })
-      .getByRole("button", { name: "Revoke device" })
-      .click();
-    await expect(
-      page.getByRole("listitem").filter({ hasText: data!.id })
-    ).toContainText("Revoked");
+    const extraDevice = page.getByRole("listitem").filter({ hasText: "Active" });
+    const extraCount = await extraDevice.count();
+    await expect(extraDevice.first()).toBeVisible();
+    await extraDevice.first().getByRole("button", { name: "Revoke device" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Revoke device" }).click();
+    await expect(extraDevice).toHaveCount(extraCount - 1);
+    await expect(page.getByText("Revoked")).toHaveCount(0);
     await page.reload();
-    await expect(
-      page.getByRole("listitem").filter({ hasText: data!.id })
-    ).toContainText("Revoked");
+    await expect(page.getByText("Revoked")).toHaveCount(0);
   });
 
   test("revokes all other devices", async ({ page }) => {
-    const { data, error } = await adminClient()
-      .from("clinic_sessions")
-      .insert({
-        tenant_id: identities().clinicA,
-        user_id: identities().owner.id,
-        session_id: randomUUID()
-      })
-      .select("id")
-      .single();
+    const { error } = await adminClient().from("clinic_sessions").insert({
+      tenant_id: identities().clinicA,
+      user_id: identities().owner.id,
+      session_id: randomUUID()
+    });
 
     expect(error).toBeNull();
-    expect(data?.id).toBeTruthy();
 
     await page.goto("/settings");
-    await expect(page.getByText(data!.id)).toBeVisible();
+    const extraDevice = page.getByRole("listitem").filter({ hasText: "Active" });
+    await expect(extraDevice.first()).toBeVisible();
     await page.getByRole("button", { name: "Revoke all other devices" }).click();
-    await expect(
-      page.getByRole("listitem").filter({ hasText: data!.id })
-    ).toContainText("Revoked");
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Revoke other devices" })
+      .click();
+    await expect(extraDevice).toHaveCount(0);
+    await expect(page.getByText("This device")).toBeVisible();
+    await expect(page.getByText("Revoked")).toHaveCount(0);
     await page.goto("/today");
     await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
   });
@@ -480,9 +471,12 @@ test.describe("owner", { tag: "@owner" }, () => {
     await page.clock.runFor(1500);
     await page.clock.setSystemTime(new Date("2024-06-01T08:25:00Z"));
     await page.clock.runFor(1500);
-    await expect(page.getByRole("status")).toContainText(/will lock/i);
+    await expect(page.getByRole("alertdialog")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Stay signed in?" })
+    ).toBeVisible();
     await page.getByRole("button", { name: "Stay signed in" }).click();
-    await expect(page.getByRole("status")).toHaveCount(0);
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
     await page.clock.setSystemTime(new Date("2024-06-01T08:55:00Z"));
     await page.clock.runFor(1500);
     await expect(page.getByRole("alertdialog")).toBeVisible();

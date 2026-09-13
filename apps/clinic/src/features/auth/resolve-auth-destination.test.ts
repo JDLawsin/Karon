@@ -90,7 +90,7 @@ describe("resolveAuthDestination", () => {
     ).toBeNull();
   });
 
-  it("sends a revoked clinic session back to log in", () => {
+  it("keeps an inactive clinic session on clinic routes for the idle lock", () => {
     expect(
       resolveAuthDestination({
         pathname: "/today",
@@ -99,7 +99,16 @@ describe("resolveAuthDestination", () => {
         membership: owner,
         sessionActive: false
       })
-    ).toBe("/login");
+    ).toBeNull();
+    expect(
+      resolveAuthDestination({
+        pathname: "/owner/today",
+        userId: "user-1",
+        aal: "aal2",
+        membership: owner,
+        sessionActive: false
+      })
+    ).toBeNull();
     expect(
       resolveAuthDestination({
         pathname: "/login",
@@ -219,7 +228,7 @@ describe("resolveAuthDestination", () => {
     ).toBe("/today");
     expect(
       resolveAuthDestination({
-        pathname: "/owner/clinic",
+        pathname: "/settings",
         userId: "user-1",
         aal: "aal2",
         membership: owner,

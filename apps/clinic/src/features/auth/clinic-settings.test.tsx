@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const search = vi.hoisted(() => ({ tab: null as string | null }));
@@ -29,11 +29,21 @@ vi.mock("@/features/staff/clinic-staff", () => ({
   default: ({ section }: { section: string }) => <div>{section}</div>
 }));
 
+vi.mock("@/lib/supabase/browser", () => ({
+  createBrowserSupabase: () => ({
+    auth: {
+      getUser: async () => ({ data: { user: { user_metadata: {} } } }),
+      updateUser: async () => ({ error: null })
+    }
+  })
+}));
+
 vi.mock("@/features/auth/clinic-staff-avatar", () => ({
   default: () => <div>Avatar</div>
 }));
 
 import { ClinicSessionProvider } from "@/lib/auth/clinic-session";
+import { StaffAvatarPreferenceProvider } from "@/features/auth/staff-avatar-preference";
 
 import ClinicSettings from "./clinic-settings";
 
@@ -46,7 +56,9 @@ const renderSettings = (role: "assistant" | "owner") =>
       }}
       userId="22222222-2222-4222-8222-222222222222"
     >
-      <ClinicSettings />
+      <StaffAvatarPreferenceProvider userId="22222222-2222-4222-8222-222222222222">
+        <ClinicSettings />
+      </StaffAvatarPreferenceProvider>
     </ClinicSessionProvider>
   );
 
@@ -63,7 +75,8 @@ describe("ClinicSettings", () => {
     expect(screen.queryByRole("tab", { name: "Clinic" })).toBeNull();
     expect(screen.queryByRole("tab", { name: "Integrations" })).toBeNull();
     expect(screen.queryByRole("tab", { name: "Members" })).toBeNull();
-    expect(screen.getByText("Password form")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Change password" })).toBeTruthy();
+    expect(screen.queryByText("Password form")).toBeNull();
     expect(screen.queryByText("Clinic details")).toBeNull();
   });
 
@@ -74,7 +87,17 @@ describe("ClinicSettings", () => {
     expect(screen.getByRole("tab", { name: "Clinic" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Integrations" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Members" })).toBeTruthy();
-    expect(screen.getByText("Password form")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Change password" })).toBeTruthy();
+    expect(screen.queryByText("Password form")).toBeNull();
+  });
+
+  it("opens the change password drawer from the account tab", () => {
+    renderSettings("owner");
+
+    fireEvent.click(screen.getByRole("button", { name: "Change password" }));
+
+    expect(screen.getByRole("dialog", { name: "Change password" })).toBeVisible();
+    expect(screen.getByText("Password form")).toBeVisible();
   });
 
   it("opens the clinic tab from the query string", () => {

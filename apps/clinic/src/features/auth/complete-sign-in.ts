@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { clearStoredLastActive } from "@/features/auth/idle-lock";
 import { parseAuthClaims, parseMembership } from "@/features/auth/parse-membership";
 import { resolveAuthDestination } from "@/features/auth/resolve-auth-destination";
 import { writeAuditEvent } from "@/lib/auth/audit";
@@ -46,6 +47,10 @@ const completeSignIn = async (
   eventType: "auth.login" | "auth.signup" | null = "auth.login"
 ) => {
   const snapshot = await readAuthSnapshot(supabase);
+
+  if (snapshot.userId) {
+    clearStoredLastActive(snapshot.userId);
+  }
 
   if (snapshot.membership && snapshot.userId && eventType) {
     await writeAuditEvent(supabase, {

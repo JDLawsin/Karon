@@ -1,5 +1,6 @@
 const IDLE_WARN_MS = 25 * 60 * 1000;
 const IDLE_LOCK_MS = 30 * 60 * 1000;
+const LAST_ACTIVE_KEY = "karon-idle-last-active";
 
 type IdlePhase = "ok" | "warn" | "lock";
 
@@ -17,5 +18,42 @@ const idlePhase = (now: number, lastActiveAt: number): IdlePhase => {
   return "ok";
 };
 
-export { IDLE_LOCK_MS, IDLE_WARN_MS, idlePhase };
+const activityResetsIdle = (phase: IdlePhase) => phase !== "lock";
+
+const readStoredLastActive = (userId: string) => {
+  try {
+    const raw = sessionStorage.getItem(`${LAST_ACTIVE_KEY}:${userId}`);
+    const value = raw ? Number(raw) : NaN;
+
+    return Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeStoredLastActive = (userId: string, at: number) => {
+  try {
+    sessionStorage.setItem(`${LAST_ACTIVE_KEY}:${userId}`, String(at));
+  } catch {
+    return;
+  }
+};
+
+const clearStoredLastActive = (userId: string) => {
+  try {
+    sessionStorage.removeItem(`${LAST_ACTIVE_KEY}:${userId}`);
+  } catch {
+    return;
+  }
+};
+
+export {
+  IDLE_LOCK_MS,
+  IDLE_WARN_MS,
+  activityResetsIdle,
+  clearStoredLastActive,
+  idlePhase,
+  readStoredLastActive,
+  writeStoredLastActive
+};
 export type { IdlePhase };

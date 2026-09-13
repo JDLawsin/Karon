@@ -32,12 +32,15 @@ const formatDeviceTime = (iso: string) => {
   }).format(date);
 };
 
+const ACTIVE_DEVICE_LIMIT = 5;
+
 const deviceLabel = (
   revokedAt: string | null,
   email: string | null,
-  lastActiveAt: string
+  lastActiveAt: string,
+  isCurrent = false
 ) => {
-  const status = revokedAt ? "Revoked" : "Active";
+  const status = revokedAt ? "Revoked" : isCurrent ? "This device" : "Active";
   const used = formatDeviceTime(lastActiveAt);
   const parts = [status];
 
@@ -52,4 +55,11 @@ const deviceLabel = (
   return parts.join(" · ");
 };
 
-export { deviceLabel, emailByUserId, staffMemberLabel };
+const visibleDeviceSessions = <T extends { revokedAt: string | null }>(
+  sessions: readonly T[]
+) =>
+  sessions
+    .filter((session) => session.revokedAt === null)
+    .slice(0, ACTIVE_DEVICE_LIMIT);
+
+export { deviceLabel, emailByUserId, staffMemberLabel, visibleDeviceSessions };

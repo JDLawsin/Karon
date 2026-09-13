@@ -10,7 +10,13 @@ import {
 } from "@karon/design-system";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { idlePhase } from "@/features/auth/idle-lock";
+import {
+  activityResetsIdle,
+  clearStoredLastActive,
+  idlePhase,
+  readStoredLastActive,
+  writeStoredLastActive
+} from "@/features/auth/idle-lock";
 import type { Membership } from "@/features/auth/resolve-auth-destination";
 import { writeAuditEvent } from "@/lib/auth/audit";
 import { leaveClinicSession } from "@/lib/auth/leave-clinic-session";
@@ -19,13 +25,21 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 type Props = {
   membership: Membership;
   userId: string;
+  sessionActive: boolean;
   children: ReactNode;
 };
 
-const IdleLockGate = ({ membership, userId, children }: Props) => {
+const IdleLockGate = ({
+  membership,
+  userId,
+  sessionActive,
+  children
+}: Props) => {
   const lastActiveRef = useRef(0);
-  const phaseRef = useRef<"ok" | "warn" | "lock">("ok");
-  const [phase, setPhase] = useState<"ok" | "warn" | "lock">("ok");
+  const phaseRef = useRef<"ok" | "warn" | "lock">(sessionActive ? "ok" : "lock");
+  const [phase, setPhase] = useState<"ok" | "warn" | "lock">(
+    sessionActive ? "ok" : "lock"
+  );
 
   useEffect(() => {
     const setNextPhase = (next: "ok" | "warn" | "lock") => {
@@ -33,23 +47,43 @@ const IdleLockGate = ({ membership, userId, children }: Props) => {
       setPhase(next);
     };
 
+    if (!sessionActive) {
+      setNextPhase("lock");
+    } else {
+      const stored = readStoredLastActive(userId);
+      lastActiveRef.current = stored ?? Date.now();
+      if (stored == null) {
+        writeStoredLastActive(userId, lastActiveRef.current);
+      }
+      setNextPhase(idlePhase(Date.now(), lastActiveRef.current));
+    }
+
     const markActive = () => {
-      if (phaseRef.current === "lock") {
+      if (!sessionActive || !activityResetsIdle(phaseRef.current)) {
         return;
       }
 
       lastActiveRef.current = Date.now();
+      writeStoredLastActive(userId, lastActiveRef.current);
       setNextPhase("ok");
       void createBrowserSupabase().rpc("touch_my_session");
     };
 
-    lastActiveRef.current = Date.now();
     window.addEventListener("pointerdown", markActive);
     window.addEventListener("keydown", markActive);
-    void createBrowserSupabase().rpc("touch_my_session");
+
+    const onVisibility = () => {
+      if (!sessionActive || phaseRef.current === "lock") {
+        return;
+      }
+
+      setNextPhase(idlePhase(Date.now(), lastActiveRef.current));
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
 
     const timer = window.setInterval(() => {
-      if (phaseRef.current === "lock") {
+      if (phaseRef.current === "lock" || !sessionActive) {
         return;
       }
 
@@ -59,9 +93,10 @@ const IdleLockGate = ({ membership, userId, children }: Props) => {
     return () => {
       window.removeEventListener("pointerdown", markActive);
       window.removeEventListener("keydown", markActive);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.clearInterval(timer);
     };
-  }, []);
+  }, [sessionActive, userId]);
 
   useEffect(() => {
     if (phase !== "lock") {
@@ -69,6 +104,7 @@ const IdleLockGate = ({ membership, userId, children }: Props) => {
     }
 
     const lock = async () => {
+      clearStoredLastActive(userId);
       const supabase = createBrowserSupabase();
       await writeAuditEvent(supabase, {
         tenantId: membership.tenantId,
@@ -79,40 +115,36 @@ const IdleLockGate = ({ membership, userId, children }: Props) => {
     };
 
     void lock();
-  }, [membership.tenantId, phase, userId]);
+  }, [membership.tenantId, phase, sessionActive, userId]);
 
   const staySignedIn = () => {
     lastActiveRef.current = Date.now();
+    writeStoredLastActive(userId, lastActiveRef.current);
     phaseRef.current = "ok";
     setPhase("ok");
     void createBrowserSupabase().rpc("touch_my_session");
   };
 
-  const stayLocked = (event: { preventDefault: () => void }) => {
+  const stayOpen = (event: { preventDefault: () => void }) => {
     event.preventDefault();
   };
 
   return (
     <>
       <div inert={phase === "lock"}>{children}</div>
-      {phase === "warn" ? (
-        <div
-          aria-live="polite"
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-warning bg-warning-subtle px-4 py-3"
-          role="status"
-        >
-          <div className="mx-auto flex max-w-3xl min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-warning-foreground">
-              Your session will lock in 5 minutes. Stay signed in to keep working.
-            </p>
-            <Button onClick={staySignedIn} type="button">
-              Stay signed in
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      <AlertDialog open={phase === "warn"}>
+        <AlertDialogContent onEscapeKeyDown={stayOpen}>
+          <AlertDialogTitle>Stay signed in?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Your session will lock in 5 minutes. Stay signed in to keep working.
+          </AlertDialogDescription>
+          <Button className="mt-6 w-full" onClick={staySignedIn} type="button">
+            Stay signed in
+          </Button>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={phase === "lock"}>
-        <AlertDialogContent onEscapeKeyDown={stayLocked}>
+        <AlertDialogContent onEscapeKeyDown={stayOpen}>
           <AlertDialogTitle>Session locked</AlertDialogTitle>
           <AlertDialogDescription>
             Sign in again to use the clinic.

@@ -3,11 +3,17 @@
 import {
   Button,
   Card,
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
   PageHeader,
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger
+  TabsTrigger,
+  useIsMobile
 } from "@karon/design-system";
 import { Building2, LoaderCircle, Plug, User, Users } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -41,17 +47,31 @@ const ClinicSettings = () => {
     canSave: false,
     saving: false
   });
+  const [passwordDrawerOpen, setPasswordDrawerOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  const changePasswordButton = (
+    <Button
+      className="w-full shrink-0 sm:w-auto"
+      onClick={() => {
+        setPasswordDrawerOpen(true);
+      }}
+      type="button"
+    >
+      Change password
+    </Button>
+  );
 
   const accountLeft = (
-    <div className="flex min-w-0 flex-col gap-3">
-      <Card className="gap-3">
-        <ClinicStaffAvatar bare role={membership.role} userId={userId} />
-      </Card>
-      <Card className="gap-3">
-        <h2 className="text-lg font-semibold">Password</h2>
-        <UpdatePasswordForm passwordRecovery={false} />
-      </Card>
-    </div>
+    <Card className="gap-3">
+      <ClinicStaffAvatar
+        bare
+        editable
+        inlineEmail
+        role={membership.role}
+        userId={userId}
+      />
+    </Card>
   );
 
   const accountPanel = isOwner ? (
@@ -69,10 +89,12 @@ const ClinicSettings = () => {
         description={
           isOwner
             ? "Account, clinic, integrations, and members."
-            : "Change the password for this sign-in."
+            : "Your account and trusted devices."
         }
         title="Settings"
-      />
+      >
+        {isOwner ? null : changePasswordButton}
+      </PageHeader>
       {isOwner ? (
         <Tabs
           className="gap-3"
@@ -125,6 +147,8 @@ const ClinicSettings = () => {
                 ) : null}
                 Save clinic details
               </Button>
+            ) : tab === "account" ? (
+              changePasswordButton
             ) : null}
           </div>
           <TabsContent className="w-full min-w-0" value="account">
@@ -143,6 +167,24 @@ const ClinicSettings = () => {
       ) : (
         accountPanel
       )}
+      <Drawer
+        onOpenChange={setPasswordDrawerOpen}
+        open={passwordDrawerOpen}
+        showSwipeHandle={isMobile}
+        swipeDirection={isMobile ? "down" : "right"}
+      >
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Change password</DrawerTitle>
+            <DrawerDescription>
+              Enter your current password, then choose a new one.
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-6">
+            <UpdatePasswordForm passwordRecovery={false} />
+          </div>
+        </DrawerContent>
+      </Drawer>
     </section>
   );
 };

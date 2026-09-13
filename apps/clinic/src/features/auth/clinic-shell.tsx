@@ -25,6 +25,7 @@ import {
 } from "@/features/auth/clinic-nav";
 import IdleLockGate from "@/features/auth/idle-lock-gate";
 import type { ClinicRole, Membership } from "@/features/auth/resolve-auth-destination";
+import { StaffAvatarPreferenceProvider } from "@/features/auth/staff-avatar-preference";
 import { ClinicSessionProvider } from "@/lib/auth/clinic-session";
 import { leaveClinicSession } from "@/lib/auth/leave-clinic-session";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
@@ -33,11 +34,18 @@ import { useClinicSync } from "@/lib/sync/use-clinic-sync";
 type Props = {
   membership: Membership;
   userId: string;
+  sessionActive?: boolean;
   appVersion: string;
   children: ReactNode;
 };
 
-const ClinicShell = ({ membership, userId, appVersion, children }: Props) => {
+const ClinicShell = ({
+  membership,
+  userId,
+  sessionActive = true,
+  appVersion,
+  children
+}: Props) => {
   const router = useRouter();
   const [chromeActions, setChromeActions] = useState<HTMLElement | null>(null);
   const role: ClinicRole = membership.role;
@@ -56,7 +64,12 @@ const ClinicShell = ({ membership, userId, appVersion, children }: Props) => {
 
   return (
     <ClinicSessionProvider membership={membership} userId={userId}>
-      <IdleLockGate membership={membership} userId={userId}>
+      <StaffAvatarPreferenceProvider userId={userId}>
+        <IdleLockGate
+          membership={membership}
+          sessionActive={sessionActive}
+          userId={userId}
+        >
         <ClinicChromeActionsContext.Provider value={chromeActions}>
           <SidebarProvider className="relative z-1 min-h-dvh min-w-0 bg-background">
             <a
@@ -102,13 +115,11 @@ const ClinicShell = ({ membership, userId, appVersion, children }: Props) => {
             </SidebarFooter>
           </Sidebar>
           <SidebarInset>
-            <header className="flex min-h-(--control-min-height) items-center gap-2 px-4 py-3 sm:px-6 md:hidden">
-              <SidebarTrigger className="relative z-1" />
-              <div className="flex min-w-0 flex-1 items-center justify-center">
-                <ClinicBrandLink className="justify-center" />
-              </div>
+            <header className="grid min-h-(--control-min-height) grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-3 sm:px-6 md:hidden">
+              <SidebarTrigger className="relative z-1 justify-self-start" />
+              <ClinicBrandLink className="justify-center justify-self-center" />
               <div
-                className="flex shrink-0 items-center justify-end"
+                className="flex items-center justify-end justify-self-end"
                 id="clinic-chrome-actions"
                 ref={(node) => {
                   if (!node) {
@@ -137,6 +148,7 @@ const ClinicShell = ({ membership, userId, appVersion, children }: Props) => {
           </SidebarProvider>
         </ClinicChromeActionsContext.Provider>
       </IdleLockGate>
+      </StaffAvatarPreferenceProvider>
     </ClinicSessionProvider>
   );
 };

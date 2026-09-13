@@ -1,30 +1,34 @@
 "use client";
 
-import { Avatar } from "@karon/design-system";
+import { Avatar, Skeleton } from "@karon/design-system";
 import { useEffect, useMemo, useState } from "react";
 
 import type { ClinicRole } from "@/features/auth/resolve-auth-destination";
 import {
   staffAvatarDataUri,
-  staffRoleLabel
+  staffRoleLabel,
+  type StaffAvatarStyleId
 } from "@/features/auth/staff-avatar";
+import StaffAvatarMenu from "@/features/auth/staff-avatar-menu";
+import { useStaffAvatarPreference } from "@/features/auth/staff-avatar-preference";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
-type Props = {
+type StaffAvatarProps = {
   userId: string;
   role: ClinicRole;
-  bare?: boolean;
+  seed?: string;
+  style?: StaffAvatarStyleId;
 };
 
-const ClinicStaffAvatar = ({
-  userId,
-  role,
-  bare = false
-}: Props) => {
-  const src = useMemo(() => staffAvatarDataUri(userId), [userId]);
-  const [email, setEmail] = useState<string | null>(null);
+const StaffAvatar = ({ userId, role, seed, style }: StaffAvatarProps) => {
+  const avatarSeed = seed ?? userId;
+  const src = useMemo(
+    () => staffAvatarDataUri(avatarSeed, style),
+    [avatarSeed, style]
+  );
   const label = staffRoleLabel(role);
-  const avatar = (
+
+  return (
     <Avatar>
       {/* eslint-disable-next-line @next/next/no-img-element -- DiceBear SVG data URI */}
       <img
@@ -34,16 +38,45 @@ const ClinicStaffAvatar = ({
       />
     </Avatar>
   );
+};
+
+type Props = StaffAvatarProps & {
+  bare?: boolean;
+  inlineEmail?: boolean;
+  editable?: boolean;
+};
+
+const ClinicStaffAvatar = ({
+  userId,
+  role,
+  bare = false,
+  inlineEmail = false,
+  editable = false
+}: Props) => {
+  const { resolvedSeed, resolvedStyle, ready } = useStaffAvatarPreference();
+  const [email, setEmail] = useState<string | null>(null);
+  const label = staffRoleLabel(role);
+  const avatar = ready ? (
+    <StaffAvatar
+      role={role}
+      seed={resolvedSeed}
+      style={resolvedStyle}
+      userId={userId}
+    />
+  ) : (
+    <Skeleton
+      aria-busy
+      aria-label={`Loading ${label.toLowerCase()} avatar`}
+      className="size-10 shrink-0 rounded-full"
+    />
+  );
 
   useEffect(() => {
     let cancelled = false;
-    const getSession = createBrowserSupabase()?.auth?.getSession;
+    const supabase = createBrowserSupabase();
 
-    if (!getSession) {
-      return;
-    }
-
-    void getSession()
+    void supabase.auth
+      .getSession()
       .then(({ data }) => {
         if (!cancelled) {
           setEmail(data.session?.user.email ?? null);
@@ -64,15 +97,26 @@ const ClinicStaffAvatar = ({
           : "flex min-w-0 items-center gap-2 overflow-hidden px-2 py-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
       }
     >
-      {avatar}
+      {editable && ready ? <StaffAvatarMenu>{avatar}</StaffAvatarMenu> : avatar}
       <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-        <p className="truncate text-sm font-medium">{label}</p>
-        {email ? (
-          <p className="truncate text-xs text-muted-foreground">{email}</p>
-        ) : null}
+        {inlineEmail && email ? (
+          <p className="truncate text-sm font-medium">
+            {label}
+            <span aria-hidden className="text-muted-foreground"> · </span>
+            <span className="font-normal text-muted-foreground">{email}</span>
+          </p>
+        ) : (
+          <>
+            <p className="truncate text-sm font-medium">{label}</p>
+            {email ? (
+              <p className="truncate text-xs text-muted-foreground">{email}</p>
+            ) : null}
+          </>
+        )}
       </div>
     </div>
   );
 };
 
+export { StaffAvatar };
 export default ClinicStaffAvatar;

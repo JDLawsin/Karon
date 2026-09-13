@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { magicLinkRedirect } from "@/features/auth/auth-redirects";
+import { parseAuthClaims } from "@/features/auth/parse-membership";
 import { authorizeOwnerAction } from "@/features/staff/authorize-owner";
 import {
   inviteAssistant,
@@ -42,9 +43,12 @@ export const GET = async () => {
     return deny(authz.status, access);
   }
 
+  const { data: claimsData } = await access.supabase.auth.getClaims();
+  const { authSessionId } = parseAuthClaims(claimsData?.claims);
   const result = await listStaffDirectory({
     userClient: access.supabase,
-    admin: createAdminSupabase()
+    admin: createAdminSupabase(),
+    callerAuthSessionId: authSessionId
   });
 
   if (!result.ok) {

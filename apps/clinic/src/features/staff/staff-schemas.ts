@@ -32,6 +32,7 @@ const memberRowSchema = z.object({
 const sessionRowSchema = z.object({
   id: z.uuid(),
   user_id: z.uuid(),
+  session_id: z.uuid(),
   last_active_at: z.string(),
   revoked_at: z.string().nullable()
 });
@@ -39,7 +40,9 @@ const sessionRowSchema = z.object({
 const staffMemberSchema = z.object({
   userId: z.uuid(),
   role: z.enum(["owner", "assistant"]),
-  email: emailSchema.nullable()
+  email: emailSchema.nullable(),
+  avatarSeed: z.string().nullable(),
+  avatarStyle: z.string().nullable()
 });
 
 const staffSessionSchema = z.object({
@@ -47,7 +50,8 @@ const staffSessionSchema = z.object({
   userId: z.uuid(),
   email: emailSchema.nullable(),
   lastActiveAt: z.string(),
-  revokedAt: z.string().nullable()
+  revokedAt: z.string().nullable(),
+  isCurrent: z.boolean()
 });
 
 const staffDirectorySchema = z.object({

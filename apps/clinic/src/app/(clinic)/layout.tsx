@@ -20,6 +20,7 @@ const ClinicLayout = async ({ children }: Props) => {
     <ClinicShell
       appVersion={appVersion}
       membership={access.membership}
+      sessionActive={access.sessionActive}
       userId={access.userId}
     >
       {children}

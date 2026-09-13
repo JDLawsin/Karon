@@ -10,7 +10,8 @@ const membershipRowSchema = z.object({
 const authClaimsSchema = z.object({
   sub: z.uuid(),
   aal: z.string().optional(),
-  amr: z.unknown().optional()
+  amr: z.unknown().optional(),
+  session_id: z.uuid().optional()
 });
 
 const parseMembership = (row: unknown): Membership | null => {
@@ -44,7 +45,7 @@ const parseAuthClaims = (claims: unknown) => {
   const parsed = authClaimsSchema.safeParse(claims);
 
   if (!parsed.success) {
-    return { userId: null, aal: null, passwordRecovery: false };
+    return { userId: null, aal: null, authSessionId: null, passwordRecovery: false };
   }
 
   const amr = parsed.data.amr;
@@ -52,6 +53,7 @@ const parseAuthClaims = (claims: unknown) => {
   return {
     userId: parsed.data.sub,
     aal: parsed.data.aal ?? null,
+    authSessionId: parsed.data.session_id ?? null,
     passwordRecovery:
       Array.isArray(amr) && amr.some((entry) => amrMethod(entry) === "recovery")
   };

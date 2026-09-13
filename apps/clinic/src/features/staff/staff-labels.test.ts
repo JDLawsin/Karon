@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { deviceLabel, emailByUserId, staffMemberLabel } from "./staff-labels";
+import {
+  deviceLabel,
+  emailByUserId,
+  staffMemberLabel,
+  visibleDeviceSessions
+} from "./staff-labels";
 
 describe("emailByUserId", () => {
   it("maps valid emails and skips missing ones", () => {
@@ -36,5 +41,29 @@ describe("deviceLabel", () => {
       }).format(new Date("2026-09-11T08:00:00.000Z"))}`
     );
     expect(deviceLabel(null, null, "not-a-date")).toBe("Active");
+    expect(deviceLabel(null, "owner@clinic.test", "2026-09-11T08:00:00.000Z", true)).toBe(
+      `This device · owner@clinic.test · last used ${new Intl.DateTimeFormat("en-PH", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }).format(new Date("2026-09-11T08:00:00.000Z"))}`
+    );
+  });
+});
+
+describe("visibleDeviceSessions", () => {
+  it("drops revoked sessions and keeps the five newest active", () => {
+    const sessions = [1, 2, 3, 4, 5, 6].map((n) => ({
+      id: `active-${n}`,
+      revokedAt: null as string | null
+    }));
+    sessions.splice(2, 0, { id: "revoked", revokedAt: "2026-09-12T08:00:00.000Z" });
+
+    expect(visibleDeviceSessions(sessions).map((session) => session.id)).toEqual([
+      "active-1",
+      "active-2",
+      "active-3",
+      "active-4",
+      "active-5"
+    ]);
   });
 });

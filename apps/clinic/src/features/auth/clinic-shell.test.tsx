@@ -29,7 +29,9 @@ vi.mock("next/link", () => ({
 vi.mock("@/lib/supabase/browser", () => ({
   createBrowserSupabase: () => ({
     auth: {
-      getSession: async () => ({ data: { session: null } })
+      getSession: async () => ({ data: { session: null } }),
+      getUser: async () => ({ data: { user: { user_metadata: {} } } }),
+      updateUser: async () => ({ error: null })
     }
   })
 }));
@@ -106,7 +108,7 @@ describe("ClinicShell", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 
-  it("keeps owner jobs off the assistant shell", () => {
+  it("keeps owner jobs off the assistant shell", async () => {
     renderShell();
 
     expect(screen.getByRole("link", { name: "Today" })).toBeTruthy();
@@ -115,19 +117,21 @@ describe("ClinicShell", () => {
     expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Password" })).toBeNull();
     expect(screen.getByRole("button", { name: "Account menu" })).toBeTruthy();
-    expect(screen.getByRole("img", { name: "Assistant avatar" })).toBeTruthy();
+    expect(
+      await screen.findByRole("img", { name: "Assistant avatar" })
+    ).toBeTruthy();
     expect(screen.getByText("Jobs")).toBeTruthy();
     expect(screen.getByText("Account")).toBeTruthy();
   });
 
-  it("shows owner jobs", () => {
+  it("shows owner jobs", async () => {
     renderShell("owner");
 
     expect(screen.getByRole("link", { name: "Today" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Today's collections" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Clinic" })).toBeNull();
     expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
-    expect(screen.getByRole("img", { name: "Owner avatar" })).toBeTruthy();
+    expect(await screen.findByRole("img", { name: "Owner avatar" })).toBeTruthy();
   });
 
   it("reserves a phone chrome action slot", () => {

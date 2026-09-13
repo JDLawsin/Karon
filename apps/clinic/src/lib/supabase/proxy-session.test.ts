@@ -10,7 +10,7 @@ describe("shouldSkipLoginRedirect", () => {
 
   it("still sends clinic pages to login", () => {
     expect(shouldSkipLoginRedirect("/today")).toBe(false);
-    expect(shouldSkipLoginRedirect("/owner/clinic")).toBe(false);
+    expect(shouldSkipLoginRedirect("/settings")).toBe(false);
   });
 
   it("keeps public auth pages reachable", () => {

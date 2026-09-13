@@ -4,7 +4,7 @@ import {
   INVITE_WINDOW_MS,
   isInviteRateLimited
 } from "@/features/staff/authorize-owner";
-import { emailByUserId } from "@/features/staff/staff-labels";
+import { emailByUserId, visibleDeviceSessions } from "@/features/staff/staff-labels";
 import {
   inviteBodySchema,
   memberRowSchema,
@@ -222,10 +222,12 @@ const revokeOtherDevices = async ({
 
 const listStaffDirectory = async ({
   userClient,
-  admin
+  admin,
+  callerAuthSessionId
 }: {
   userClient: SupabaseClient;
   admin: SupabaseClient;
+  callerAuthSessionId: string | null;
 }) => {
   const [
     { data: memberRows, error: memberError },
@@ -234,7 +236,7 @@ const listStaffDirectory = async ({
     userClient.from("clinic_members").select("user_id, role").order("role"),
     userClient
       .from("clinic_sessions")
-      .select("id, user_id, last_active_at, revoked_at")
+      .select("id, user_id, session_id, last_active_at, revoked_at")
       .order("last_active_at", { ascending: false })
   ]);
 
@@ -266,25 +268,43 @@ const listStaffDirectory = async ({
     const users = await Promise.all(
       ids.map(async (id) => {
         const { data } = await admin.auth.admin.getUserById(id);
-        return { id, email: data.user?.email ?? null };
+        const metadata = data.user?.user_metadata;
+
+        return {
+          id,
+          email: data.user?.email ?? null,
+          avatarSeed:
+            typeof metadata?.avatar_seed === "string" ? metadata.avatar_seed : null,
+          avatarStyle:
+            typeof metadata?.avatar_style === "string"
+              ? metadata.avatar_style
+              : null
+        };
       })
     );
     const emails = emailByUserId(users);
+    const profileById = Object.fromEntries(users.map((user) => [user.id, user]));
 
     return {
       ok: true as const,
       members: membersParsed.map((row) => ({
         userId: row.user_id,
         role: row.role,
-        email: emails[row.user_id] ?? null
-      })),
-      sessions: sessionsParsed.map((row) => ({
-        id: row.id,
-        userId: row.user_id,
         email: emails[row.user_id] ?? null,
-        lastActiveAt: row.last_active_at,
-        revokedAt: row.revoked_at
-      }))
+        avatarSeed: profileById[row.user_id]?.avatarSeed ?? null,
+        avatarStyle: profileById[row.user_id]?.avatarStyle ?? null
+      })),
+      sessions: visibleDeviceSessions(
+        sessionsParsed.map((row) => ({
+          id: row.id,
+          userId: row.user_id,
+          email: emails[row.user_id] ?? null,
+          lastActiveAt: row.last_active_at,
+          revokedAt: row.revoked_at,
+          isCurrent:
+            callerAuthSessionId !== null && row.session_id === callerAuthSessionId
+        }))
+      )
     };
   } catch {
     return {

@@ -8,6 +8,14 @@ class UpdatePasswordPage {
     await this.page.locator("form[data-hydrated=true]").waitFor();
   }
 
+  async openFromSettings() {
+    await this.page.getByRole("button", { name: "Change password" }).click();
+    await this.page
+      .getByRole("dialog", { name: "Change password" })
+      .waitFor({ state: "visible" });
+    await this.waitReady();
+  }
+
   async submitNew(password: string) {
     await this.waitReady();
     await this.page.getByLabel("New password").fill(password);

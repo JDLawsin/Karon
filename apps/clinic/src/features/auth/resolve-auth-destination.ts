@@ -57,11 +57,15 @@ const resolveAuthDestination = ({
   }
 
   if (membership && !sessionActive) {
-    if (pathname === "/update-password") {
+    if (pathname === "/update-password" || pathname === "/login") {
       return null;
     }
 
-    return pathname === "/login" ? null : "/login";
+    if (isAuthEntryPath(pathname)) {
+      return "/login";
+    }
+
+    return null;
   }
 
   if (needsOwnerTotp(aal, membership, deviceTrusted)) {

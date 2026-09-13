@@ -16,8 +16,15 @@ import {
   showSuccessToast,
   Skeleton
 } from "@karon/design-system";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { StaffAvatar } from "@/features/auth/clinic-staff-avatar";
+import {
+  resolveStaffAvatarSeed,
+  resolveStaffAvatarStyle
+} from "@/features/auth/staff-avatar";
+import { useStaffAvatarPreference } from "@/features/auth/staff-avatar-preference";
 import { deviceLabel, staffMemberLabel } from "@/features/staff/staff-labels";
 import {
   apiErrorSchema,
@@ -29,9 +36,12 @@ import {
   type StaffMember,
   type StaffSession
 } from "@/features/staff/staff-schemas";
+import { useClinicSession } from "@/lib/auth/clinic-session";
+import { leaveClinicSession } from "@/lib/auth/leave-clinic-session";
 import FieldError from "@/lib/forms/field-error";
 import { parseJson } from "@/lib/forms/parse-json";
 import { useClinicForm } from "@/lib/forms/use-clinic-form";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 type ClinicStaffProps = {
   section: "staff" | "devices";
@@ -42,7 +52,7 @@ type PendingAction =
   | { kind: "revoke"; sessionId: string }
   | { kind: "revoke-others" };
 
-const pendingCopy = (pending: PendingAction) => {
+const pendingCopy = (pending: PendingAction, sessions: StaffSession[]) => {
   if (pending.kind === "remove") {
     return {
       title: "Remove this assistant?",
@@ -52,6 +62,19 @@ const pendingCopy = (pending: PendingAction) => {
   }
 
   if (pending.kind === "revoke") {
+    const isCurrent = sessions.some(
+      (session) => session.id === pending.sessionId && session.isCurrent
+    );
+
+    if (isCurrent) {
+      return {
+        title: "Revoke this device?",
+        description:
+          "This is the browser you are using now. You will be logged out of Karon.",
+        action: "Revoke and log out"
+      };
+    }
+
     return {
       title: "Revoke this device?",
       description: "That session will have to log in again.",
@@ -61,12 +84,15 @@ const pendingCopy = (pending: PendingAction) => {
 
   return {
     title: "Revoke all other devices?",
-    description: "You will stay signed in here.",
+    description: "You will stay signed in on this browser.",
     action: "Revoke other devices"
   };
 };
 
 const ClinicStaff = ({ section }: ClinicStaffProps) => {
+  const { userId } = useClinicSession();
+  const { resolvedSeed, resolvedStyle, ready } = useStaffAvatarPreference();
+  const router = useRouter();
   const [members, setMembers] = useState<StaffMember[]>([]);
   const [sessions, setSessions] = useState<StaffSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,7 +174,7 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
     await load();
   };
 
-  const revokeSession = async (sessionId: string) => {
+  const revokeSession = async (sessionId: string, reload = true) => {
     const body = sessionBodySchema.parse({ sessionId });
     const response = await fetch("/api/sessions", {
       method: "POST",
@@ -161,10 +187,14 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
       showErrorToast(
         failed.success ? failed.data.error : "Could not revoke that device."
       );
-      return;
+      return false;
     }
 
-    await load();
+    if (reload) {
+      await load();
+    }
+
+    return true;
   };
 
   const revokeOthers = async () => {
@@ -200,14 +230,24 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
     }
 
     if (action.kind === "revoke") {
-      await revokeSession(action.sessionId);
+      const isCurrent = sessions.some(
+        (session) => session.id === action.sessionId && session.isCurrent
+      );
+      const revoked = await revokeSession(action.sessionId, !isCurrent);
+
+      if (revoked && isCurrent) {
+        await leaveClinicSession(createBrowserSupabase());
+        router.push("/login");
+        router.refresh();
+      }
+
       return;
     }
 
     await revokeOthers();
   };
 
-  const copy = pending ? pendingCopy(pending) : null;
+  const copy = pending ? pendingCopy(pending, sessions) : null;
 
   return (
     <div className="flex min-w-0 w-full flex-col gap-3">
@@ -248,9 +288,28 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
                     className="flex min-w-0 flex-col gap-2 rounded-lg bg-background px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
                     key={member.userId}
                   >
-                    <p className="min-w-0 break-all text-sm">
-                      {staffMemberLabel(member.role, member.email)}
-                    </p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <StaffAvatar
+                        role={member.role}
+                        seed={
+                          member.userId === userId && ready
+                            ? resolvedSeed
+                            : resolveStaffAvatarSeed(
+                                member.userId,
+                                member.avatarSeed
+                              )
+                        }
+                        style={
+                          member.userId === userId && ready
+                            ? resolvedStyle
+                            : resolveStaffAvatarStyle(member.avatarStyle)
+                        }
+                        userId={member.userId}
+                      />
+                      <p className="min-w-0 break-all text-sm">
+                        {staffMemberLabel(member.role, member.email)}
+                      </p>
+                    </div>
                     {member.role === "assistant" ? (
                       <Button
                         onClick={() =>
@@ -293,17 +352,20 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
                 key={session.id}
               >
                 <p className="min-w-0 break-all text-sm">
-                  {deviceLabel(session.revokedAt, session.email, session.lastActiveAt)}
+                  {deviceLabel(
+                    session.revokedAt,
+                    session.email,
+                    session.lastActiveAt,
+                    session.isCurrent
+                  )}
                 </p>
-                {!session.revokedAt ? (
-                  <Button
-                    onClick={() => setPending({ kind: "revoke", sessionId: session.id })}
-                    type="button"
-                    variant="outline"
-                  >
-                    Revoke device
-                  </Button>
-                ) : null}
+                <Button
+                  onClick={() => setPending({ kind: "revoke", sessionId: session.id })}
+                  type="button"
+                  variant="outline"
+                >
+                  Revoke device
+                </Button>
               </li>
             ))}
           </ul>
