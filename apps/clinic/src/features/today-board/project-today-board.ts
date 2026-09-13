@@ -32,6 +32,8 @@ type TodayBoardRow = {
   storedStatus: VisitStatus;
   startsAt: string;
   googleEventId?: string;
+  serviceName?: string;
+  note?: string;
   syncState: "local" | "synced";
 };
 
@@ -238,6 +240,8 @@ const foldVisits = (events: ClinicEvent[]) => {
       startsAt: string;
       status: VisitStatus;
       googleEventId?: string;
+      serviceName?: string;
+      note?: string;
       eventIds: string[];
     }
   >();
@@ -271,6 +275,8 @@ const foldVisits = (events: ClinicEvent[]) => {
         startsAt: payload.data.startsAt,
         status: payload.data.status ?? "confirmed",
         googleEventId: payload.data.googleEventId,
+        serviceName: payload.data.serviceName,
+        note: payload.data.note,
         eventIds: [event.id]
       });
       continue;
@@ -325,6 +331,8 @@ const toRow = (
     startsAt: string;
     status: VisitStatus;
     googleEventId?: string;
+    serviceName?: string;
+    note?: string;
     eventIds: string[];
   },
   patient: { name: string; mobile: string; email?: string },
@@ -339,6 +347,8 @@ const toRow = (
   storedStatus: visit.status,
   startsAt: visit.startsAt,
   googleEventId: visit.googleEventId,
+  serviceName: visit.serviceName,
+  note: visit.note,
   status,
   syncState: visit.eventIds.some((id) => outboxIds.has(id)) ? "local" : "synced"
 });

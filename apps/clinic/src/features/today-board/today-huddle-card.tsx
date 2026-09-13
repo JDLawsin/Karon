@@ -100,6 +100,11 @@ const TodayHuddleCard = ({
             {formatVisitTime(row.startsAt)}
           </p>
           <p className="truncate font-medium leading-5">{row.name}</p>
+          {row.serviceName || row.note ? (
+            <p className="truncate text-xs text-muted-foreground">
+              {[row.serviceName, row.note].filter(Boolean).join(" · ")}
+            </p>
+          ) : null}
         </div>
         {hasMenu ? (
           <DropdownMenu>

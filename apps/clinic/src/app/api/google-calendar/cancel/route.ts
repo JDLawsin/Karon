@@ -1,3 +1,5 @@
+// Deferred: Google Calendar — keep for later reconnect
+
 import { NextResponse } from "next/server";
 
 import { getClinicAccess } from "@/lib/auth/clinic-access";

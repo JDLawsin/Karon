@@ -1,3 +1,5 @@
+// Deferred: Google Calendar — keep for later reconnect
+
 import { z } from "zod";
 
 import { guestAttendees, type GoogleBookingEvent } from "./google-booking-event";

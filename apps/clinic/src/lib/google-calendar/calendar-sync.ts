@@ -1,5 +1,7 @@
 import "server-only";
 
+// Deferred: Google Calendar — keep for later reconnect
+
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
 import { z } from "zod";

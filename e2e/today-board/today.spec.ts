@@ -39,6 +39,18 @@ const interceptEmptyBoard = async (page: Page) => {
 
     await route.continue();
   });
+  await page.route("**/rest/v1/booking_requests**", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]"
+      });
+      return;
+    }
+
+    await route.continue();
+  });
   await page.route("**/rest/v1/clinics**", async (route) => {
     if (route.request().method() === "GET") {
       await route.fulfill({

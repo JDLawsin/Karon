@@ -1,11 +1,10 @@
-// Deferred: Google Calendar — keep for later reconnect
-
 import { NextResponse } from "next/server";
 
 import { authorizeOwnerAction } from "@/features/staff/authorize-owner";
+import { ensureOwnerBookingLink } from "@/features/booking/ensure-booking-link";
 import { getClinicAccess } from "@/lib/auth/clinic-access";
 
-export const POST = async () => {
+export const GET = async () => {
   const access = await getClinicAccess();
   const authz = authorizeOwnerAction({
     userId: access.userId,
@@ -14,21 +13,22 @@ export const POST = async () => {
     mfaOk: access.mfaOk
   });
 
-  if (!authz.ok || !access.membership || !access.sessionActive) {
+  if (!authz.ok || !access.membership || !access.userId || !access.sessionActive) {
     return NextResponse.json(
       { error: "Forbidden" },
       { status: authz.ok ? 401 : authz.status }
     );
   }
 
-  const { error } = await access.supabase
-    .from("google_calendar_connections")
-    .delete()
-    .eq("tenant_id", access.membership.tenantId);
+  const link = await ensureOwnerBookingLink({
+    supabase: access.supabase,
+    tenantId: access.membership.tenantId,
+    userId: access.userId
+  });
 
-  if (error) {
-    return NextResponse.json({ error: "Could not disconnect." }, { status: 400 });
+  if (!link) {
+    return NextResponse.json({ error: "Could not create a booking link." }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(link);
 };

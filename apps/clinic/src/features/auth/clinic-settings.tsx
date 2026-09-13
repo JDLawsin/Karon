@@ -26,7 +26,7 @@ import ClinicDetailsForm, {
 import ClinicStaffAvatar from "@/features/auth/clinic-staff-avatar";
 import IdleLockSettings from "@/features/auth/idle-lock-settings";
 import UpdatePasswordForm from "@/features/auth/update-password-form";
-import ClinicBookingSettings from "@/features/google-calendar/clinic-booking-settings";
+import ClinicBookingSettings from "@/features/booking/clinic-booking-settings";
 import ClinicStaff from "@/features/staff/clinic-staff";
 import { useClinicSession } from "@/lib/auth/clinic-session";
 

@@ -1,3 +1,5 @@
+// Deferred: Google Calendar — keep for later reconnect
+
 import type { BookingPage } from "./booking-page";
 
 type ExistingConnection = {

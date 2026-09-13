@@ -1,5 +1,7 @@
 "use client";
 
+// Deferred: Google Calendar — keep for later reconnect
+
 import { Alert, Button, Input, Label, cn } from "@karon/design-system";
 import { useEffect, useState } from "react";
 

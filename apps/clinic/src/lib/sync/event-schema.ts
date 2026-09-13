@@ -36,7 +36,9 @@ const appointmentSetPayloadSchema = z.object({
   patientId: z.uuid(),
   startsAt: z.string().min(1),
   status: visitStatusSchema.optional(),
-  googleEventId: z.string().min(1).optional()
+  googleEventId: z.string().min(1).optional(),
+  serviceName: z.string().trim().min(1).max(80).optional(),
+  note: z.string().trim().max(500).optional()
 });
 
 const visitStatusChangedPayloadSchema = z.object({

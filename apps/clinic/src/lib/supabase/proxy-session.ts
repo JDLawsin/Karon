@@ -10,7 +10,8 @@ const isAnonymousPublicPath = (pathname: string) =>
   pathname === "/signup" ||
   pathname === "/forgot-password" ||
   pathname === "/~offline" ||
-  pathname.startsWith("/auth/");
+  pathname.startsWith("/auth/") ||
+  pathname.startsWith("/book/");
 
 const shouldSkipLoginRedirect = (pathname: string) =>
   isAnonymousPublicPath(pathname) || pathname.startsWith("/api/");

@@ -1,5 +1,7 @@
 "use client";
 
+// Deferred: Google Calendar — keep for later reconnect
+
 import {
   Button,
   Input,

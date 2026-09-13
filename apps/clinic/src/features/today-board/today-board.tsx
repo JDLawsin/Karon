@@ -16,7 +16,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useClinicChromeActions } from "@/features/auth/clinic-chrome-actions";
-import CalendarMatchList from "@/features/google-calendar/calendar-match-list";
+import BookingInbox from "@/features/booking/booking-inbox";
 import {
   calendarDateInClinic,
   formatClinicDate,
@@ -186,7 +186,7 @@ const TodayBoard = () => {
           />
         </div>
         {ready ? (
-          <CalendarMatchList autoConfirm={autoConfirm} events={events} />
+          <BookingInbox autoConfirm={autoConfirm} events={events} />
         ) : null}
       </div>
     </div>

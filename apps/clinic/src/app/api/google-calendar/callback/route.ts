@@ -1,3 +1,5 @@
+// Deferred: Google Calendar — keep for later reconnect
+
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 

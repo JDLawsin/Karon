@@ -16,5 +16,6 @@ describe("shouldSkipLoginRedirect", () => {
   it("keeps public auth pages reachable", () => {
     expect(shouldSkipLoginRedirect("/login")).toBe(true);
     expect(shouldSkipLoginRedirect("/auth/callback")).toBe(true);
+    expect(shouldSkipLoginRedirect("/book/abc123xyz")).toBe(true);
   });
 });

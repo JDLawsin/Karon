@@ -1,3 +1,5 @@
+// Deferred: Google Calendar — keep for later reconnect
+
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 type GoogleOauthState = {

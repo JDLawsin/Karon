@@ -21,7 +21,7 @@ vi.mock("@/features/auth/clinic-details-form", () => ({
   clinicDetailsFormId: "clinic-details-form"
 }));
 
-vi.mock("@/features/google-calendar/clinic-booking-settings", () => ({
+vi.mock("@/features/booking/clinic-booking-settings", () => ({
   default: () => <h2>Bookings</h2>
 }));
 

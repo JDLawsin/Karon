@@ -1,3 +1,5 @@
+// Deferred: Google Calendar — keep for later reconnect
+
 import { NextResponse } from "next/server";
 
 import { authorizeOwnerAction } from "@/features/staff/authorize-owner";

@@ -30,6 +30,8 @@ type BookingInput = {
   startsAt?: string;
   autoConfirm?: boolean;
   googleEventId?: string;
+  serviceName?: string;
+  note?: string;
   now?: Date;
 };
 
@@ -66,7 +68,9 @@ const addBooking = async (db: ClinicDb, input: BookingInput) => {
       patientId,
       startsAt: input.startsAt ?? occurredAt,
       status: initialVisitStatus(input.autoConfirm ?? true),
-      ...(input.googleEventId ? { googleEventId: input.googleEventId } : {})
+      ...(input.googleEventId ? { googleEventId: input.googleEventId } : {}),
+      ...(input.serviceName ? { serviceName: input.serviceName } : {}),
+      ...(input.note ? { note: input.note } : {})
     }
   });
 

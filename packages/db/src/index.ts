@@ -6,6 +6,9 @@ export { decodeJwtClaims, sessionRoleForClaims } from "./claims";
 export type { JwtClaims } from "./claims";
 export {
   auditEvents,
+  bookingLinks,
+  bookingRequestStatusEnum,
+  bookingRequests,
   calendarImportStatusEnum,
   calendarImports,
   clinicEvents,
@@ -19,6 +22,8 @@ export {
 } from "./schema";
 export type {
   AuditEvent,
+  BookingLink,
+  BookingRequest,
   Clinic,
   ClinicAddress,
   ClinicEvent,

@@ -309,9 +309,85 @@ export const reminderSends = pgTable(
   }
 ).enableRLS();
 
+export const bookingRequestStatusEnum = pgEnum("booking_request_status", [
+  "pending",
+  "accepted",
+  "declined"
+]);
+
+export const bookingLinks = pgTable(
+  "booking_links",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => clinics.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull(),
+    slug: text("slug").notNull(),
+    createdAt: timestamptz("created_at").defaultNow().notNull(),
+    updatedAt: timestamptz("updated_at").defaultNow().notNull()
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [authUsers.id],
+      name: "booking_links_user_id_fk"
+    }).onDelete("cascade"),
+    uniqueIndex("booking_links_slug_idx").on(table.slug),
+    uniqueIndex("booking_links_tenant_user_idx").on(table.tenantId, table.userId),
+    check(
+      "booking_links_slug_format",
+      sql`${table.slug} ~ '^[A-Za-z0-9_-]{8,32}$'`
+    )
+  ]
+).enableRLS();
+
+export const bookingRequests = pgTable(
+  "booking_requests",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => clinics.id, { onDelete: "cascade" }),
+    linkId: uuid("link_id")
+      .notNull()
+      .references(() => bookingLinks.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    mobile: text("mobile").notNull(),
+    serviceId: text("service_id").notNull(),
+    serviceName: text("service_name").notNull(),
+    note: text("note"),
+    startsAt: timestamptz("starts_at").notNull(),
+    status: bookingRequestStatusEnum("status").notNull().default("pending"),
+    visitId: uuid("visit_id"),
+    createdAt: timestamptz("created_at").defaultNow().notNull(),
+    updatedAt: timestamptz("updated_at").defaultNow().notNull()
+  },
+  (table) => [
+    uniqueIndex("booking_requests_link_slot_idx")
+      .on(table.linkId, table.startsAt)
+      .where(sql`${table.status} in ('pending', 'accepted')`),
+    index("booking_requests_tenant_status_idx").on(table.tenantId, table.status),
+    check(
+      "booking_requests_name_length",
+      sql`char_length(btrim(${table.name})) between 1 and 80`
+    ),
+    check(
+      "booking_requests_mobile_length",
+      sql`char_length(btrim(${table.mobile})) between 1 and 20`
+    ),
+    check(
+      "booking_requests_note_length",
+      sql`${table.note} is null or char_length(${table.note}) <= 500`
+    )
+  ]
+).enableRLS();
+
 export type Clinic = typeof clinics.$inferSelect;
 export type ClinicMember = typeof clinicMembers.$inferSelect;
 export type ClinicSession = typeof clinicSessions.$inferSelect;
 export type TrustedDevice = typeof trustedDevices.$inferSelect;
 export type AuditEvent = typeof auditEvents.$inferSelect;
 export type ClinicEvent = typeof clinicEvents.$inferSelect;
+export type BookingLink = typeof bookingLinks.$inferSelect;
+export type BookingRequest = typeof bookingRequests.$inferSelect;
