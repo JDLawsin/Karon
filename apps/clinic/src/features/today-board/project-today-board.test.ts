@@ -144,7 +144,63 @@ describe("projectTodayBoard", () => {
     expect(rows).toEqual([]);
   });
 
-  it("rolls yesterday's unfinished visit into carryover", () => {
+  it("projects a chosen clinic day without marking future visits late", () => {
+    const huddle = projectTodayBoard(
+      [
+        event("patient.created", { name: "Ana Cruz", mobile: "09171234567" }),
+        event(
+          "appointment.set",
+          {
+            patientId: PATIENT,
+            startsAt: "2026-09-13T00:00:00.000Z",
+            status: "confirmed"
+          },
+          { recordId: VISIT }
+        )
+      ],
+      manilaNoon,
+      undefined,
+      new Set(),
+      "2026-09-13"
+    );
+
+    expect(huddle.rows).toEqual([
+      expect.objectContaining({
+        visitId: VISIT,
+        status: "confirmed",
+        storedStatus: "confirmed"
+      })
+    ]);
+    expect(huddle.leftoverByDate).toEqual({});
+  });
+
+  it("keeps leftover visits for the week legend when viewing another day", () => {
+    const huddle = projectTodayBoard(
+      [
+        event("patient.created", { name: "Ana Cruz", mobile: "09171234567" }),
+        event(
+          "appointment.set",
+          {
+            patientId: PATIENT,
+            startsAt: "2026-09-11T04:00:00.000Z",
+            status: "waiting"
+          },
+          { recordId: VISIT }
+        )
+      ],
+      manilaNoon,
+      undefined,
+      new Set(),
+      "2026-09-13"
+    );
+
+    expect(huddle.rows).toEqual([]);
+    expect(huddle.leftoverByDate).toEqual({
+      "2026-09-11": { waiting: 1 }
+    });
+  });
+
+  it("rolls yesterday's unfinished visit into leftover counts", () => {
     const huddle = projectTodayBoard(
       [
         event("patient.created", { name: "Ana Cruz", mobile: "09171234567" }),
@@ -161,12 +217,9 @@ describe("projectTodayBoard", () => {
       manilaNoon
     );
 
-    expect(huddle.carryover).toEqual([
-      expect.objectContaining({
-        visitId: VISIT,
-        storedStatus: "waiting"
-      })
-    ]);
+    expect(huddle.leftoverByDate).toEqual({
+      "2026-09-11": { waiting: 1 }
+    });
   });
 
   it("marks a visit local-only while its event is still in the outbox", () => {

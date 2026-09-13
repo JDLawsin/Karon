@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { initialVisitStatus, transitionVisitStatus } from "./visit-status";
+import { initialVisitStatus, isReverseVisitStatus, transitionVisitStatus } from "./visit-status";
 
 describe("initialVisitStatus", () => {
   it("confirms a new booking when auto-confirm is on", () => {
@@ -49,8 +49,11 @@ describe("transitionVisitStatus", () => {
     expect(transitionVisitStatus("pending_review", "in_chair")).toBeNull();
   });
 
-  it("rejects leaving a completed visit", () => {
-    expect(transitionVisitStatus("complete", "waiting")).toBeNull();
+  it("moves a visit back to correct a step", () => {
+    expect(transitionVisitStatus("waiting", "confirmed")).toBe("confirmed");
+    expect(transitionVisitStatus("in_chair", "waiting")).toBe("waiting");
+    expect(transitionVisitStatus("complete", "in_chair")).toBe("in_chair");
+    expect(transitionVisitStatus("complete", "waiting")).toBe("waiting");
   });
 
   it("rejects leaving a cancelled visit", () => {
@@ -59,5 +62,14 @@ describe("transitionVisitStatus", () => {
 
   it("rejects leaving a no-show", () => {
     expect(transitionVisitStatus("no_show", "waiting")).toBeNull();
+  });
+});
+
+describe("isReverseVisitStatus", () => {
+  it("treats an earlier pipeline step as reverse", () => {
+    expect(isReverseVisitStatus("waiting", "confirmed")).toBe(true);
+    expect(isReverseVisitStatus("complete", "in_chair")).toBe(true);
+    expect(isReverseVisitStatus("confirmed", "waiting")).toBe(false);
+    expect(isReverseVisitStatus("confirmed", "cancelled")).toBe(false);
   });
 });

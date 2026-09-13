@@ -43,7 +43,7 @@ type TodaySnapshot = {
 
 type TodayHuddle = {
   rows: TodayBoardRow[];
-  carryover: TodayBoardRow[];
+  leftoverByDate: Record<string, Partial<Record<BoardStatus, number>>>;
   snapshot: TodaySnapshot;
 };
 
@@ -101,6 +101,12 @@ const formatClinicDate = (now: Date, timeZone = CLINIC_TZ) =>
     weekday: "short",
     month: "short",
     day: "numeric"
+  }).format(now);
+
+const formatClinicWeekday = (now: Date, timeZone = CLINIC_TZ) =>
+  new Intl.DateTimeFormat("en-PH", {
+    timeZone,
+    weekday: "long"
   }).format(now);
 
 const clinicLocalParts = (now: Date, timeZone = CLINIC_TZ) => {
@@ -300,6 +306,18 @@ const foldVisits = (events: ClinicEvent[]) => {
   return { patients, visits, outstandingPhp: Math.max(0, outstandingPhp) };
 };
 
+type FoldedClinic = ReturnType<typeof foldVisits>;
+
+const bumpLeftover = (
+  leftoverByDate: TodayHuddle["leftoverByDate"],
+  date: string,
+  status: BoardStatus
+) => {
+  const bucket = leftoverByDate[date] ?? {};
+  bucket[status] = (bucket[status] ?? 0) + 1;
+  leftoverByDate[date] = bucket;
+};
+
 const toRow = (
   visitId: string,
   visit: {
@@ -332,18 +350,20 @@ const sortRows = (rows: TodayBoardRow[]) =>
     return byStart !== 0 ? byStart : left.visitId.localeCompare(right.visitId);
   });
 
-const projectTodayBoard = (
-  events: ClinicEvent[],
+const projectFoldedBoard = (
+  folded: FoldedClinic,
   now: Date,
   timeZone = CLINIC_TZ,
-  outboxIds: ReadonlySet<string> = new Set()
+  outboxIds: ReadonlySet<string> = new Set(),
+  viewDay?: string
 ): TodayHuddle => {
-  const today = calendarDateInClinic(now.toISOString(), timeZone);
-  const nowMs = now.getTime();
+  const realToday = calendarDateInClinic(now.toISOString(), timeZone);
+  const today = viewDay ?? realToday;
+  const nowMs = today === realToday ? now.getTime() : 0;
   const ids = new Set(outboxIds);
-  const { patients, visits, outstandingPhp } = foldVisits(events);
+  const { patients, visits, outstandingPhp } = folded;
   const rows: TodayBoardRow[] = [];
-  const carryover: TodayBoardRow[] = [];
+  const leftoverByDate: TodayHuddle["leftoverByDate"] = {};
   let patientsToday = 0;
 
   for (const [visitId, visit] of visits) {
@@ -355,7 +375,6 @@ const projectTodayBoard = (
 
     const clinicDate = calendarDateInClinic(visit.startsAt, timeZone);
     const isToday = clinicDate === today;
-    const isPast = clinicDate < today;
 
     if (isToday && visit.status !== "cancelled") {
       patientsToday += 1;
@@ -372,7 +391,7 @@ const projectTodayBoard = (
     }
 
     if (
-      !isPast ||
+      clinicDate >= realToday ||
       (visit.status !== "pending_review" &&
         visit.status !== "confirmed" &&
         visit.status !== "waiting" &&
@@ -387,14 +406,14 @@ const projectTodayBoard = (
         ? "confirmed"
         : (boardStatusOf(visit.status, visit.startsAt, nowMs) ?? "confirmed");
 
-    carryover.push(toRow(visitId, visit, patient, status, ids));
+    bumpLeftover(leftoverByDate, clinicDate, status);
   }
 
   const sortedRows = sortRows(rows);
 
   return {
     rows: sortedRows,
-    carryover: sortRows(carryover),
+    leftoverByDate,
     snapshot: {
       patientsToday,
       arrived: sortedRows.filter(
@@ -407,6 +426,15 @@ const projectTodayBoard = (
     }
   };
 };
+
+const projectTodayBoard = (
+  events: ClinicEvent[],
+  now: Date,
+  timeZone = CLINIC_TZ,
+  outboxIds: ReadonlySet<string> = new Set(),
+  viewDay?: string
+): TodayHuddle =>
+  projectFoldedBoard(foldVisits(events), now, timeZone, outboxIds, viewDay);
 
 const visitFromEvents = (events: ClinicEvent[], visitId: string) =>
   foldVisits(events).visits.get(visitId);
@@ -445,12 +473,15 @@ export {
   clinicLocalParts,
   countByBoardStatus,
   formatClinicDate,
+  formatClinicWeekday,
   formatOutstanding,
   formatVisitTime,
+  foldVisits,
   hasDuplicateMobile,
   nextVisitStatus,
   patientForVisit,
   patientsFromEvents,
+  projectFoldedBoard,
   projectTodayBoard,
   startsAtFromClinicLocal,
   visitFromEvents,

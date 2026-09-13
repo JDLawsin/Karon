@@ -8,48 +8,95 @@ import {
   DrawerHeader,
   DrawerTitle,
   PageHeader,
+  cn,
   useIsMobile
 } from "@karon/design-system";
-import { useMemo, useState } from "react";
+import { CalendarDays } from "lucide-react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useClinicChromeActions } from "@/features/auth/clinic-chrome-actions";
 import CalendarMatchList from "@/features/google-calendar/calendar-match-list";
 import {
-  BOARD_STATUSES,
-  BOARD_STATUS_LABEL,
-  VISIT_STATUS_LABEL,
-  countByBoardStatus,
+  calendarDateInClinic,
   formatClinicDate,
-  formatOutstanding,
-  formatVisitTime
+  formatClinicWeekday,
+  formatOutstanding
 } from "@/features/today-board/project-today-board";
-import TodayStatusGroup from "@/features/today-board/today-status-group";
+import TodayHuddleBoard from "@/features/today-board/today-huddle-board";
 import { useTodayBoard } from "@/features/today-board/use-today-board";
 import WalkInForm from "@/features/today-board/walk-in-form";
 
+type DateControlProps = {
+  className?: string;
+  label: string;
+  value: string;
+  onChange: (day: string) => void;
+};
+
+const DateControl = ({ className, label, value, onChange }: DateControlProps) => (
+  <label
+    className={cn(
+      "relative inline-flex h-(--control-min-height) min-h-(--control-min-height) min-w-0 cursor-pointer items-center gap-2 rounded-md px-3 text-sm font-medium transition-[color,background-color,transform] duration-(--motion-duration) hover:scale-(--control-hover-scale) hover:bg-muted",
+      className
+    )}
+  >
+    <CalendarDays aria-hidden className="size-5 shrink-0" />
+    <span className="min-w-0 truncate tabular-nums">{label}</span>
+    <input
+      aria-label={`Clinic date, ${label}`}
+      className="absolute inset-0 cursor-pointer opacity-0"
+      onChange={(event) => {
+        if (event.target.value) {
+          onChange(event.target.value);
+        }
+      }}
+      onClick={(event) => {
+        try {
+          event.currentTarget.showPicker?.();
+        } catch {
+          // Click still opens the native picker when showPicker is blocked.
+        }
+      }}
+      type="date"
+      value={value}
+    />
+  </label>
+);
+
 const TodayBoard = () => {
+  const [viewDay, setViewDay] = useState<string | undefined>();
   const {
     huddle,
     events,
     ready,
     now,
     autoConfirm,
+    hours,
     isDuplicateMobile,
     addWalkInPatient,
     markVisit
-  } = useTodayBoard();
+  } = useTodayBoard(viewDay);
   const isMobile = useIsMobile();
   const chromeSlot = useClinicChromeActions();
   const [open, setOpen] = useState(false);
-  const counts = useMemo(() => countByBoardStatus(huddle.rows), [huddle.rows]);
-  const todayLabel = formatClinicDate(now);
+  const selectedDay = viewDay ?? calendarDateInClinic(now.toISOString());
+  const selectedAt = new Date(`${selectedDay}T12:00:00+08:00`);
+  const viewingToday = selectedDay === calendarDateInClinic(now.toISOString());
+  const dateLabel = formatClinicDate(selectedAt);
+  const title = viewingToday ? "Today" : formatClinicWeekday(selectedAt);
 
   const openDrawer = () => setOpen(true);
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <PageHeader description={todayLabel} title="Today">
+      <PageHeader description={dateLabel} title={title}>
+        <DateControl
+          className="hidden md:inline-flex"
+          label={dateLabel}
+          onChange={setViewDay}
+          value={selectedDay}
+        />
         <Button
           className="hidden md:inline-flex"
           onClick={openDrawer}
@@ -60,14 +107,22 @@ const TodayBoard = () => {
       </PageHeader>
       {chromeSlot
         ? createPortal(
-            <Button
-              className="h-11 min-h-11 shrink-0 px-3 text-sm text-primary hover:scale-100"
-              onClick={openDrawer}
-              type="button"
-              variant="ghost"
-            >
-              Add patient
-            </Button>,
+            <div className="flex min-w-0 items-center">
+              <DateControl
+                className="max-w-36 px-2 hover:scale-100"
+                label={dateLabel}
+                onChange={setViewDay}
+                value={selectedDay}
+              />
+              <Button
+                className="h-11 min-h-11 shrink-0 px-3 text-sm text-primary hover:scale-100"
+                onClick={openDrawer}
+                type="button"
+                variant="ghost"
+              >
+                Add patient
+              </Button>
+            </div>,
             chromeSlot
           )
         : null}
@@ -93,116 +148,47 @@ const TodayBoard = () => {
           />
         </DrawerContent>
       </Drawer>
-      {ready ? (
-        <CalendarMatchList autoConfirm={autoConfirm} events={events} />
-      ) : null}
-      {ready ? (
-        <ul className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
-          <li className="min-w-0 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3">
-            <p className="text-sm text-muted-foreground">Patients today</p>
-            <p className="text-2xl font-semibold tabular-nums">
-              {huddle.snapshot.patientsToday}
-            </p>
-          </li>
-          <li className="min-w-0 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3">
-            <p className="text-sm text-muted-foreground">Arrived</p>
-            <p className="text-2xl font-semibold tabular-nums">
-              {huddle.snapshot.arrived}
-            </p>
-          </li>
-          <li className="min-w-0 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3">
-            <p className="text-sm text-muted-foreground">To collect</p>
-            <p className="text-2xl font-semibold tabular-nums">
-              {formatOutstanding(huddle.snapshot.outstandingPhp)}
-            </p>
-          </li>
-        </ul>
-      ) : null}
-      {huddle.rows.length > 0 ? (
-        <ul className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-          {BOARD_STATUSES.map((status) => (
-            <li
-              className="min-w-0 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card px-3 py-3 transition-transform duration-(--motion-duration) hover:scale-(--surface-hover-scale)"
-              key={status}
-            >
-              <p className="text-sm text-muted-foreground">
-                {BOARD_STATUS_LABEL[status]}
-              </p>
-              <p className="text-2xl font-semibold tabular-nums">
-                {counts[status]}
-              </p>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {huddle.carryover.length > 0 ? (
-        <section className="flex min-w-0 flex-col gap-2">
-          <h2 className="text-sm font-medium">Carryover</h2>
-          <ul className="flex min-w-0 flex-col gap-1">
-            {huddle.carryover.map((row) => (
-              <li
-                className="flex min-h-(--control-min-height) min-w-0 flex-wrap items-center gap-2 border-b-(length:var(--surface-border-width)) border-border py-2 last:border-b-0"
-                key={row.visitId}
-              >
-                <p className="shrink-0 tabular-nums text-sm text-muted-foreground">
-                  {formatVisitTime(row.startsAt)}
-                </p>
-                <p className="min-w-0 flex-1 truncate font-medium">{row.name}</p>
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2.6fr)_minmax(16rem,0.85fr)] lg:items-start">
+        <div className="flex min-w-0 flex-col gap-4">
+          {ready ? (
+            <ul className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
+              <li className="min-w-0 rounded-lg bg-card px-3 py-3">
                 <p className="text-sm text-muted-foreground">
-                  {VISIT_STATUS_LABEL[row.storedStatus]}
+                  {viewingToday ? "Patients today" : "Patients this day"}
                 </p>
-                {row.storedStatus === "pending_review" ||
-                row.storedStatus === "confirmed" ||
-                row.storedStatus === "waiting" ||
-                row.storedStatus === "in_chair" ? (
-                  <Button
-                    aria-label={`Mark ${row.name} ${
-                      row.storedStatus === "in_chair"
-                        ? "complete"
-                        : row.storedStatus === "waiting"
-                          ? "in chair"
-                          : "waiting"
-                    }`}
-                    onClick={() =>
-                      void markVisit(
-                        row.visitId,
-                        row.storedStatus === "in_chair"
-                          ? "complete"
-                          : row.storedStatus === "waiting"
-                            ? "in_chair"
-                            : "waiting"
-                      )
-                    }
-                    type="button"
-                    variant="outline"
-                  >
-                    {row.storedStatus === "in_chair"
-                      ? "Complete"
-                      : row.storedStatus === "waiting"
-                        ? "In chair"
-                        : "Waiting"}
-                  </Button>
-                ) : null}
+                <p className="text-2xl font-semibold tabular-nums">
+                  {huddle.snapshot.patientsToday}
+                </p>
               </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-      {ready && huddle.rows.length === 0 ? (
-        <p className="text-muted-foreground">No patients today</p>
-      ) : null}
-      {huddle.rows.length > 0 ? (
-        <div className="flex min-w-0 flex-col gap-6 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-6">
-          {BOARD_STATUSES.map((status) => (
-            <TodayStatusGroup
-              key={status}
-              onMark={markVisit}
-              rows={huddle.rows.filter((row) => row.status === status)}
-              status={status}
-            />
-          ))}
+              <li className="min-w-0 rounded-lg bg-card px-3 py-3">
+                <p className="text-sm text-muted-foreground">Arrived</p>
+                <p className="text-2xl font-semibold tabular-nums">
+                  {huddle.snapshot.arrived}
+                </p>
+              </li>
+              <li className="min-w-0 rounded-lg bg-card px-3 py-3">
+                <p className="text-sm text-muted-foreground">To collect</p>
+                <p className="text-2xl font-semibold tabular-nums">
+                  {formatOutstanding(huddle.snapshot.outstandingPhp)}
+                </p>
+              </li>
+            </ul>
+          ) : null}
+          <TodayHuddleBoard
+            leftoverByDate={huddle.leftoverByDate}
+            hours={hours}
+            now={now}
+            onMark={markVisit}
+            onViewDay={setViewDay}
+            ready={ready}
+            rows={huddle.rows}
+            viewDay={selectedDay}
+          />
         </div>
-      ) : null}
+        {ready ? (
+          <CalendarMatchList autoConfirm={autoConfirm} events={events} />
+        ) : null}
+      </div>
     </div>
   );
 };

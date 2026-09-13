@@ -24,6 +24,7 @@
     "@dicebear/open-peeps": "9.4.2",
     "@dicebear/pixel-art": "9.4.2",
     "@dicebear/thumbs": "9.4.2",
+    "@dnd-kit/core": "^6.3.1",
     "@hookform/resolvers": "^5.9.1",
     "@karon/db": "workspace:^",
     "@karon/design-system": "workspace:*",

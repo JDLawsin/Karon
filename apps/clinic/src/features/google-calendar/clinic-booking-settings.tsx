@@ -26,6 +26,7 @@ import {
 } from "@karon/design-system";
 import { useEffect, useState } from "react";
 
+import BookingPageLink from "@/features/google-calendar/booking-page-link";
 import GoogleCalendarMark from "@/features/google-calendar/google-calendar-mark";
 import { writeAutoConfirm } from "@/features/today-board/local";
 import { useClinicSession } from "@/lib/auth/clinic-session";
@@ -338,29 +339,18 @@ const ClinicBookingSettings = () => {
             {pages.length > 0 ? (
               <ul className="flex min-w-0 flex-col gap-2">
                 {pages.map((page) => (
-                  <li
-                    className="flex min-w-0 flex-col gap-2 rounded-md border-(length:var(--surface-border-width)) border-border p-3 sm:flex-row sm:items-center sm:justify-between"
-                    key={page.scheduleKey}
-                  >
-                    <div className="min-w-0">
-                      <p className="font-medium">{page.name}</p>
-                      <p className="break-all text-sm text-muted-foreground">
-                        {page.url}
-                      </p>
-                    </div>
-                    <Button
+                  <li className="min-w-0" key={page.scheduleKey}>
+                    <BookingPageLink
                       disabled={pending}
-                      onClick={() => {
+                      name={page.name}
+                      onRemove={() => {
                         void persist(
                           selectedCalendarId(),
                           pages.filter((row) => row.scheduleKey !== page.scheduleKey)
                         );
                       }}
-                      type="button"
-                      variant="outline"
-                    >
-                      Remove
-                    </Button>
+                      url={page.url}
+                    />
                   </li>
                 ))}
               </ul>

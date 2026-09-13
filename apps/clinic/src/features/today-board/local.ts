@@ -6,6 +6,11 @@ import {
 import { recordClinicEvent, recordClinicEvents } from "@/lib/sync/sync-engine";
 
 import {
+  DEFAULT_HUDDLE_HOURS,
+  huddleHoursOf,
+  type HuddleHours
+} from "./huddle-schedule";
+import {
   patientForVisit,
   visitFromEvents,
   visitStatusFromEvents
@@ -13,6 +18,7 @@ import {
 import { initialVisitStatus, transitionVisitStatus } from "./visit-status";
 
 const AUTO_CONFIRM_KEY = "autoConfirmBookings";
+const CLINIC_HOURS_KEY = "clinicHours";
 
 type BookingInput = {
   tenantId: string;
@@ -134,12 +140,36 @@ const writeAutoConfirm = async (db: ClinicDb, autoConfirm: boolean) => {
   });
 };
 
+const readClinicHours = async (db: ClinicDb): Promise<HuddleHours> => {
+  const row = await db.meta.get(CLINIC_HOURS_KEY);
+
+  if (!row?.value) {
+    return { ...DEFAULT_HUDDLE_HOURS };
+  }
+
+  try {
+    return huddleHoursOf(JSON.parse(row.value) as unknown) ?? { ...DEFAULT_HUDDLE_HOURS };
+  } catch {
+    return { ...DEFAULT_HUDDLE_HOURS };
+  }
+};
+
+const writeClinicHours = async (db: ClinicDb, hours: HuddleHours) => {
+  await db.meta.put({
+    key: CLINIC_HOURS_KEY,
+    value: JSON.stringify(hours)
+  });
+};
+
 export {
   AUTO_CONFIRM_KEY,
+  CLINIC_HOURS_KEY,
   addBooking,
   addBooking as addWalkIn,
   changeVisitStatus,
   readAutoConfirm,
-  writeAutoConfirm
+  readClinicHours,
+  writeAutoConfirm,
+  writeClinicHours
 };
 export type { BookingInput };

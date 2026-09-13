@@ -71,14 +71,14 @@ const ClinicShell = ({
           userId={userId}
         >
         <ClinicChromeActionsContext.Provider value={chromeActions}>
-          <SidebarProvider className="relative z-1 min-h-dvh min-w-0 bg-background">
+          <SidebarProvider className="relative z-1 min-h-dvh min-w-0 bg-sidebar">
             <a
               className="sr-only focus:not-sr-only focus:absolute focus:z-(--z-sticky) focus:inline-flex focus:min-h-(--control-min-height) focus:items-center focus:rounded-md focus:bg-primary focus:px-4 focus:text-sm focus:font-medium focus:text-primary-foreground focus:ring-2 focus:ring-ring focus:outline-none"
               href="#clinic-main"
             >
               Skip to content
             </a>
-          <Sidebar collapsible="icon">
+          <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
               <div className="flex min-w-0 items-center gap-1 group-data-[collapsible=icon]:flex-col">
                 <ClinicBrandLink className="min-w-0 flex-1 group-data-[collapsible=icon]:flex-none" />

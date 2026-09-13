@@ -140,7 +140,7 @@ const SidebarProvider = ({
       <TooltipProvider delayDuration={0}>
         <div
           className={cn(
-            "group/sidebar-wrapper flex min-h-svh w-full",
+            "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
             className
           )}
           data-slot="sidebar-wrapper"
@@ -317,7 +317,12 @@ const SidebarRail = ({ className, ...props }: ComponentProps<"button">) => {
 
 const SidebarInset = ({ className, ...props }: ComponentProps<"div">) => (
   <div
-    className={cn("relative flex min-w-0 flex-1 flex-col bg-background", className)}
+    className={cn(
+      "relative flex min-h-0 min-w-0 flex-1 flex-col bg-background",
+      "md:peer-data-[variant=inset]:my-2 md:peer-data-[variant=inset]:mr-2 md:peer-data-[variant=inset]:overflow-hidden md:peer-data-[variant=inset]:rounded-lg",
+      "md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
+      className
+    )}
     data-slot="sidebar-inset"
     {...props}
   />

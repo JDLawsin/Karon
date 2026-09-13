@@ -19,6 +19,13 @@
   }
 }
 
+/* Scroll-lock pads the document by the scrollbar width and paints a strip that shifts the shell. */
+html,
+body {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+
 body::before {
   content: "";
   pointer-events: none;

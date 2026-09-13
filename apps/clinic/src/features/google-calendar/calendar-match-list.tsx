@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert, Button, Input, Label } from "@karon/design-system";
+import { Alert, Button, Input, Label, cn } from "@karon/design-system";
 import { useEffect, useState } from "react";
 
 import { addBooking } from "@/features/today-board/local";
@@ -52,10 +52,6 @@ const CalendarMatchList = ({ autoConfirm, events }: Props) => {
     })();
   }, [membership.tenantId, events.length]);
 
-  if (rows.length === 0) {
-    return null;
-  }
-
   const markMatched = async (row: ImportRow, visitId: string) => {
     const supabase = createBrowserSupabase();
     const { data, error } = await supabase
@@ -80,9 +76,17 @@ const CalendarMatchList = ({ autoConfirm, events }: Props) => {
   };
 
   return (
-    <section className="flex min-w-0 flex-col gap-3">
+    <section
+      className={cn(
+        "flex min-w-0 flex-col gap-3 rounded-lg bg-card p-3 lg:sticky lg:top-4",
+        rows.length === 0 && "max-lg:hidden"
+      )}
+    >
       <h2 className="text-sm font-medium">New Google bookings</h2>
       {matchError ? <Alert title={matchError} variant="danger" /> : null}
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No new Google bookings</p>
+      ) : (
       <ul className="flex min-w-0 flex-col gap-3">
         {rows.map((row) => (
           <li
@@ -188,6 +192,7 @@ const CalendarMatchList = ({ autoConfirm, events }: Props) => {
           </li>
         ))}
       </ul>
+      )}
     </section>
   );
 };

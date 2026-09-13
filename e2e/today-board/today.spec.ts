@@ -62,7 +62,7 @@ test.describe("today board", { tag: "@assistant" }, () => {
     await today.goto();
 
     await expect(page.getByRole("heading", { name: "Today", level: 1 })).toBeVisible();
-    await expect(page.getByText("No patients today")).toBeVisible();
+    await expect(page.getByText("No patients this day")).toBeVisible();
     await expect(page.getByRole("button", { name: "Add patient" })).toBeVisible();
     await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
   });
@@ -119,7 +119,7 @@ test.describe("today board", { tag: "@assistant" }, () => {
 
       await expect(page.getByRole("heading", { name: "Today", level: 1 })).toBeVisible();
       await expect(page.getByRole("button", { name: "Add patient" })).toBeVisible();
-      await expect(page.getByText("No patients today")).toBeVisible();
+      await expect(page.getByText("No patients this day")).toBeVisible();
 
       if (width === 320) {
         const overflow = await page.evaluate(

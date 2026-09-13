@@ -4,14 +4,22 @@ import { liveQuery } from "dexie";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
+  DEFAULT_HUDDLE_HOURS,
+  huddleHoursOf,
+  type HuddleHours
+} from "@/features/today-board/huddle-schedule";
+import {
   addBooking,
   changeVisitStatus,
   readAutoConfirm,
-  writeAutoConfirm
+  readClinicHours,
+  writeAutoConfirm,
+  writeClinicHours
 } from "@/features/today-board/local";
 import {
+  foldVisits,
   hasDuplicateMobile,
-  projectTodayBoard
+  projectFoldedBoard
 } from "@/features/today-board/project-today-board";
 import { useClinicSession } from "@/lib/auth/clinic-session";
 import { openClinicDb } from "@/lib/db/clinic-db";
@@ -20,12 +28,13 @@ import type { ClinicEvent, VisitStatus } from "@/lib/sync/event-schema";
 
 const LATE_TICK_MS = 60_000;
 
-const useTodayBoard = () => {
+const useTodayBoard = (viewDay?: string) => {
   const { membership, userId } = useClinicSession();
   const [now, setNow] = useState(() => new Date());
   const [events, setEvents] = useState<ClinicEvent[]>([]);
   const [outboxIds, setOutboxIds] = useState<Set<string>>(new Set());
   const [autoConfirm, setAutoConfirm] = useState(true);
+  const [hours, setHours] = useState<HuddleHours>(DEFAULT_HUDDLE_HOURS);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -46,6 +55,7 @@ const useTodayBoard = () => {
       }
 
       setAutoConfirm(await readAutoConfirm(db));
+      setHours(await readClinicHours(db));
 
       const subscription = liveQuery(async () => {
         if (!db.isOpen()) {
@@ -95,17 +105,27 @@ const useTodayBoard = () => {
     const load = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("auto_confirm_bookings")
+        .select("auto_confirm_bookings, hours")
         .eq("id", membership.tenantId)
         .maybeSingle();
 
-      if (cancelled || !data || typeof data.auto_confirm_bookings !== "boolean") {
+      if (cancelled || !data) {
         return;
       }
 
-      setAutoConfirm(data.auto_confirm_bookings);
       const db = await openClinicDb(membership.tenantId);
-      await writeAutoConfirm(db, data.auto_confirm_bookings);
+
+      if (typeof data.auto_confirm_bookings === "boolean") {
+        setAutoConfirm(data.auto_confirm_bookings);
+        await writeAutoConfirm(db, data.auto_confirm_bookings);
+      }
+
+      const nextHours = huddleHoursOf(data.hours);
+
+      if (nextHours) {
+        setHours(nextHours);
+        await writeClinicHours(db, nextHours);
+      }
     };
 
     void load();
@@ -115,9 +135,10 @@ const useTodayBoard = () => {
     };
   }, [membership.tenantId]);
 
+  const folded = useMemo(() => foldVisits(events), [events]);
   const huddle = useMemo(
-    () => projectTodayBoard(events, now, undefined, outboxIds),
-    [events, now, outboxIds]
+    () => projectFoldedBoard(folded, now, undefined, outboxIds, viewDay),
+    [folded, now, outboxIds, viewDay]
   );
 
   const isDuplicateMobile = useCallback(
@@ -170,6 +191,7 @@ const useTodayBoard = () => {
     ready,
     now,
     autoConfirm,
+    hours,
     isDuplicateMobile,
     addWalkInPatient,
     markVisit

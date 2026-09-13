@@ -147,6 +147,13 @@ describe("ClinicShell", () => {
     expect(
       screen.getAllByRole("button", { name: "Toggle sidebar" }).length
     ).toBeGreaterThan(0);
+    expect(document.querySelector('[data-slot="sidebar"]')).toHaveAttribute(
+      "data-variant",
+      "inset"
+    );
+    expect(document.querySelector('[data-slot="sidebar-inset"]')?.className).toContain(
+      "rounded-lg"
+    );
   });
 
   it("collapses the desktop rail when the toggle is pressed", () => {
@@ -159,6 +166,10 @@ describe("ClinicShell", () => {
     expect(document.querySelector('[data-slot="sidebar"]')).toHaveAttribute(
       "data-collapsible",
       "icon"
+    );
+    expect(document.querySelector('[data-slot="sidebar"]')).toHaveAttribute(
+      "data-variant",
+      "inset"
     );
   });
 });

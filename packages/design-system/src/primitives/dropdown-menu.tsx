@@ -5,7 +5,12 @@ import type { ComponentProps } from "react";
 
 import { cn } from "../lib/cn";
 
-const DropdownMenu = DropdownMenuPrimitive.Root;
+const DropdownMenu = ({
+  modal = false,
+  ...props
+}: ComponentProps<typeof DropdownMenuPrimitive.Root>) => (
+  <DropdownMenuPrimitive.Root modal={modal} {...props} />
+);
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
