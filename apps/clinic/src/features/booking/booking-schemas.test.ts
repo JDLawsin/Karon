@@ -4,7 +4,8 @@ import {
   bookingIdempotencyKeySchema,
   bookingReplayMatches,
   bookingTurnstileTokenOf,
-  isBookingHoneypotFilled
+  isBookingHoneypotFilled,
+  publicBookingPageSchema
 } from "./booking-schemas";
 
 describe("isBookingHoneypotFilled", () => {
@@ -55,5 +56,47 @@ describe("bookingIdempotencyKeySchema", () => {
     expect(
       bookingIdempotencyKeySchema.safeParse("11111111-1111-4111-8111-111111111111").success
     ).toBe(true);
+  });
+});
+
+describe("publicBookingPageSchema", () => {
+  it("accepts clinic card fields", () => {
+    const parsed = publicBookingPageSchema.safeParse({
+      clinicName: "Happy Teeth",
+      timezone: "Asia/Manila",
+      hoursLabel: "Mon–Sat, 9:00 am – 6:00 pm",
+      phone: "09171234567",
+      address: "123 Osmena Blvd, Cebu City",
+      logoUrl: "https://example.com/logo.png",
+      services: [{ id: "clean", name: "Cleaning" }],
+      dates: ["2026-09-14"],
+      date: "2026-09-14",
+      slots: [
+        {
+          clock: "09:00",
+          startsAt: "2026-09-14T01:00:00.000Z",
+          label: "9:00 AM"
+        }
+      ]
+    });
+
+    expect(parsed.success).toBe(true);
+  });
+
+  it("allows a clinic with no address", () => {
+    const parsed = publicBookingPageSchema.safeParse({
+      clinicName: "Happy Teeth",
+      timezone: "Asia/Manila",
+      hoursLabel: "Mon–Fri, 9:00 am – 5:00 pm",
+      phone: null,
+      address: null,
+      logoUrl: null,
+      services: [],
+      dates: [],
+      date: null,
+      slots: []
+    });
+
+    expect(parsed.success).toBe(true);
   });
 });

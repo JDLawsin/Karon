@@ -38,12 +38,19 @@ const clinicBookingRowSchema = z.object({
   name: z.string().min(1),
   timezone: z.string().nullable(),
   hours: z.unknown(),
-  services: z.unknown()
+  services: z.unknown(),
+  phone: z.string().nullable().optional(),
+  address: z.unknown().optional(),
+  logo_path: z.string().nullable().optional()
 });
 
 const publicBookingPageSchema = z.object({
   clinicName: z.string(),
   timezone: z.string(),
+  hoursLabel: z.string(),
+  phone: z.string().nullable(),
+  address: z.string().nullable(),
+  logoUrl: z.string().nullable(),
   services: z.array(z.object({ id: z.string(), name: z.string() })),
   dates: z.array(z.string()),
   date: z.string().nullable(),
@@ -105,6 +112,7 @@ const bookingReplayMatches = (
   existing.mobile === submitted.mobile;
 
 type PublicBookingSubmit = z.infer<typeof publicBookingSubmitSchema>;
+type PublicBookingPagePayload = z.infer<typeof publicBookingPageSchema>;
 
 export {
   bookingApiErrorSchema,
@@ -121,4 +129,4 @@ export {
   publicBookingPageSchema,
   publicBookingSubmitSchema
 };
-export type { PublicBookingSubmit };
+export type { PublicBookingPagePayload, PublicBookingSubmit };

@@ -1,5 +1,8 @@
 import "server-only";
 
+import { cache } from "react";
+
+import { clinicLogoPreviewUrl } from "@/features/auth/clinic-logo";
 import { log } from "@/lib/logger/server";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import {
@@ -7,6 +10,11 @@ import {
   toClinicEvent
 } from "@/lib/sync/event-schema";
 
+import {
+  clinicPhoneOf,
+  formatClinicAddress,
+  formatClinicHours
+} from "./booking-clinic-display";
 import {
   bookingIdempotencyKeySchema,
   bookingLinkRowSchema,
@@ -33,10 +41,16 @@ const SEND_FAILED = "Could not send that booking.";
 const SLOT_TAKEN = "That time is no longer available.";
 const LINK_MISSING = "This booking link is not available.";
 
+const LOGO_SIGNED_SECONDS = 60 * 60 * 24;
+
 type PublicBookingPage = {
   clinicName: string;
   timezone: string;
   hours: { days: number[]; open: string; close: string };
+  hoursLabel: string;
+  phone: string | null;
+  address: string | null;
+  logoUrl: string | null;
   services: { id: string; name: string }[];
   dates: string[];
   date: string | null;
@@ -52,6 +66,10 @@ type SubmitPublicBookingOptions = {
 const toPublicBookingPayload = (page: PublicBookingPage) => ({
   clinicName: page.clinicName,
   timezone: page.timezone,
+  hoursLabel: page.hoursLabel,
+  phone: page.phone,
+  address: page.address,
+  logoUrl: page.logoUrl,
   services: page.services,
   dates: page.dates,
   date: page.date,
@@ -110,7 +128,7 @@ const readLink = async (
   return bookingLinkRowSchema.safeParse(data);
 };
 
-const loadPublicBooking = async (
+const loadPublicBookingPage = async (
   rawSlug: string,
   rawDate: string | null,
   now = new Date()
@@ -130,7 +148,7 @@ const loadPublicBooking = async (
 
   const { data: clinicRow } = await admin
     .from("clinics")
-    .select("name, timezone, hours, services")
+    .select("name, timezone, hours, services, phone, address, logo_path")
     .eq("id", link.data.tenant_id)
     .maybeSingle();
   const clinic = clinicBookingRowSchema.safeParse(clinicRow);
@@ -146,7 +164,11 @@ const loadPublicBooking = async (
   const dates = bookableDates(hours, timezone, now);
   const date =
     rawDate && DATE.test(rawDate) && dates.includes(rawDate) ? rawDate : (dates[0] ?? null);
-  const occupied = await occupiedStarts(admin, link.data.tenant_id);
+  const address = formatClinicAddress(clinic.data.address);
+  const [occupied, logoUrl] = await Promise.all([
+    occupiedStarts(admin, link.data.tenant_id),
+    clinicLogoPreviewUrl(admin, clinic.data.logo_path, LOGO_SIGNED_SECONDS)
+  ]);
   const slots = date
     ? bookingSlotsForDate({
         date,
@@ -160,9 +182,13 @@ const loadPublicBooking = async (
   return {
     ok: true,
     page: {
-      clinicName: clinic.data.name,
+      clinicName: clinic.data.name.trim(),
       timezone,
       hours,
+      hoursLabel: formatClinicHours(hours),
+      phone: clinicPhoneOf(clinic.data.phone),
+      address,
+      logoUrl,
       services: clinicServicesOf(clinic.data.services),
       dates,
       date,
@@ -170,6 +196,8 @@ const loadPublicBooking = async (
     }
   };
 };
+
+const loadPublicBooking = cache(loadPublicBookingPage);
 
 const submitPublicBooking = async (
   rawSlug: string,

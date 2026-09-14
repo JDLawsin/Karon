@@ -56,7 +56,8 @@ const removeClinicLogo = async (
 
 const clinicLogoPreviewUrl = async (
   supabase: SupabaseClient,
-  logoPath: string | null | undefined
+  logoPath: string | null | undefined,
+  expiresIn = 3600
 ) => {
   if (!logoPath) {
     return null;
@@ -64,7 +65,7 @@ const clinicLogoPreviewUrl = async (
 
   const { data, error } = await supabase.storage
     .from(CLINIC_BRANDING_BUCKET)
-    .createSignedUrl(logoPath, 3600);
+    .createSignedUrl(logoPath, expiresIn);
 
   if (error || !data.signedUrl) {
     return null;
