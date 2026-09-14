@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 
+import { clinicLocalParts } from "@/features/today-board/project-today-board";
+import type { ClinicEvent } from "@/lib/sync/event-schema";
+
 import {
   bookableDates,
   bookingSlotsForDate,
   clinicHoursOf,
   clinicServicesOf,
   instantFromClinicLocal,
-  offeredBookingSlot
+  occupiedVisitStarts,
+  offeredBookingSlot,
+  visitOccupiesSlot
 } from "./booking-slots";
 
 const WEEKDAY_HOURS = {
@@ -14,6 +19,24 @@ const WEEKDAY_HOURS = {
   open: "09:00",
   close: "12:00"
 };
+
+const visitEvent = (
+  visitId: string,
+  startsAt: string,
+  status: "confirmed" | "cancelled" = "confirmed"
+): ClinicEvent => ({
+  id: "11111111-1111-4111-8111-111111111111",
+  tenantId: "22222222-2222-4222-8222-222222222222",
+  actorUserId: "33333333-3333-4333-8333-333333333333",
+  recordId: visitId,
+  occurredAt: startsAt,
+  type: "appointment.set",
+  payload: {
+    patientId: "44444444-4444-4444-8444-444444444444",
+    startsAt,
+    status
+  }
+});
 
 describe("clinicHoursOf", () => {
   it("reads working days with the huddle open/close window", () => {
@@ -47,6 +70,15 @@ describe("instantFromClinicLocal", () => {
       "2026-09-14T01:00:00.000Z"
     );
   });
+
+  it("keeps an explicit offset guess on a DST spring-forward date", () => {
+    const instant = instantFromClinicLocal("2026-03-08", "03:30", "America/New_York");
+    const parts = clinicLocalParts(instant, "America/New_York");
+
+    expect(Number.isNaN(instant.getTime())).toBe(false);
+    // ponytail: offset-guess is not Temporal; this pins today's mapping so DST drift is visible
+    expect(`${parts.date} ${parts.time}`).toBe("2026-03-08 04:30");
+  });
 });
 
 describe("bookingSlotsForDate", () => {
@@ -62,6 +94,21 @@ describe("bookingSlotsForDate", () => {
     });
 
     expect(slots.map((slot) => slot.clock)).toEqual(["10:30", "11:30"]);
+  });
+
+  it("hides a grid slot when a walk-in falls inside it", () => {
+    const now = new Date("2026-09-14T01:00:00.000Z");
+    const occupied = [instantFromClinicLocal("2026-09-14", "10:15", "Asia/Manila").toISOString()];
+    const slots = bookingSlotsForDate({
+      date: "2026-09-14",
+      hours: WEEKDAY_HOURS,
+      timeZone: "Asia/Manila",
+      occupied,
+      now
+    });
+
+    expect(slots.map((slot) => slot.clock)).not.toContain("10:00");
+    expect(slots.map((slot) => slot.clock)).toContain("10:30");
   });
 
   it("returns no slots on a closed weekday", () => {
@@ -145,5 +192,26 @@ describe("offeredBookingSlot", () => {
         now
       })
     ).toBeNull();
+  });
+});
+
+describe("visitOccupiesSlot", () => {
+  it("treats a non-cancelled visit as occupying its huddle slot", () => {
+    const startsAt = instantFromClinicLocal("2026-09-14", "10:15", "Asia/Manila").toISOString();
+    const slot = instantFromClinicLocal("2026-09-14", "10:00", "Asia/Manila").toISOString();
+    const events = [visitEvent("55555555-5555-4555-8555-555555555555", startsAt)];
+
+    expect(occupiedVisitStarts(events)).toEqual([startsAt]);
+    expect(visitOccupiesSlot(events, slot, "Asia/Manila")).toBe(true);
+  });
+
+  it("ignores cancelled visits", () => {
+    const startsAt = instantFromClinicLocal("2026-09-14", "10:00", "Asia/Manila").toISOString();
+    const events = [
+      visitEvent("55555555-5555-4555-8555-555555555555", startsAt, "cancelled")
+    ];
+
+    expect(occupiedVisitStarts(events)).toEqual([]);
+    expect(visitOccupiesSlot(events, startsAt, "Asia/Manila")).toBe(false);
   });
 });

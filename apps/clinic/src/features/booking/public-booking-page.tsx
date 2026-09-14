@@ -1,10 +1,11 @@
 "use client";
 
 import { Alert, Button, Input, KaronWordmark, Label, ThemeToggle } from "@karon/design-system";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   bookingApiErrorSchema,
+  bookingIdempotencyKeySchema,
   publicBookingPageSchema
 } from "@/features/booking/booking-schemas";
 
@@ -28,11 +29,49 @@ type PagePayload = {
   slots: Slot[];
 };
 
+type TurnstileApi = {
+  render: (
+    container: HTMLElement,
+    options: {
+      sitekey: string;
+      callback: (token: string) => void;
+      "error-callback"?: () => void;
+      "expired-callback"?: () => void;
+    }
+  ) => string;
+  remove: (widgetId: string) => void;
+};
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
+
 const readPage = (value: unknown): PagePayload | null => {
   const parsed = publicBookingPageSchema.safeParse(value);
 
   return parsed.success ? parsed.data : null;
 };
+
+const bookingIdempotencyKey = (slug: string) => {
+  const storageKey = `karon-book-idempotency:${slug}`;
+
+  try {
+    const existing = sessionStorage.getItem(storageKey);
+    const parsed = bookingIdempotencyKeySchema.safeParse(existing);
+
+    if (parsed.success) {
+      return parsed.data;
+    }
+
+    const next = crypto.randomUUID();
+    sessionStorage.setItem(storageKey, next);
+
+    return next;
+  } catch {
+    return crypto.randomUUID();
+  }
+};
+
+const windowTurnstile = () =>
+  (window as unknown as { turnstile?: TurnstileApi }).turnstile;
 
 const selectClassName =
   "min-h-(--control-min-height) w-full min-w-0 rounded-md border-(length:var(--surface-border-width)) border-border bg-background px-3 text-sm";
@@ -51,9 +90,12 @@ const PublicBookingPage = ({ slug }: Props) => {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [note, setNote] = useState("");
+  const [website, setWebsite] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const turnstileRef = useRef<HTMLDivElement>(null);
 
   const load = async (nextDate?: string, brickOnFail = true) => {
     const params = nextDate ? `?date=${encodeURIComponent(nextDate)}` : "";
@@ -121,6 +163,63 @@ const PublicBookingPage = ({ slug }: Props) => {
     };
   }, [slug]);
 
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY || !page || done || missing) {
+      return;
+    }
+
+    const container = turnstileRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    let widgetId: string | null = null;
+    let cancelled = false;
+
+    const render = () => {
+      const api = windowTurnstile();
+
+      if (cancelled || !api || widgetId || !turnstileRef.current) {
+        return;
+      }
+
+      widgetId = api.render(turnstileRef.current, {
+        sitekey: TURNSTILE_SITE_KEY,
+        callback: (token) => setTurnstileToken(token),
+        "error-callback": () => setTurnstileToken(""),
+        "expired-callback": () => setTurnstileToken("")
+      });
+    };
+
+    const existing = document.querySelector<HTMLScriptElement>(
+      "script[data-karon-turnstile]"
+    );
+    let script = existing;
+
+    if (windowTurnstile()) {
+      render();
+    } else if (script) {
+      script.addEventListener("load", render);
+    } else {
+      script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.dataset.karonTurnstile = "true";
+      script.addEventListener("load", render);
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      cancelled = true;
+      script?.removeEventListener("load", render);
+
+      if (widgetId) {
+        windowTurnstile()?.remove(widgetId);
+      }
+    };
+  }, [page, done, missing]);
+
   const onDateChange = async (next: string) => {
     setStartsAt("");
     setPending(true);
@@ -134,12 +233,17 @@ const PublicBookingPage = ({ slug }: Props) => {
     setPending(true);
     const response = await fetch(`/api/book/${encodeURIComponent(slug)}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": bookingIdempotencyKey(slug)
+      },
       body: JSON.stringify({
         name,
         mobile,
         startsAt,
         serviceId,
+        website,
+        ...(TURNSTILE_SITE_KEY ? { turnstileToken } : {}),
         ...(note.trim() ? { note: note.trim() } : {})
       })
     });
@@ -185,7 +289,7 @@ const PublicBookingPage = ({ slug }: Props) => {
         </>
       ) : (
         <form
-          className="flex min-w-0 flex-col gap-4"
+          className="relative flex min-w-0 flex-col gap-4"
           onSubmit={(event) => {
             event.preventDefault();
             void submit();
@@ -200,6 +304,20 @@ const PublicBookingPage = ({ slug }: Props) => {
             <Alert title="No bookable days in the next two weeks." />
           ) : (
             <>
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute left-[-10000px] top-auto h-px w-px overflow-hidden"
+              >
+                <label htmlFor="book-website">Company website</label>
+                <input
+                  autoComplete="off"
+                  id="book-website"
+                  name="website"
+                  tabIndex={-1}
+                  onChange={(event) => setWebsite(event.target.value)}
+                  value={website}
+                />
+              </div>
               <div className="flex min-w-0 flex-col gap-2">
                 <Label htmlFor="book-date">Date</Label>
                 <select
@@ -284,6 +402,9 @@ const PublicBookingPage = ({ slug }: Props) => {
                   value={note}
                 />
               </div>
+              {TURNSTILE_SITE_KEY ? (
+                <div className="min-h-16 w-full min-w-0" ref={turnstileRef} />
+              ) : null}
               {error ? <Alert title={error} variant="danger" /> : null}
               <Button
                 disabled={
@@ -291,7 +412,8 @@ const PublicBookingPage = ({ slug }: Props) => {
                   !startsAt ||
                   !serviceId ||
                   name.trim().length === 0 ||
-                  mobile.trim().length === 0
+                  mobile.trim().length === 0 ||
+                  Boolean(TURNSTILE_SITE_KEY && !turnstileToken)
                 }
                 type="submit"
               >

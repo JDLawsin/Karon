@@ -1,11 +1,21 @@
 import "server-only";
 
+import { log } from "@/lib/logger/server";
 import { createAdminSupabase } from "@/lib/supabase/admin";
+import {
+  clinicEventRowSchema,
+  toClinicEvent
+} from "@/lib/sync/event-schema";
 
 import {
+  bookingIdempotencyKeySchema,
   bookingLinkRowSchema,
+  bookingReplayMatches,
+  bookingReplayRowSchema,
   bookingSlugSchema,
+  bookingTurnstileTokenOf,
   clinicBookingRowSchema,
+  isBookingHoneypotFilled,
   publicBookingSubmitSchema
 } from "./booking-schemas";
 import {
@@ -13,10 +23,15 @@ import {
   bookingSlotsForDate,
   clinicHoursOf,
   clinicServicesOf,
+  occupiedVisitStarts,
   offeredBookingSlot
 } from "./booking-slots";
+import { verifyTurnstileToken } from "./booking-turnstile";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const SEND_FAILED = "Could not send that booking.";
+const SLOT_TAKEN = "That time is no longer available.";
+const LINK_MISSING = "This booking link is not available.";
 
 type PublicBookingPage = {
   clinicName: string;
@@ -28,20 +43,58 @@ type PublicBookingPage = {
   slots: { clock: string; startsAt: string; label: string }[];
 };
 
+type SubmitPublicBookingOptions = {
+  now?: Date;
+  idempotencyKey?: string | null;
+  remoteIp?: string;
+};
+
+const toPublicBookingPayload = (page: PublicBookingPage) => ({
+  clinicName: page.clinicName,
+  timezone: page.timezone,
+  services: page.services,
+  dates: page.dates,
+  date: page.date,
+  slots: page.slots
+});
+
 const occupiedStarts = async (
   admin: ReturnType<typeof createAdminSupabase>,
-  linkId: string
+  tenantId: string
 ) => {
-  // ponytail: occupancy is pending+accepted requests on this link only; walk-ins on the huddle can still collide
-  const { data } = await admin
-    .from("booking_requests")
-    .select("starts_at")
-    .eq("link_id", linkId)
-    .in("status", ["pending", "accepted"]);
+  // ponytail: visit fold is advisory; unique (tenant_id, starts_at) is the public-vs-public race.
+  // Walk-in vs public in the same second can still collide until a schedule_blocks table exists.
+  const [{ data: requests }, eventsResult] = await Promise.all([
+    admin
+      .from("booking_requests")
+      .select("starts_at")
+      .eq("tenant_id", tenantId)
+      .in("status", ["pending", "accepted"]),
+    admin
+      .from("clinic_events")
+      .select(
+        "id, tenant_id, actor_user_id, event_type, record_id, payload, occurred_at, received_at"
+      )
+      .eq("tenant_id", tenantId)
+      .in("event_type", ["appointment.set", "visit.status_changed"])
+  ]);
 
-  return (data ?? []).flatMap((row) =>
+  if (eventsResult.error) {
+    log.withMetadata({ code: "BOOKING_OCCUPANCY_EVENTS" }).warn(
+      "booking.occupancy_events_failed"
+    );
+  }
+
+  const requestStarts = (requests ?? []).flatMap((row) =>
     typeof row.starts_at === "string" ? [row.starts_at] : []
   );
+  const events = (eventsResult.data ?? []).flatMap((row) => {
+    const parsed = clinicEventRowSchema.safeParse(row);
+
+    return parsed.success ? [toClinicEvent(parsed.data)] : [];
+  });
+
+  return [...requestStarts, ...occupiedVisitStarts(events)];
 };
 
 const readLink = async (
@@ -93,7 +146,7 @@ const loadPublicBooking = async (
   const dates = bookableDates(hours, timezone, now);
   const date =
     rawDate && DATE.test(rawDate) && dates.includes(rawDate) ? rawDate : (dates[0] ?? null);
-  const occupied = await occupiedStarts(admin, link.data.id);
+  const occupied = await occupiedStarts(admin, link.data.tenant_id);
   const slots = date
     ? bookingSlotsForDate({
         date,
@@ -121,19 +174,46 @@ const loadPublicBooking = async (
 const submitPublicBooking = async (
   rawSlug: string,
   body: unknown,
-  now = new Date()
+  options: SubmitPublicBookingOptions = {}
 ): Promise<{ ok: true } | { ok: false; status: 400 | 404 | 409; error: string }> => {
+  if (isBookingHoneypotFilled(body)) {
+    log
+      .withMetadata({ code: "BOT_CHECK_FAILED", reason: "honeypot" })
+      .warn("booking.bot_check_failed");
+
+    return { ok: false, status: 400, error: SEND_FAILED };
+  }
+
+  const turnstileOk = await verifyTurnstileToken({
+    token: bookingTurnstileTokenOf(body),
+    remoteIp: options.remoteIp
+  });
+
+  if (!turnstileOk) {
+    log
+      .withMetadata({ code: "BOT_CHECK_FAILED", reason: "turnstile" })
+      .warn("booking.bot_check_failed");
+
+    return { ok: false, status: 400, error: SEND_FAILED };
+  }
+
   const slug = bookingSlugSchema.safeParse(rawSlug);
   const parsed = publicBookingSubmitSchema.safeParse(body);
+  const idempotencyKey = bookingIdempotencyKeySchema.safeParse(options.idempotencyKey);
 
-  if (!slug.success || !parsed.success) {
+  if (!slug.success || !idempotencyKey.success) {
+    return { ok: false, status: 400, error: SEND_FAILED };
+  }
+
+  if (!parsed.success) {
     return { ok: false, status: 400, error: "Check the booking details and try again." };
   }
 
+  const now = options.now ?? new Date();
   const loaded = await loadPublicBooking(slug.data, null, now);
 
   if (!loaded.ok) {
-    return { ok: false, status: 404, error: "This booking link is not available." };
+    return { ok: false, status: 404, error: LINK_MISSING };
   }
 
   const startsAt = new Date(parsed.data.startsAt);
@@ -141,10 +221,10 @@ const submitPublicBooking = async (
   const link = await readLink(admin, slug.data);
 
   if (!link.success) {
-    return { ok: false, status: 404, error: "This booking link is not available." };
+    return { ok: false, status: 404, error: LINK_MISSING };
   }
 
-  const occupied = await occupiedStarts(admin, link.data.id);
+  const occupied = await occupiedStarts(admin, link.data.tenant_id);
   const slot = offeredBookingSlot({
     startsAt,
     hours: loaded.page.hours,
@@ -155,7 +235,7 @@ const submitPublicBooking = async (
   const service = loaded.page.services.find((row) => row.id === parsed.data.serviceId);
 
   if (!slot || !service) {
-    return { ok: false, status: 409, error: "That time is no longer available." };
+    return { ok: false, status: 409, error: SLOT_TAKEN };
   }
 
   const { error } = await admin.from("booking_requests").insert({
@@ -167,15 +247,36 @@ const submitPublicBooking = async (
     service_name: service.name,
     note: parsed.data.note ?? null,
     starts_at: slot.startsAt,
-    status: "pending"
+    status: "pending",
+    idempotency_key: idempotencyKey.data
   });
 
-  if (error) {
-    return { ok: false, status: 409, error: "That time is no longer available." };
+  if (!error) {
+    return { ok: true };
   }
 
-  return { ok: true };
+  if (error.code === "23505") {
+    const { data: existing } = await admin
+      .from("booking_requests")
+      .select("starts_at, service_id, mobile")
+      .eq("tenant_id", link.data.tenant_id)
+      .eq("idempotency_key", idempotencyKey.data)
+      .maybeSingle();
+    const replay = bookingReplayRowSchema.safeParse(existing);
+
+    if (replay.success && bookingReplayMatches(replay.data, parsed.data)) {
+      return { ok: true };
+    }
+
+    if (replay.success) {
+      return { ok: false, status: 409, error: SEND_FAILED };
+    }
+
+    return { ok: false, status: 409, error: SLOT_TAKEN };
+  }
+
+  return { ok: false, status: 409, error: SLOT_TAKEN };
 };
 
-export { loadPublicBooking, submitPublicBooking };
-export type { PublicBookingPage };
+export { loadPublicBooking, submitPublicBooking, toPublicBookingPayload };
+export type { PublicBookingPage, SubmitPublicBookingOptions };

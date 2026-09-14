@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  BOOKING_GET_IP_LIMIT,
   BOOKING_POST_IP_LIMIT,
   BOOKING_POST_WINDOW_MS,
+  isPublicBookingGetLimited,
   isPublicBookingPostLimited
 } from "./booking-rate-limit";
 
@@ -38,5 +40,19 @@ describe("isPublicBookingPostLimited", () => {
     expect(isPublicBookingPostLimited(request, slug, start + BOOKING_POST_WINDOW_MS)).toBe(
       false
     );
+  });
+});
+
+describe("isPublicBookingGetLimited", () => {
+  it("allows more availability reads than posts before blocking", () => {
+    const start = 3_000_000;
+    const slug = `slug-${start}`;
+    const request = requestFor("203.0.113.10");
+
+    for (let i = 0; i < BOOKING_GET_IP_LIMIT; i += 1) {
+      expect(isPublicBookingGetLimited(request, slug, start + i)).toBe(false);
+    }
+
+    expect(isPublicBookingGetLimited(request, slug, start + BOOKING_GET_IP_LIMIT)).toBe(true);
   });
 });

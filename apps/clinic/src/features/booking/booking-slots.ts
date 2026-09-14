@@ -1,12 +1,16 @@
 import {
+  HUDDLE_SLOT_MINUTES,
+  clinicMinutes,
+  huddleHoursOf,
+  slotStart
+} from "@/features/today-board/huddle-schedule";
+import {
   calendarDateInClinic,
   clinicLocalParts,
+  foldVisits,
   formatVisitTime
 } from "@/features/today-board/project-today-board";
-import {
-  HUDDLE_SLOT_MINUTES,
-  huddleHoursOf
-} from "@/features/today-board/huddle-schedule";
+import type { ClinicEvent } from "@/lib/sync/event-schema";
 
 const BOOKING_HORIZON_DAYS = 14;
 const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -118,6 +122,37 @@ const addCalendarDays = (date: string, days: number) => {
   return next.toISOString().slice(0, 10);
 };
 
+const occupiedSlotKey = (iso: string, timeZone: string) => {
+  const at = new Date(iso);
+
+  if (Number.isNaN(at.getTime())) {
+    return null;
+  }
+
+  return `${calendarDateInClinic(iso, timeZone)}:${slotStart(clinicMinutes(iso, timeZone))}`;
+};
+
+const occupiedVisitStarts = (events: readonly ClinicEvent[]) =>
+  [...foldVisits([...events]).visits.values()].flatMap((visit) =>
+    visit.status === "cancelled" ? [] : [visit.startsAt]
+  );
+
+const visitOccupiesSlot = (
+  events: readonly ClinicEvent[],
+  startsAt: string,
+  timeZone: string
+) => {
+  const target = occupiedSlotKey(startsAt, timeZone);
+
+  if (!target) {
+    return false;
+  }
+
+  return occupiedVisitStarts(events).some(
+    (iso) => occupiedSlotKey(iso, timeZone) === target
+  );
+};
+
 const bookableDates = (
   hours: BookableHours,
   timeZone: string,
@@ -160,7 +195,11 @@ const bookingSlotsForDate = (input: {
   }
 
   const taken = new Set(
-    input.occupied.map((iso) => new Date(iso).getTime()).filter((value) => !Number.isNaN(value))
+    input.occupied.flatMap((iso) => {
+      const key = occupiedSlotKey(iso, input.timeZone);
+
+      return key ? [key] : [];
+    })
   );
   const today = calendarDateInClinic(input.now.toISOString(), input.timeZone);
   const slots: BookingSlot[] = [];
@@ -177,7 +216,7 @@ const bookingSlotsForDate = (input: {
       continue;
     }
 
-    if (taken.has(starts.getTime())) {
+    if (taken.has(`${input.date}:${minute}`)) {
       continue;
     }
 
@@ -226,6 +265,9 @@ export {
   clinicHoursOf,
   clinicServicesOf,
   instantFromClinicLocal,
-  offeredBookingSlot
+  occupiedSlotKey,
+  occupiedVisitStarts,
+  offeredBookingSlot,
+  visitOccupiesSlot
 };
 export type { BookableHours, BookingSlot };

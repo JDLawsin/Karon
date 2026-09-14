@@ -2,6 +2,9 @@
 const BOOKING_POST_WINDOW_MS = 10 * 60 * 1000;
 const BOOKING_POST_IP_LIMIT = 8;
 const BOOKING_POST_SLUG_LIMIT = 40;
+const BOOKING_GET_WINDOW_MS = 10 * 60 * 1000;
+const BOOKING_GET_IP_LIMIT = 60;
+const BOOKING_GET_SLUG_LIMIT = 240;
 
 const hits = new Map<string, number[]>();
 
@@ -18,7 +21,7 @@ const isLimited = (key: string, limit: number, now: number, windowMs: number) =>
   return false;
 };
 
-const bookingPostClientKey = (request: Request) => {
+const bookingClientKey = (request: Request) => {
   const forwarded = request.headers.get("x-forwarded-for");
   const ip =
     forwarded?.split(",")[0]?.trim() ||
@@ -33,18 +36,37 @@ const isPublicBookingPostLimited = (
   slug: string,
   now = Date.now()
 ) => {
-  const ip = bookingPostClientKey(request);
+  const ip = bookingClientKey(request);
   const slugKey = slug.slice(0, 64);
 
   return (
-    isLimited(`ip:${ip}:${slugKey}`, BOOKING_POST_IP_LIMIT, now, BOOKING_POST_WINDOW_MS) ||
-    isLimited(`slug:${slugKey}`, BOOKING_POST_SLUG_LIMIT, now, BOOKING_POST_WINDOW_MS)
+    isLimited(`post-ip:${ip}:${slugKey}`, BOOKING_POST_IP_LIMIT, now, BOOKING_POST_WINDOW_MS) ||
+    isLimited(`post-slug:${slugKey}`, BOOKING_POST_SLUG_LIMIT, now, BOOKING_POST_WINDOW_MS)
+  );
+};
+
+const isPublicBookingGetLimited = (
+  request: Request,
+  slug: string,
+  now = Date.now()
+) => {
+  const ip = bookingClientKey(request);
+  const slugKey = slug.slice(0, 64);
+
+  return (
+    isLimited(`get-ip:${ip}:${slugKey}`, BOOKING_GET_IP_LIMIT, now, BOOKING_GET_WINDOW_MS) ||
+    isLimited(`get-slug:${slugKey}`, BOOKING_GET_SLUG_LIMIT, now, BOOKING_GET_WINDOW_MS)
   );
 };
 
 export {
+  BOOKING_GET_IP_LIMIT,
+  BOOKING_GET_SLUG_LIMIT,
+  BOOKING_GET_WINDOW_MS,
   BOOKING_POST_IP_LIMIT,
   BOOKING_POST_SLUG_LIMIT,
   BOOKING_POST_WINDOW_MS,
+  bookingClientKey,
+  isPublicBookingGetLimited,
   isPublicBookingPostLimited
 };

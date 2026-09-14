@@ -4,8 +4,10 @@ import { Alert, Button, cn } from "@karon/design-system";
 import { useEffect, useRef, useState } from "react";
 
 import { inboxRowSchema } from "@/features/booking/booking-schemas";
+import { visitOccupiesSlot } from "@/features/booking/booking-slots";
 import { addBooking } from "@/features/today-board/local";
 import {
+  CLINIC_TZ,
   formatVisitTime,
   patientsFromEvents
 } from "@/features/today-board/project-today-board";
@@ -127,6 +129,11 @@ const BookingInbox = ({ autoConfirm, events }: Props) => {
     setBusyId(row.id);
 
     try {
+      if (visitOccupiesSlot(events, row.startsAt, CLINIC_TZ)) {
+        setActionError("That time already has a visit on the board.");
+        return;
+      }
+
       const claimed = await mark(row, "accepted");
 
       if (!claimed) {

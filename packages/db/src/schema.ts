@@ -360,13 +360,17 @@ export const bookingRequests = pgTable(
     startsAt: timestamptz("starts_at").notNull(),
     status: bookingRequestStatusEnum("status").notNull().default("pending"),
     visitId: uuid("visit_id"),
+    idempotencyKey: text("idempotency_key"),
     createdAt: timestamptz("created_at").defaultNow().notNull(),
     updatedAt: timestamptz("updated_at").defaultNow().notNull()
   },
   (table) => [
-    uniqueIndex("booking_requests_link_slot_idx")
-      .on(table.linkId, table.startsAt)
+    uniqueIndex("booking_requests_tenant_slot_idx")
+      .on(table.tenantId, table.startsAt)
       .where(sql`${table.status} in ('pending', 'accepted')`),
+    uniqueIndex("booking_requests_tenant_idempotency_idx")
+      .on(table.tenantId, table.idempotencyKey)
+      .where(sql`${table.idempotencyKey} is not null`),
     index("booking_requests_tenant_status_idx").on(table.tenantId, table.status),
     check(
       "booking_requests_name_length",

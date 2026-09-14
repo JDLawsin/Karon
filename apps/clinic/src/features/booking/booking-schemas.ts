@@ -5,6 +5,8 @@ const bookingSlugSchema = z
   .trim()
   .regex(/^[A-Za-z0-9_-]{8,32}$/);
 
+const bookingIdempotencyKeySchema = z.uuid();
+
 const publicBookingSubmitSchema = z.object({
   name: z.string().trim().min(1, "Enter your name.").max(80),
   mobile: z.string().trim().min(1, "Enter a mobile number.").max(20),
@@ -62,15 +64,60 @@ const bookingApiErrorSchema = z.object({
   error: z.string()
 });
 
+const bookingReplayRowSchema = z.object({
+  starts_at: z.string(),
+  service_id: z.string(),
+  mobile: z.string()
+});
+
+const isBookingHoneypotFilled = (body: unknown) => {
+  if (!body || typeof body !== "object" || !("website" in body)) {
+    return false;
+  }
+
+  const value = body.website;
+
+  if (value == null) {
+    return false;
+  }
+
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+
+  return true;
+};
+
+const bookingTurnstileTokenOf = (body: unknown) => {
+  if (!body || typeof body !== "object" || !("turnstileToken" in body)) {
+    return undefined;
+  }
+
+  return typeof body.turnstileToken === "string" ? body.turnstileToken : undefined;
+};
+
+const bookingReplayMatches = (
+  existing: { starts_at: string; service_id: string; mobile: string },
+  submitted: { startsAt: string; serviceId: string; mobile: string }
+) =>
+  Date.parse(existing.starts_at) === Date.parse(submitted.startsAt) &&
+  existing.service_id === submitted.serviceId &&
+  existing.mobile === submitted.mobile;
+
 type PublicBookingSubmit = z.infer<typeof publicBookingSubmitSchema>;
 
 export {
   bookingApiErrorSchema,
+  bookingIdempotencyKeySchema,
   bookingLinkResponseSchema,
   bookingLinkRowSchema,
+  bookingReplayMatches,
+  bookingReplayRowSchema,
   bookingSlugSchema,
+  bookingTurnstileTokenOf,
   clinicBookingRowSchema,
   inboxRowSchema,
+  isBookingHoneypotFilled,
   publicBookingPageSchema,
   publicBookingSubmitSchema
 };
