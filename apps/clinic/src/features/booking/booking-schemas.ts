@@ -38,11 +38,27 @@ const clinicBookingRowSchema = z.object({
   name: z.string().min(1),
   timezone: z.string().nullable(),
   hours: z.unknown(),
-  services: z.unknown(),
   phone: z.string().nullable().optional(),
   address: z.unknown().optional(),
   logo_path: z.string().nullable().optional()
 });
+
+const bookableServiceRowSchema = z.object({
+  id: z.uuid(),
+  name: z.string().trim().min(1).max(80)
+});
+
+const bookableServicesOf = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((row) => {
+    const parsed = bookableServiceRowSchema.safeParse(row);
+
+    return parsed.success ? [parsed.data] : [];
+  });
+};
 
 const publicBookingPageSchema = z.object({
   clinicName: z.string(),
@@ -115,6 +131,8 @@ type PublicBookingSubmit = z.infer<typeof publicBookingSubmitSchema>;
 type PublicBookingPagePayload = z.infer<typeof publicBookingPageSchema>;
 
 export {
+  bookableServiceRowSchema,
+  bookableServicesOf,
   bookingApiErrorSchema,
   bookingIdempotencyKeySchema,
   bookingLinkResponseSchema,

@@ -23,7 +23,8 @@ const files = [
   "packages/db/drizzle/0014_appointments.sql",
   "packages/db/drizzle/0015_google_booking_pages.sql",
   "packages/db/drizzle/0016_booking_links.sql",
-  "packages/db/drizzle/0017_booking_invariants.sql"
+  "packages/db/drizzle/0017_booking_invariants.sql",
+  "packages/db/drizzle/0018_clinic_services.sql"
 ];
 
 const splitSql = (contents: string) => {

@@ -1,12 +1,13 @@
 import { z } from "zod";
 
 import { clinicNameSchema, emailSchema } from "@/features/auth/auth-schemas";
+import { SUGGESTED_SERVICE_NAMES } from "@/features/services/service-catalog";
 
 const DEFAULT_TIMEZONE = "Asia/Manila";
 const DEFAULT_OPEN = "09:00";
 const DEFAULT_CLOSE = "18:00";
 const DEFAULT_WORKING_DAYS = [1, 2, 3, 4, 5, 6];
-const SUGGESTED_SERVICES = ["Oral prophylaxis", "Extraction", "Filling"];
+const SUGGESTED_SERVICES = SUGGESTED_SERVICE_NAMES;
 const MAX_STAFF_INVITES = 5;
 const MAX_SERVICES = 12;
 
@@ -116,7 +117,12 @@ const clinicOnboardingSchema = clinicOnboardingFields.superRefine((data, ctx) =>
   addStaffEmailIssues(data.staffEmails, ctx);
 });
 
+const clinicDetailsSchema = clinicOnboardingFields
+  .omit({ staffEmails: true, services: true })
+  .superRefine(addHoursIssue);
+
 type ClinicOnboarding = z.infer<typeof clinicOnboardingSchema>;
+type ClinicDetails = z.infer<typeof clinicDetailsSchema>;
 
 type ClinicProfile = {
   timezone: string;
@@ -152,6 +158,57 @@ const defaultOnboardingValues = (): ClinicOnboarding => ({
   close: DEFAULT_CLOSE,
   staffEmails: [""],
   services: []
+});
+
+const defaultClinicDetailsValues = (): ClinicDetails => {
+  const {
+    name,
+    phone,
+    email,
+    line1,
+    barangay,
+    city,
+    province,
+    postalCode,
+    timezone,
+    days,
+    open,
+    close
+  } = defaultOnboardingValues();
+  return {
+    name,
+    phone,
+    email,
+    line1,
+    barangay,
+    city,
+    province,
+    postalCode,
+    timezone,
+    days,
+    open,
+    close
+  };
+};
+
+const toClinicDetailsProfile = (
+  values: ClinicDetails
+): Omit<ClinicProfile, "services"> => ({
+  timezone: values.timezone,
+  phone: values.phone,
+  email: values.email,
+  address: {
+    line1: values.line1,
+    barangay: values.barangay,
+    city: values.city,
+    province: values.province,
+    postalCode: values.postalCode
+  },
+  hours: {
+    days: [...values.days].sort((left, right) => left - right),
+    open: values.open.slice(0, 5),
+    close: values.close.slice(0, 5)
+  }
 });
 
 const toClinicProfile = (values: ClinicOnboarding): ClinicProfile => ({
@@ -201,7 +258,6 @@ const clinicRowSchema = z.object({
     })
     .nullable()
     .optional(),
-  services: z.array(serviceSchema).nullable().optional(),
   logo_path: z.string().nullable().optional()
 });
 
@@ -229,8 +285,7 @@ const fromClinicRow = (row: unknown): ClinicOnboarding => {
     timezone: data.timezone?.trim() || DEFAULT_TIMEZONE,
     days: days.length > 0 ? days : [...DEFAULT_WORKING_DAYS],
     open: data.hours?.open?.slice(0, 5) || DEFAULT_OPEN,
-    close: data.hours?.close?.slice(0, 5) || DEFAULT_CLOSE,
-    services: data.services ?? []
+    close: data.hours?.close?.slice(0, 5) || DEFAULT_CLOSE
   };
 };
 
@@ -263,7 +318,7 @@ const ONBOARDING_STEPS = [
   {
     id: "services",
     label: "Services",
-    blurb: "Add a few now. You can edit them later."
+    blurb: "Add a few names now. Add icons and details later on Services."
   },
   {
     id: "review",
@@ -313,10 +368,13 @@ export {
   ONBOARDING_STEPS,
   SUGGESTED_SERVICES,
   WORKING_DAYS,
+  clinicDetailsSchema,
   clinicOnboardingSchema,
   clinicPhoneSchema,
+  defaultClinicDetailsValues,
   defaultOnboardingValues,
   fromClinicRow,
+  toClinicDetailsProfile,
   onboardingHoursSchema,
   onboardingIdentitySchema,
   onboardingServicesSchema,
@@ -325,4 +383,4 @@ export {
   stepForOnboardingIssues,
   toClinicProfile
 };
-export type { ClinicOnboarding, ClinicProfile };
+export type { ClinicDetails, ClinicOnboarding, ClinicProfile };

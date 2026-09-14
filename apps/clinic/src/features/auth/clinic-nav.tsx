@@ -16,6 +16,7 @@ import {
   type ThemePreference
 } from "@karon/design-system";
 import {
+  BriefcaseMedical,
   CalendarDays,
   ChevronRight,
   LogOut,
@@ -32,7 +33,7 @@ import type { ReactNode } from "react";
 import ClinicStaffAvatar from "@/features/auth/clinic-staff-avatar";
 import type { ClinicRole } from "@/features/auth/resolve-auth-destination";
 
-type JobHref = "/today" | "/owner/today";
+type JobHref = "/today" | "/services" | "/owner/today";
 
 type JobItem = {
   href: JobHref;
@@ -47,6 +48,12 @@ const JOBS: Record<JobHref, JobItem> = {
     label: "Today",
     name: "Today",
     icon: CalendarDays
+  },
+  "/services": {
+    href: "/services",
+    label: "Services",
+    name: "Services",
+    icon: BriefcaseMedical
   },
   "/owner/today": {
     href: "/owner/today",
@@ -75,7 +82,9 @@ const themeIcon: Record<ThemePreference, ReactNode> = {
 };
 
 const jobsFor = (role: ClinicRole): JobItem[] =>
-  role === "owner" ? [JOBS["/today"], JOBS["/owner/today"]] : [JOBS["/today"]];
+  role === "owner"
+    ? [JOBS["/today"], JOBS["/services"], JOBS["/owner/today"]]
+    : [JOBS["/today"], JOBS["/services"]];
 
 const isCurrentPath = (pathname: string, href: string) => pathname === href;
 

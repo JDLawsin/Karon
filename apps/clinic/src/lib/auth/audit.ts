@@ -10,7 +10,10 @@ type AuditEventType =
   | "auth.password_changed"
   | "member.invited"
   | "member.removed"
-  | "access.denied";
+  | "access.denied"
+  | "service.created"
+  | "service.updated"
+  | "service.deleted";
 
 type AuditWrite = {
   tenantId: string;

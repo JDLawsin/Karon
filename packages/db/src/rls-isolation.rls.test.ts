@@ -744,6 +744,71 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(tokenColumn ?? []).toEqual([]);
   });
 
+  it("lets members CRUD own clinic services and hides other clinics", async () => {
+    const ownId = randomUUID();
+    const otherId = randomUUID();
+    const serviceName = `Service ${suffix}`;
+    const assistant = await createAuthedClient(users[1]!.email);
+
+    const { data: created, error: createError } = await assistant.client
+      .from("clinic_services")
+      .insert({
+        id: ownId,
+        tenant_id: clinicIds[0],
+        name: serviceName,
+        created_by: users[1]!.id,
+        updated_by: users[1]!.id
+      })
+      .select("id")
+      .single();
+
+    expect(createError).toBeNull();
+    expect(created?.id).toBe(ownId);
+
+    const { error: seedOtherError } = await admin.from("clinic_services").insert({
+      id: otherId,
+      tenant_id: clinicIds[1],
+      name: "Other clinic service",
+      created_by: users[2]!.id,
+      updated_by: users[2]!.id
+    });
+
+    expect(seedOtherError).toBeNull();
+
+    const { data: visible, error: selectError } = await assistant.client
+      .from("clinic_services")
+      .select("id, name");
+
+    expect(selectError).toBeNull();
+    expect(visible?.map((row) => row.id)).toEqual([ownId]);
+
+    const { error: updateError } = await assistant.client
+      .from("clinic_services")
+      .update({
+        name: `${serviceName} updated`,
+        updated_by: users[1]!.id
+      })
+      .eq("id", ownId);
+
+    expect(updateError).toBeNull();
+
+    const { data: crossUpdated, error: crossUpdateError } = await assistant.client
+      .from("clinic_services")
+      .update({ name: "Hacked" })
+      .eq("id", otherId)
+      .select("id");
+
+    expect(crossUpdated ?? []).toEqual([]);
+    expect(crossUpdateError?.code).toBe("42501");
+
+    const { error: deleteError } = await assistant.client
+      .from("clinic_services")
+      .delete()
+      .eq("id", ownId);
+
+    expect(deleteError).toBeNull();
+  });
+
   it("lets members read own calendar imports and hides other clinics", async () => {
     const ownId = randomUUID();
     const otherId = randomUUID();

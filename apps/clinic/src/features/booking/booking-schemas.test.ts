@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  bookableServicesOf,
   bookingIdempotencyKeySchema,
   bookingReplayMatches,
   bookingTurnstileTokenOf,
@@ -56,6 +57,26 @@ describe("bookingIdempotencyKeySchema", () => {
     expect(
       bookingIdempotencyKeySchema.safeParse("11111111-1111-4111-8111-111111111111").success
     ).toBe(true);
+  });
+});
+
+describe("bookableServicesOf", () => {
+  it("keeps valid clinic_services rows and drops invalid ones", () => {
+    expect(
+      bookableServicesOf([
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          name: "  Cleaning "
+        },
+        { id: "bad", name: "Skip" },
+        { name: "No id" }
+      ])
+    ).toEqual([
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        name: "Cleaning"
+      }
+    ]);
   });
 });
 

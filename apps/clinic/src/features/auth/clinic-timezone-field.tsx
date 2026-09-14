@@ -1,7 +1,7 @@
 import { Label } from "@karon/design-system";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 
-import type { ClinicOnboarding } from "@/features/auth/onboarding-schemas";
+import type { ClinicDetails } from "@/features/auth/onboarding-schemas";
 import FieldError from "@/lib/forms/field-error";
 
 const TIME_ZONES =
@@ -17,8 +17,8 @@ const selectClassName =
 
 type Props = {
   idPrefix: string;
-  register: UseFormRegister<ClinicOnboarding>;
-  errors: FieldErrors<ClinicOnboarding>;
+  register: UseFormRegister<ClinicDetails>;
+  errors: FieldErrors<ClinicDetails>;
   hideLabel?: boolean;
 };
 

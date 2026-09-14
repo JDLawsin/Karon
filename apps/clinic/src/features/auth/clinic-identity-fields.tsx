@@ -1,13 +1,13 @@
 import { Input, Label } from "@karon/design-system";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 
-import type { ClinicOnboarding } from "@/features/auth/onboarding-schemas";
+import type { ClinicDetails } from "@/features/auth/onboarding-schemas";
 import FieldError from "@/lib/forms/field-error";
 
 type Props = {
   idPrefix: string;
-  register: UseFormRegister<ClinicOnboarding>;
-  errors: FieldErrors<ClinicOnboarding>;
+  register: UseFormRegister<ClinicDetails>;
+  errors: FieldErrors<ClinicDetails>;
 };
 
 const ClinicIdentityFields = ({ idPrefix, register, errors }: Props) => {

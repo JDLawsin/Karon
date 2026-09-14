@@ -40,7 +40,7 @@ const ClinicServicesFields = ({ idPrefix, services, onChange, errors }: Props) =
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-muted-foreground">
-        Add a few now. You can edit them later.
+        Add a few names now. You can add icons and details later on Services.
       </p>
       <div className="flex flex-wrap gap-2">
         {SUGGESTED_SERVICES.map((name) => {

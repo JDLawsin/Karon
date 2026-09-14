@@ -4,7 +4,13 @@ import { Alert, Button, cn, Input, Label } from "@karon/design-system";
 import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import type { FieldPath } from "react-hook-form";
+import type {
+  FieldErrors,
+  FieldPath,
+  UseFormRegister,
+  UseFormSetValue,
+  UseFormWatch
+} from "react-hook-form";
 import type { z } from "zod";
 
 import { tenantIdSchema } from "@/features/auth/auth-schemas";
@@ -28,6 +34,7 @@ import {
   staffInviteEmails,
   stepForOnboardingIssues,
   toClinicProfile,
+  type ClinicDetails,
   type ClinicOnboarding
 } from "@/features/auth/onboarding-schemas";
 import { writeAuditEvent } from "@/lib/auth/audit";
@@ -78,6 +85,12 @@ const OnboardingForm = () => {
   } = useClinicForm(clinicOnboardingSchema, {
     defaultValues: defaultOnboardingValues()
   });
+  const profileFields = {
+    register: register as unknown as UseFormRegister<ClinicDetails>,
+    errors: errors as FieldErrors<ClinicDetails>,
+    watch: watch as unknown as UseFormWatch<ClinicDetails>,
+    setValue: setValue as unknown as UseFormSetValue<ClinicDetails>
+  };
   const values = watch();
   const current = ONBOARDING_STEPS[step];
 
@@ -280,9 +293,9 @@ const OnboardingForm = () => {
       {step === 0 ? (
         <div className="flex flex-col gap-4">
           <ClinicIdentityFields
-            errors={errors}
+            errors={profileFields.errors}
             idPrefix="onboarding"
-            register={register}
+            register={profileFields.register}
           />
           <ClinicLogoField
             error={logoError}
@@ -300,16 +313,16 @@ const OnboardingForm = () => {
       {step === 1 ? (
         <div className="flex flex-col gap-4">
           <ClinicTimezoneField
-            errors={errors}
+            errors={profileFields.errors}
             idPrefix="onboarding"
-            register={register}
+            register={profileFields.register}
           />
           <ClinicHoursFields
-            errors={errors}
+            errors={profileFields.errors}
             idPrefix="onboarding"
-            register={register}
-            setValue={setValue}
-            watch={watch}
+            register={profileFields.register}
+            setValue={profileFields.setValue}
+            watch={profileFields.watch}
           />
         </div>
       ) : null}

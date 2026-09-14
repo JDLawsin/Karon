@@ -72,28 +72,6 @@ const clinicHoursOf = (value: unknown): BookableHours | null => {
   return { days, open: window.open, close: window.close };
 };
 
-const clinicServicesOf = (value: unknown) => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((row) => {
-    if (!row || typeof row !== "object") {
-      return [];
-    }
-
-    const id = "id" in row && typeof row.id === "string" ? row.id.trim() : "";
-    const name =
-      "name" in row && typeof row.name === "string" ? row.name.trim() : "";
-
-    if (!id || !name) {
-      return [];
-    }
-
-    return [{ id, name: name.slice(0, 80) }];
-  });
-};
-
 // ponytail: offset-guess is enough for PH (no DST); use Temporal.ZonedDateTime if we book across DST zones
 const instantFromClinicLocal = (date: string, time: string, timeZone: string) => {
   const clock = time.slice(0, 5);
@@ -263,7 +241,6 @@ export {
   bookableDates,
   bookingSlotsForDate,
   clinicHoursOf,
-  clinicServicesOf,
   instantFromClinicLocal,
   occupiedSlotKey,
   occupiedVisitStarts,

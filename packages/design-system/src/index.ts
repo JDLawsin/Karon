@@ -114,6 +114,7 @@ export type { ShowToastOptions } from "./lib/toast";
 export { default as ToastMessage } from "./patterns/toast-message";
 export type { ToastMessageProps, ToastVariant } from "./patterns/toast-message";
 export { Toaster } from "./primitives/sonner";
+export { useDebouncedValue } from "./hooks/use-debounced-value";
 export { useIsMobile } from "./hooks/use-mobile";
 export {
   applyResolvedTheme,

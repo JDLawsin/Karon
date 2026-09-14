@@ -14,13 +14,12 @@ import {
   removeClinicLogo,
   uploadClinicLogo
 } from "@/features/auth/clinic-logo";
-import ClinicServicesFields from "@/features/auth/clinic-services-fields";
 import {
-  clinicOnboardingSchema,
-  defaultOnboardingValues,
+  clinicDetailsSchema,
+  defaultClinicDetailsValues,
   fromClinicRow,
-  toClinicProfile,
-  type ClinicOnboarding
+  toClinicDetailsProfile,
+  type ClinicDetails
 } from "@/features/auth/onboarding-schemas";
 import { useClinicSession } from "@/lib/auth/clinic-session";
 import { markHydrated, useClinicForm } from "@/lib/forms/use-clinic-form";
@@ -55,10 +54,9 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
     reset,
     watch,
     formState: { errors, isDirty }
-  } = useClinicForm(clinicOnboardingSchema, {
-    defaultValues: defaultOnboardingValues()
+  } = useClinicForm(clinicDetailsSchema, {
+    defaultValues: defaultClinicDetailsValues()
   });
-  const values = watch();
   const canSave = isDirty || logoFile !== null || logoCleared;
 
   useEffect(() => {
@@ -72,9 +70,7 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
           const supabase = createBrowserSupabase();
           const { data, error } = await supabase
             .from("clinics")
-            .select(
-              "name, timezone, phone, email, address, hours, services, logo_path"
-            )
+            .select("name, timezone, phone, email, address, hours, logo_path")
             .eq("id", membership.tenantId)
             .maybeSingle();
 
@@ -99,7 +95,7 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
 
   const applyIssues = (zodError: z.ZodError) => {
     for (const issue of zodError.issues) {
-      const path = issue.path.join(".") as FieldPath<ClinicOnboarding>;
+      const path = issue.path.join(".") as FieldPath<ClinicDetails>;
       if (path) {
         setFieldError(path, { type: "manual", message: issue.message });
       }
@@ -108,7 +104,7 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const parsed = clinicOnboardingSchema.safeParse(getValues());
+    const parsed = clinicDetailsSchema.safeParse(getValues());
 
     if (!parsed.success) {
       applyIssues(parsed.error);
@@ -117,7 +113,7 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
 
     setPending(true);
     const supabase = createBrowserSupabase();
-    const profile = toClinicProfile(parsed.data);
+    const profile = toClinicDetailsProfile(parsed.data);
 
     try {
       const { error } = await supabase
@@ -129,7 +125,6 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
           email: profile.email,
           address: profile.address,
           hours: profile.hours,
-          services: profile.services,
           updated_at: new Date().toISOString()
         })
         .eq("id", membership.tenantId);
@@ -197,11 +192,10 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
         aria-label="Loading clinic details"
         className="grid w-full min-w-0 grid-cols-1 gap-3 lg:grid-cols-2 lg:items-start"
       >
-        <Skeleton className="min-h-96 w-full min-w-0 rounded-lg lg:row-span-4" />
+        <Skeleton className="min-h-96 w-full min-w-0 rounded-lg lg:row-span-3" />
         <Skeleton className="min-h-28 w-full min-w-0 rounded-lg" />
         <Skeleton className="min-h-36 w-full min-w-0 rounded-lg" />
         <Skeleton className="min-h-52 w-full min-w-0 rounded-lg" />
-        <Skeleton className="min-h-40 w-full min-w-0 rounded-lg" />
       </div>
     );
   }
@@ -218,7 +212,7 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
     >
       {loadError ? <Alert title={loadError} variant="danger" /> : null}
       <div className="grid w-full min-w-0 grid-cols-1 gap-3 lg:grid-cols-2 lg:items-start">
-        <SettingsCard className="min-w-0 lg:row-span-4" title="Clinic details">
+        <SettingsCard className="min-w-0 lg:row-span-3" title="Clinic details">
           <ClinicIdentityFields
             errors={errors}
             idPrefix="clinic"
@@ -264,16 +258,6 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
             register={register}
             setValue={setValue}
             watch={watch}
-          />
-        </SettingsCard>
-        <SettingsCard className="min-w-0" title="Service name">
-          <ClinicServicesFields
-            errors={errors}
-            idPrefix="clinic"
-            onChange={(services) =>
-              setValue("services", services, { shouldDirty: true })
-            }
-            services={values.services ?? []}
           />
         </SettingsCard>
       </div>

@@ -16,6 +16,7 @@ import {
   formatClinicHours
 } from "./booking-clinic-display";
 import {
+  bookableServicesOf,
   bookingIdempotencyKeySchema,
   bookingLinkRowSchema,
   bookingReplayMatches,
@@ -30,7 +31,6 @@ import {
   bookableDates,
   bookingSlotsForDate,
   clinicHoursOf,
-  clinicServicesOf,
   occupiedVisitStarts,
   offeredBookingSlot
 } from "./booking-slots";
@@ -146,11 +146,18 @@ const loadPublicBookingPage = async (
     return { ok: false, status: 404 };
   }
 
-  const { data: clinicRow } = await admin
-    .from("clinics")
-    .select("name, timezone, hours, services, phone, address, logo_path")
-    .eq("id", link.data.tenant_id)
-    .maybeSingle();
+  const [{ data: clinicRow }, { data: serviceRows }] = await Promise.all([
+    admin
+      .from("clinics")
+      .select("name, timezone, hours, phone, address, logo_path")
+      .eq("id", link.data.tenant_id)
+      .maybeSingle(),
+    admin
+      .from("clinic_services")
+      .select("id, name")
+      .eq("tenant_id", link.data.tenant_id)
+      .order("name")
+  ]);
   const clinic = clinicBookingRowSchema.safeParse(clinicRow);
   const hours = clinic.success ? clinicHoursOf(clinic.data.hours) : null;
   const timezone = clinic.success
@@ -189,7 +196,7 @@ const loadPublicBookingPage = async (
       phone: clinicPhoneOf(clinic.data.phone),
       address,
       logoUrl,
-      services: clinicServicesOf(clinic.data.services),
+      services: bookableServicesOf(serviceRows),
       dates,
       date,
       slots

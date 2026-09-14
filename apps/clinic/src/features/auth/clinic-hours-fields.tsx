@@ -8,16 +8,16 @@ import type {
 
 import {
   WORKING_DAYS,
-  type ClinicOnboarding
+  type ClinicDetails
 } from "@/features/auth/onboarding-schemas";
 import FieldError from "@/lib/forms/field-error";
 
 type Props = {
   idPrefix: string;
-  register: UseFormRegister<ClinicOnboarding>;
-  watch: UseFormWatch<ClinicOnboarding>;
-  setValue: UseFormSetValue<ClinicOnboarding>;
-  errors: FieldErrors<ClinicOnboarding>;
+  register: UseFormRegister<ClinicDetails>;
+  watch: UseFormWatch<ClinicDetails>;
+  setValue: UseFormSetValue<ClinicDetails>;
+  errors: FieldErrors<ClinicDetails>;
 };
 
 const ClinicHoursFields = ({

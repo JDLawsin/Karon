@@ -14,6 +14,7 @@ export {
   clinicEvents,
   clinicMembers,
   clinicRoleEnum,
+  clinicServices,
   clinicSessions,
   clinics,
   googleCalendarConnections,
@@ -29,7 +30,7 @@ export type {
   ClinicEvent,
   ClinicHours,
   ClinicMember,
-  ClinicService,
+  ClinicServiceRow,
   ClinicSession,
   TrustedDevice
 } from "./schema";

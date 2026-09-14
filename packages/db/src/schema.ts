@@ -33,11 +33,6 @@ export type ClinicHours = {
   close: string;
 };
 
-export type ClinicService = {
-  id: string;
-  name: string;
-};
-
 export const clinics = pgTable(
   "clinics",
   {
@@ -52,10 +47,6 @@ export const clinics = pgTable(
       .notNull()
       .default(sql`'{}'::jsonb`),
     hours: jsonb("hours").$type<ClinicHours>(),
-    services: jsonb("services")
-      .$type<ClinicService[]>()
-      .notNull()
-      .default(sql`'[]'::jsonb`),
     logoPath: text("logo_path"),
     autoConfirmBookings: boolean("auto_confirm_bookings").notNull().default(true),
     trialStartedAt: timestamptz("trial_started_at").defaultNow().notNull(),
@@ -70,6 +61,52 @@ export const clinics = pgTable(
     check(
       "clinics_timezone_length",
       sql`char_length(btrim(${table.timezone})) between 1 and 64`
+    )
+  ]
+).enableRLS();
+
+export const clinicServices = pgTable(
+  "clinic_services",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => clinics.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    icon: text("icon"),
+    createdAt: timestamptz("created_at").defaultNow().notNull(),
+    updatedAt: timestamptz("updated_at").defaultNow().notNull(),
+    createdBy: uuid("created_by").notNull(),
+    updatedBy: uuid("updated_by").notNull()
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [authUsers.id],
+      name: "clinic_services_created_by_fk"
+    }).onDelete("restrict"),
+    foreignKey({
+      columns: [table.updatedBy],
+      foreignColumns: [authUsers.id],
+      name: "clinic_services_updated_by_fk"
+    }).onDelete("restrict"),
+    uniqueIndex("clinic_services_tenant_name_idx").on(
+      table.tenantId,
+      sql`lower(btrim(${table.name}))`
+    ),
+    index("clinic_services_tenant_name_sort_idx").on(table.tenantId, table.name),
+    check(
+      "clinic_services_name_length",
+      sql`char_length(btrim(${table.name})) between 1 and 80`
+    ),
+    check(
+      "clinic_services_description_length",
+      sql`${table.description} is null or char_length(${table.description}) <= 280`
+    ),
+    check(
+      "clinic_services_icon_length",
+      sql`${table.icon} is null or char_length(${table.icon}) <= 64`
     )
   ]
 ).enableRLS();
@@ -188,7 +225,10 @@ export const auditEvents = pgTable(
         'auth.password_changed',
         'member.invited',
         'member.removed',
-        'access.denied'
+        'access.denied',
+        'service.created',
+        'service.updated',
+        'service.deleted'
       )`
     )
   ]
@@ -388,6 +428,7 @@ export const bookingRequests = pgTable(
 ).enableRLS();
 
 export type Clinic = typeof clinics.$inferSelect;
+export type ClinicServiceRow = typeof clinicServices.$inferSelect;
 export type ClinicMember = typeof clinicMembers.$inferSelect;
 export type ClinicSession = typeof clinicSessions.$inferSelect;
 export type TrustedDevice = typeof trustedDevices.$inferSelect;

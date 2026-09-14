@@ -7,7 +7,6 @@ import {
   bookableDates,
   bookingSlotsForDate,
   clinicHoursOf,
-  clinicServicesOf,
   instantFromClinicLocal,
   occupiedVisitStarts,
   offeredBookingSlot,
@@ -49,18 +48,6 @@ describe("clinicHoursOf", () => {
 
   it("rejects hours without a working day", () => {
     expect(clinicHoursOf({ days: [], open: "09:00", close: "18:00" })).toBeNull();
-  });
-});
-
-describe("clinicServicesOf", () => {
-  it("keeps named services and drops empty rows", () => {
-    expect(
-      clinicServicesOf([
-        { id: "prophy", name: "  Oral prophylaxis " },
-        { id: "", name: "Skip" },
-        { name: "No id" }
-      ])
-    ).toEqual([{ id: "prophy", name: "Oral prophylaxis" }]);
   });
 });
 
