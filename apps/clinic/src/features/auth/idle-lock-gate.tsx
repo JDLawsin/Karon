@@ -16,6 +16,7 @@ import {
   activityResetsIdle,
   clearStoredLastActive,
   IDLE_HEARTBEAT_MS,
+  IDLE_LAST_ACTIVE_KEY,
   IDLE_LOCK_ENABLED_EVENT,
   idlePhase,
   parseIdleLockEnabled,
@@ -177,7 +178,26 @@ const IdleLockGate = ({
       setNextPhase(idlePhase(Date.now(), lastActiveRef.current));
     };
 
+    const onActivityInAnotherTab = (event: StorageEvent) => {
+      if (
+        event.key !== `${IDLE_LAST_ACTIVE_KEY}:${userId}` ||
+        event.newValue == null ||
+        !activityResetsIdle(phaseRef.current)
+      ) {
+        return;
+      }
+
+      const activeAt = Number(event.newValue);
+      if (!Number.isFinite(activeAt) || activeAt <= lastActiveRef.current) {
+        return;
+      }
+
+      lastActiveRef.current = activeAt;
+      setNextPhase(idlePhase(Date.now(), activeAt));
+    };
+
     document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("storage", onActivityInAnotherTab);
     touchSession();
     const heartbeat = window.setInterval(() => {
       if (phaseRef.current === "lock" || !sessionActive) {
@@ -199,6 +219,7 @@ const IdleLockGate = ({
       window.removeEventListener("pointerdown", markActive);
       window.removeEventListener("keydown", markActive);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("storage", onActivityInAnotherTab);
       window.clearInterval(heartbeat);
       window.clearInterval(timer);
     };

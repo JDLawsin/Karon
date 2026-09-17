@@ -111,13 +111,13 @@ const runDrain = async (db: ClinicDb, supabase: SupabaseClient) => {
       continue;
     }
 
-    clientLog
-      .withMetadata({ eventId: parsed.data.id, type: parsed.data.type })
-      .error("sync.drain_failed");
-
     if (isRetryLater(error)) {
       return;
     }
+
+    clientLog
+      .withMetadata({ eventId: parsed.data.id, type: parsed.data.type })
+      .error("sync.drain_failed");
 
     await db.outbox.update(item.id, { attempts: item.attempts + 1 });
   }

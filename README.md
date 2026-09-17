@@ -1,8 +1,10 @@
 # Karon
 
-Offline-first PWA for small dental clinics in the Philippines. Cebuano *karon* means now / today.
+Offline-first-target PWA for small dental clinics in the Philippines. Cebuano *karon* means now / today.
 
-The chair loop: who is here today → patient → tooth chart → peso quote → payment → next visit. The phone still works when wifi dies.
+**Offline-first target; current offline coverage = intake + visit status only.**
+
+Shipped today (auth → Today huddle → services → public `/book` requests). The full chair loop (tooth chart → peso quote → payment → next visit) is **spec intent**, not present-tense product — see private docs / [IMPLEMENTATION-TRUTH](../docs/IMPLEMENTATION-TRUTH.md) when available.
 
 ## Setup
 
@@ -28,9 +30,9 @@ yarn test:e2e
 
 ## Repo
 
-- `apps/clinic` — chair PWA
+- `apps/clinic` — clinic PWA
 - `packages/design-system` — tokens and UI primitives
 - `packages/db` — Drizzle schema (server-only)
-- `docs/` — product and architecture ([attributions](docs/attributions.md) for stock photos)
+- `docs/` — product and architecture (may be private / incomplete in public clone)
 
-Start in [docs/README.md](docs/README.md).
+Start in [docs/README.md](docs/README.md) when present.

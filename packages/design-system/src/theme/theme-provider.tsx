@@ -6,12 +6,13 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode
 } from "react";
 
 import {
   applyResolvedTheme,
+  DEFAULT_THEME_PREFERENCE,
   parseThemePreference,
   resolveTheme,
   THEME_STORAGE_KEY,
@@ -30,38 +31,54 @@ type ThemeProviderProps = {
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
+const THEME_CHANGE_EVENT = "karon-theme-change";
+
+const subscribeToThemePreference = (onStoreChange: () => void) => {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(THEME_CHANGE_EVENT, onStoreChange);
+
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(THEME_CHANGE_EVENT, onStoreChange);
+  };
+};
+
+const getThemePreference = (): ThemePreference =>
+  parseThemePreference(localStorage.getItem(THEME_STORAGE_KEY));
+
+const getServerThemePreference = (): ThemePreference => DEFAULT_THEME_PREFERENCE;
+
+const subscribeToSystemTheme = (onStoreChange: () => void) => {
+  const media = window.matchMedia(SYSTEM_THEME_QUERY);
+  media.addEventListener("change", onStoreChange);
+
+  return () => media.removeEventListener("change", onStoreChange);
+};
+
+const getSystemDark = (): boolean => window.matchMedia(SYSTEM_THEME_QUERY).matches;
+
+const getServerSystemDark = (): boolean => false;
 
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
-  const [preference, setPreferenceState] = useState<ThemePreference>("system");
-  const [systemDark, setSystemDark] = useState(false);
-  const [ready, setReady] = useState(false);
+  const preference = useSyncExternalStore(
+    subscribeToThemePreference,
+    getThemePreference,
+    getServerThemePreference
+  );
+  const systemDark = useSyncExternalStore(
+    subscribeToSystemTheme,
+    getSystemDark,
+    getServerSystemDark
+  );
 
   useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    setPreferenceState(
-      parseThemePreference(localStorage.getItem(THEME_STORAGE_KEY))
-    );
-    setSystemDark(media.matches);
-    setReady(true);
-
-    const syncSystem = () => {
-      setSystemDark(media.matches);
-    };
-    media.addEventListener("change", syncSystem);
-    return () => media.removeEventListener("change", syncSystem);
-  }, []);
-
-  useEffect(() => {
-    if (!ready) {
-      return;
-    }
-
     applyResolvedTheme(resolveTheme(preference, systemDark));
-  }, [preference, ready, systemDark]);
+  }, [preference, systemDark]);
 
   const setPreference = useCallback((next: ThemePreference) => {
-    setPreferenceState(next);
     localStorage.setItem(THEME_STORAGE_KEY, next);
+    window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
   }, []);
 
   const value = useMemo(

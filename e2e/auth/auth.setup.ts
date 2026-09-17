@@ -137,6 +137,22 @@ setup("seed clinics and storage states", async ({ page }) => {
     throw memberError;
   }
 
+  const { error: serviceError } = await admin.from("clinic_services").insert({
+    tenant_id: identities.clinicA,
+    name: "E2E Cleaning",
+    description: "Routine cleaning for browser tests.",
+    icon: "cleaning",
+    price_minor: 120_000,
+    currency_code: "PHP",
+    duration_minutes: 45,
+    created_by: identities.owner.id,
+    updated_by: identities.owner.id
+  });
+
+  if (serviceError) {
+    throw serviceError;
+  }
+
   writeFileSync(
     resolve(authDir, "users.json"),
     JSON.stringify(identities, null, 2)

@@ -26,10 +26,10 @@ const visitStatusSchema = z
   .transform((status) => (status === "booked" ? "confirmed" : status));
 
 const patientPayloadSchema = z.object({
-  name: z.string().trim().min(1),
-  mobile: z.string().trim().min(1),
+  name: z.string().trim().min(1).max(120),
+  mobile: z.string().trim().min(7).max(20),
   birthday: z.string().optional(),
-  email: z.string().trim().email().optional()
+  email: z.string().trim().email().max(254).optional()
 });
 
 const appointmentSetPayloadSchema = z.object({

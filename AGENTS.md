@@ -1,12 +1,14 @@
 # Karon
 
-Offline-first **PWA** for small dental clinics (Cebu / PH beachhead). Buyer = dentist. Daily user = assistant. **SaaS**, not custom per clinic. Cebuano *karon* = now / today.
+Offline-first-target **PWA** for small dental clinics (Cebu / PH beachhead). Buyer = dentist. Daily user = assistant. **SaaS**, not custom per clinic. Cebuano *karon* = now / today.
 
-Chair loop is the product. Marketing and platform admin apps are **TODO** — do not scaffold empty shells.
+**Offline-first target; current offline coverage = intake + visit status only.**
+
+Chair loop is the product **intent**. Shipped today: auth → Today huddle → services → public `/book` ([ADR 0007](docs/adr/0007-booking-system-of-record.md) **(private)** when present). Marketing and platform admin apps are **TODO** — do not scaffold empty shells.
 
 ## Tech stack
 
-Locked in `docs/adr/0003-nextjs-supabase.md`. Yarn 4 workspaces (`docs/adr/0004-monorepo.md`).
+Locked in `docs/adr/0003-nextjs-supabase.md` **(private)**. Yarn 4 workspaces (`docs/adr/0004-monorepo.md` **(private)**).
 
 | Layer | This repo |
 | --- | --- |
@@ -52,33 +54,49 @@ export default TodayPage;
 
 ES6+ only. Never `var`. Prefer `const`. Arrow functions, kebab-case files. Feature UI: typed `Props`, arrow, **default export**. Hooks and domain: **named** exports.
 
-Cursor: `.cursor/rules/clinic-js-style.mdc`, `.cursor/rules/react-state.mdc`, `.cursor/rules/lighthouse-quality.mdc` (90+ Lighthouse-minded UI; do not run DevTools unless asked).
+Cursor and Codex share the same project guidance. Codex discovers this file automatically; Cursor uses the `.cursor` files below. When a task matches a scoped rule, read it before editing:
+
+| Scope | Shared instruction |
+| --- | --- |
+| Always | `.cursor/rules/ponytail.mdc`, `.cursor/rules/responsive-ui.mdc` |
+| TypeScript / TSX | `.cursor/rules/clinic-js-style.mdc`, `.cursor/rules/react-state.mdc` |
+| UI / CSS | `.cursor/rules/karon-design.mdc`, `.cursor/rules/overlay-motion.mdc`, `.cursor/rules/lighthouse-quality.mdc` |
+| Playwright | `.cursor/rules/writing-e2e.mdc`, `.cursor/rules/e2e-test.mdc` |
+| Finalize code changes | `.cursor/rules/finalize-review.mdc`, `.cursor/rules/clean-runtime.mdc` |
+
+Aim for Lighthouse-minded 90+ UI; do not run DevTools unless asked.
 
 ## Docs and skills
 
+Private planning docs may be absent from a public clone — label **`(private)`**. Prefer code + this file when private docs are unavailable.
+
 | Task | Read |
 | --- | --- |
-| What we build | `docs/v1-spec-freeze.md` + `docs/v1-features.md` |
-| Stack | `docs/adr/0003-nextjs-supabase.md` |
-| Folders | `docs/folder-structure.md` |
-| How to write a feature | `docs/code-patterns.md` |
-| Visual language | `DESIGN.md` + `docs/design-system.md` |
-| Privacy | `docs/pia-draft.md` (not legal approval) |
+| What ships vs intent | `docs/IMPLEMENTATION-TRUTH.md` **(private)** |
+| What we build (intent) | `docs/v1-spec-freeze.md` + `docs/v1-features.md` **(private)** — Impl column is source for status |
+| Booking SoT | `docs/adr/0007-booking-system-of-record.md` **(private)** — `/book` primary; NestJS notes SUPERSEDED |
+| Stack | `docs/adr/0003-nextjs-supabase.md` **(private)** |
+| Folders | `docs/folder-structure.md` **(private)** |
+| How to write a feature | `docs/code-patterns.md` **(private)** |
+| Visual language | `DESIGN.md` + `docs/design-system.md` **(private)** |
+| Privacy | `docs/pia-draft.md` **(private)** — **NOT PRODUCTION APPROVED** |
 
-Ponytail is always-on via `.cursor/rules/ponytail.mdc` and **takes priority**. Product locks: `.cursor/skills/clinic-overrides/` — override generic Next / Vercel / Supabase skills (Server Actions as chair save, Prisma, Zustand, REST `/api/patients`). They do not override Ponytail.
+Ponytail is always-on via `.cursor/rules/ponytail.mdc` and **takes priority**. Codex-native project skills live in `.agents/skills/`; Cursor-compatible copies live in `.cursor/skills/`. Product locks: `.agents/skills/clinic-overrides/` — override generic Next / Vercel / Supabase skills (Server Actions as chair save, Prisma, Zustand, REST `/api/patients`). They do not override Ponytail.
 
-Playwright: `.cursor/rules/writing-e2e.mdc` + `.cursor/rules/e2e-test.mdc`. Review specs with `.cursor/skills/review-e2e-test/`. Specs live in `e2e/`. Fake data only.
+Playwright: `.cursor/rules/writing-e2e.mdc` + `.cursor/rules/e2e-test.mdc`. Review specs with `.agents/skills/review-e2e-test/`. Specs live in `e2e/`. Fake data only.
 
 ## Boundaries
 
-Always: airplane-mode chair loop; owner vs assistant on the **server**; no SPI in ops logs; PayMongo is dentist → us.
+Always: offline for **supported** surfaces (intake + visit status today); owner vs assistant on the **server**; no SPI in ops logs; PayMongo is dentist → us (**Missing** until built).
 
-Never: service-role in the PWA; Server Actions as odontogram save; HMO/AI/photos in V1; empty `apps/marketing` or `apps/admin` unless asked.
+Never: service-role in the PWA; Server Actions as odontogram save; HMO/AI/photos in V1; NestJS booking service; empty `apps/marketing` or `apps/admin` unless asked; claim Frozen chair SaaS as shipped.
 
-Ask first: new runtime dependencies; SMS vendor. Do not seed PayMongo / `plans` pesos until [docs/pricing.md](docs/pricing.md) is Accepted (it is **draft**).
+Ask first: new runtime dependencies; SMS vendor; Google Calendar reconnect. Do not seed PayMongo / `plans` pesos until [docs/pricing.md](docs/pricing.md) **(private)** is Accepted (it is **draft**).
 
 Never commit `.env*`.
 
 ## Verify
 
 After a feature, non-trivial bug fix, or refactor: `.cursor/rules/finalize-review.mdc`. Then matching `yarn` scripts. Then `.cursor/rules/clean-runtime.mdc` (existing `next dev` / test terminals). Do not claim done while those are dirty. Changed UI: exercise the flow in the browser when tools exist (fake data).
+
+When completing work tied to a Jira feature ticket, update that ticket to `Done`, add honest completion evidence, and rename it to the repository's `KR-###-Done-...` convention before handoff.

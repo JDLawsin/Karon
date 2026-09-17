@@ -297,8 +297,7 @@ describe("countByBoardStatus", () => {
     });
     expect(huddle.snapshot).toEqual({
       patientsToday: 1,
-      arrived: 1,
-      outstandingPhp: 0
+      arrived: 1
     });
   });
 });

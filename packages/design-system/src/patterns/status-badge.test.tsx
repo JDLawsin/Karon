@@ -12,4 +12,10 @@ describe("StatusBadge", () => {
     expect(badge.textContent).toBe("Late");
     expect(badge.className).toContain("bg-warning-subtle");
   });
+
+  it("uses the primary role for an in-chair status", () => {
+    render(<StatusBadge tone="primary">In chair</StatusBadge>);
+
+    expect(screen.getByText("In chair").className).toContain("bg-primary");
+  });
 });

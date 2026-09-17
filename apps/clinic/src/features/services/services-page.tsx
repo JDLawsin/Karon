@@ -29,25 +29,43 @@ import {
   useDebouncedValue,
   useIsMobile
 } from "@karon/design-system";
-import { EllipsisVertical, Globe, Plus, Search, Stethoscope } from "lucide-react";
+import {
+  Clock3,
+  EllipsisVertical,
+  Globe,
+  Plus,
+  Search,
+  Stethoscope
+} from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 import ServiceForm from "@/features/services/service-form";
 import { isServiceIconKey } from "@/features/services/service-icons";
+import { formatServicePrice } from "@/features/services/service-money";
 import type { ClinicServiceRow } from "@/features/services/service-schemas";
 import { ServiceIconBadge } from "@/features/services/service-visual";
 import { useClinicServices } from "@/features/services/use-clinic-services";
 
 type ServiceListItemProps = {
+  canEdit: boolean;
   service: ClinicServiceRow;
   onEdit: (service: ClinicServiceRow) => void;
   onDelete: (service: ClinicServiceRow) => void;
 };
 
-const ServiceListItem = ({ service, onEdit, onDelete }: ServiceListItemProps) => {
+const ServiceListItem = ({
+  canEdit,
+  service,
+  onEdit,
+  onDelete
+}: ServiceListItemProps) => {
   const description = service.description?.trim();
   const iconKey =
     service.icon && isServiceIconKey(service.icon) ? service.icon : null;
+  const formattedPrice =
+    service.price_minor === null || service.currency_code === null
+      ? null
+      : formatServicePrice(service.price_minor, service.currency_code);
 
   return (
     <li className="min-w-0">
@@ -76,6 +94,21 @@ const ServiceListItem = ({ service, onEdit, onDelete }: ServiceListItemProps) =>
             >
               {description || "No description yet"}
             </span>
+            <span className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+              {formattedPrice ? (
+                <span className="font-semibold text-foreground tabular-nums">
+                  {formattedPrice}
+                </span>
+              ) : (
+                <StatusBadge tone="warning">Needs price</StatusBadge>
+              )}
+              {service.duration_minutes === null ? null : (
+                <span className="inline-flex items-center gap-1 text-muted-foreground tabular-nums">
+                  <Clock3 aria-hidden className="size-3.5" />
+                  {service.duration_minutes} min
+                </span>
+              )}
+            </span>
             <span
               className="mt-2 inline-flex max-w-full items-center gap-1.5"
               title="Clients can choose this service on your public booking page."
@@ -88,24 +121,28 @@ const ServiceListItem = ({ service, onEdit, onDelete }: ServiceListItemProps) =>
             </span>
           </span>
         </button>
-        <div className="flex shrink-0 items-start py-2 pr-2 sm:items-center sm:py-0 sm:pr-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                aria-label={`Actions for ${service.name}`}
-                className="h-10 min-h-10 w-10 max-h-10 px-0 hover:scale-100 [&_svg]:size-4"
-                type="button"
-                variant="ghost"
-              >
-                <EllipsisVertical />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" collisionPadding={8}>
-              <DropdownMenuItem onSelect={() => onEdit(service)}>Edit</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => onDelete(service)}>Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {canEdit ? (
+          <div className="flex shrink-0 items-start py-2 pr-2 sm:items-center sm:py-0 sm:pr-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-label={`Actions for ${service.name}`}
+                  className="h-10 min-h-10 w-10 max-h-10 px-0 hover:scale-100 [&_svg]:size-4"
+                  type="button"
+                  variant="ghost"
+                >
+                  <EllipsisVertical />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" collisionPadding={8}>
+                <DropdownMenuItem onSelect={() => onEdit(service)}>Edit</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onDelete(service)}>
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ) : null}
       </div>
     </li>
   );
@@ -149,6 +186,8 @@ const ServicesPage = () => {
   const isMobile = useIsMobile();
   const {
     services,
+    currencyCode,
+    canEdit,
     loading,
     error,
     createService,
@@ -206,10 +245,12 @@ const ServicesPage = () => {
         }
         title="Services"
       >
-        <Button onClick={openCreate} type="button">
-          <Plus aria-hidden className="size-4" />
-          Add service
-        </Button>
+        {canEdit && currencyCode ? (
+          <Button onClick={openCreate} type="button">
+            <Plus aria-hidden className="size-4" />
+            Add service
+          </Button>
+        ) : null}
       </PageHeader>
 
       {error ? <Alert title={error} variant="danger" /> : null}
@@ -256,6 +297,7 @@ const ServicesPage = () => {
             <ul className="flex flex-col gap-2">
               {filteredServices.map((service) => (
                 <ServiceListItem
+                  canEdit={canEdit}
                   key={service.id}
                   onDelete={setDeleting}
                   onEdit={openEdit}
@@ -281,26 +323,38 @@ const ServicesPage = () => {
       >
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>{editing ? "Edit service" : "Add service"}</DrawerTitle>
+            <DrawerTitle>
+              {editing ? (canEdit ? "Edit service" : "Service details") : "Add service"}
+            </DrawerTitle>
             <DrawerDescription>
               {editing
-                ? "Update how this service appears on booking and in the clinic."
-                : "Name and icon help patients choose the right visit when they book."}
+                ? canEdit
+                  ? "Update the service, chair price, and default appointment time."
+                  : "Service pricing is read-only for assistants."
+                : "Set the service details, chair price, and default appointment time."}
             </DrawerDescription>
           </DrawerHeader>
-          <ServiceForm
-            onSave={async (values) => {
-              if (editing) {
-                await updateService.mutateAsync({ service: editing, values });
-              } else {
-                await createService.mutateAsync(values);
-              }
+          {currencyCode ? (
+            <ServiceForm
+              currencyCode={currencyCode}
+              onSave={async (values) => {
+                if (editing) {
+                  await updateService.mutateAsync({ service: editing, values });
+                } else {
+                  await createService.mutateAsync(values);
+                }
 
-              setDrawerOpen(false);
-              setEditing(null);
-            }}
-            service={editing}
-          />
+                setDrawerOpen(false);
+                setEditing(null);
+              }}
+              readOnly={!canEdit}
+              service={editing}
+            />
+          ) : (
+            <div className="px-6 pb-6">
+              <Alert title="Clinic currency is unavailable." variant="danger" />
+            </div>
+          )}
         </DrawerContent>
       </Drawer>
 

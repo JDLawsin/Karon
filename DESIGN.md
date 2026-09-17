@@ -2,12 +2,12 @@
 version: alpha
 name: Karon
 description: >-
-  Offline-first dental clinic PWA. Flat poster UI — paper white, action Blue 600,
-  Outfit, emerald only for success, never spa mint or Chair Azure.
+  Offline-first-target dental clinic PWA. Quiet ops workbench on paper — Blue 600,
+  Outfit, emerald only for success, never spa mint or Chair Azure. Density tiers (D3).
 colors:
   # Neutrals — ~90% of the canvas
   surface: "#F3F4F6"
-  surface-sunken: "#F3F4F6"
+  surface-sunken: "#E5E7EB"  # darker than surface — wells (D2)
   paper: "#FFFFFF"
   text: "#111827"
   text-subtle: "#4B5563"
@@ -154,14 +154,16 @@ production UI MUST import `@karon/design-system` and MUST use CSS variables in
 **`tokens.css` wins**. Do not re-implement Button, Input, or Dialog from the YAML
 recipes when those primitives already exist.
 
-Engineering spec (package tree, shadcn, density attribute): [`docs/design-system.md`](docs/design-system.md).
-Agent workflow: `.cursor/skills/karon-design/`. Product locks: [ADR 0005](docs/adr/0005-design-system.md).
+Engineering spec (package tree, shadcn, density attribute): [`docs/design-system.md`](docs/design-system.md) **(private)**.
+Agent workflow: `.cursor/skills/karon-design/`. Product locks: [ADR 0005](docs/adr/0005-design-system.md) **(private)**.
+Booking SoT: [ADR 0007](docs/adr/0007-booking-system-of-record.md) **(private)**.
 
 Aligned with: [Atlassian Design System](https://atlassian.design/get-started) token
-roles, [DESIGN.md](https://github.com/google-labs-code/design.md) portability, Flat
-poster UI (color blocks, no shadow). Not aligned with: Chair Azure / IBM Plex,
-default shadcn zinc dashboards, spa-mint dentistry Dribbbles, Material card theatre,
-Atlassian blue `#0C66E4` as a copy, prompt Blue 500 on white text (fails WCAG AA).
+roles, [DESIGN.md](https://github.com/google-labs-code/design.md) portability, quiet
+ops workbench on paper (color blocks; no Material elevation theatre). Not aligned with:
+Chair Azure / IBM Plex, default shadcn zinc dashboards, spa-mint dentistry Dribbbles,
+Material card theatre, Atlassian blue `#0C66E4` as a copy, prompt Blue 500 on white
+text (fails WCAG AA). Poster is inspiration — not a ban on separators (D1).
 
 ---
 
@@ -170,26 +172,31 @@ Atlassian blue `#0C66E4` as a copy, prompt Blue 500 on white text (fails WCAG AA
 Karon (Cebuano *now / today*) is chair software for a 1–2 person dental clinic.
 The **buyer** is the dentist. The **daily user** is the secretary / chairside
 assistant, often on a cheap Android phone, sometimes in gloves, often with wifi
-that dies mid-procedure. The loop that matters is ninety seconds after one morning
-of teaching: who is here → name + mobile → tooth → peso quote → cash / GCash /
-unpaid → next visit.
+that dies mid-procedure. The loop that matters (intent) is ninety seconds after one
+morning of teaching: who is here → name + mobile → tooth → peso quote → cash / GCash /
+unpaid → next visit. **Offline-first target; current offline coverage = intake +
+visit status only.** North star UX: quiet **chair ops workbench** — attention strip →
+next patient → fat verb → calm booking interrupt.
 
 ### Atmosphere
 
 - MUST default to `paper` (`#FFFFFF`) for ~90% of the canvas. Clinics are already
-  visually noisy (lights, instruments, Messenger). The product is a quiet poster,
-  not a notebook with hairlines.
+  visually noisy (lights, instruments, Messenger). Atmosphere: **quiet ops workbench
+  on paper** — poster is inspiration, not a ban on separators (D1).
 - MUST treat color as meaning. Saturated fills are for **one** primary action per
   section, or for a status that also has a text label.
-- MUST group related blocks with `surface` / `muted` color fills, not 1px borders
-  as structure. `--surface-border-width` is `0`. `--shadow` is `none`.
+- MUST group related blocks primarily with `surface` / `surface-sunken` fills.
+  **Allow:** a 1px low-contrast separator token **or** a real sunken delta when fill
+  alone vanishes (~3% luminance). MUST NOT invent `border-l-4` + `shadow-md` as structure.
+  Drag overlay = opacity/ring, not `shadow-md`. Keep: no Material elevation theatre.
+  Default `--surface-border-width` may stay `0`; `--shadow` stays `none` on resting chrome.
 - MUST NOT ship Chair Azure, IBM Plex, cream paper, terracotta accents,
-  glassmorphism, or Material elevation.
+  glassmorphism, or Material elevation theatre.
 - Auth split MAY place licensed clinic photos as small rotated paper cards
   (`bg-background`, `rounded-lg`) on the primary color-block. The photo inside
   stays square (`rounded-none`). MUST NOT full-bleed photos or put them on chair
-  screens. Inventory: [`docs/attributions.md`](docs/attributions.md).
-- SHOULD feel closer to a printed flat poster than to a SaaS marketing site.
+  screens. Inventory: [`docs/attributions.md`](docs/attributions.md) **(private)**.
+- SHOULD feel like a fast honest chair ops surface — not a SaaS marketing site, not EHR density.
 
 ### Brand vs product
 
@@ -219,7 +226,7 @@ emoji. MUST NOT tile the mark as a watermark behind the today board.
 | Consumer wellness / teeth-whitening brand | Buyer is a dentist, not a TikTok clinic |
 | Green primary buttons | Green is **paid / synced / success** only (CVD + money-app vibe) |
 | Red primary buttons | Red is **unpaid / expired / destructive** |
-| Dark mode | Supported via `data-theme`. Default preference is **system**. Chair can force light. |
+| Dark mode | Supported via `data-theme`. **Clinic first-run default = light** (D8). User MAY choose system/dark in Settings. |
 
 ---
 
@@ -242,7 +249,7 @@ Refer to tokens by YAML key in prose. In app code, emit the CSS variable
 | --- | --- | --- |
 | `paper` | `#FFFFFF` | Page canvas. Stark white. Not cream, not Chair Azure cool paper. |
 | `surface` | `#F3F4F6` | Cards, wells, grouping fills on paper |
-| `surface-sunken` | `#F3F4F6` | Same as surface — wells inside a page. Never the outermost canvas. |
+| `surface-sunken` | `#E5E7EB` | **Darker than `surface`** — wells inside a page (D2). Never the outermost canvas. Dark theme: document a visible delta in `tokens.css`. YAML MUST NOT claim “same as surface.” |
 | `text` | `#111827` | Body, headings, peso amounts |
 | `text-subtle` | `#4B5563` | Labels, metadata. Contrast ≥ 4.5:1 on paper. |
 | `text-subtlest` | `#6B7280` | Placeholders only — not body copy |
@@ -250,17 +257,17 @@ Refer to tokens by YAML key in prose. In app code, emit the CSS variable
 | `border-input` | `#E5E7EB` | Fields use `--input-fill` (`#E5E7EB`) and `--input-border-width: 0`. |
 | `border-focused` | `#2563EB` | Focus ring; same as brand |
 
-MUST use `paper` as the page background. MUST NOT use hairline borders as the way
-to know a card exists. The Karon pattern is **white paper, gray color-block
-surfaces, no drop shadow**.
+MUST use `paper` as the page background. Prefer fill grouping; MAY use low-contrast
+separator or sunken delta when wells would otherwise vanish. The Karon pattern is
+**white paper, gray color-block surfaces, no Material drop-shadow theatre**.
 
 ### Dark theme
 
 Same token **names**. Values live under `[data-theme="dark"]` in `tokens.css`. Paper
 is gray-900 (`#111827`), not `#000` and not Chair Azure blue-black. Fields use
 `--input-fill: #111827` so they contrast on `#1F2937` cards. Filled buttons use the
-matching `*-foreground`. Preference: `system` (default), `light`, or `dark`, stored
-as `karon-theme`. Chair MAY force light. MUST NOT introduce a second hex palette in
+matching `*-foreground`. Preference: **`light` (clinic first-run default)**, `system`, or `dark`, stored
+as `karon-theme` (D8). MUST NOT introduce a second hex palette in
 feature files for dark. MUST NOT add a Chair vs Flat look switch (`data-look`).
 
 ### Semantic roles
@@ -271,7 +278,7 @@ These answer “what state is this?” Names are whole words.
 | --- | --- | --- |
 | `primary` (Blue 600) | `#2563EB` | The one action: Save visit, Add patient, Collect. Links, focus. Hover `#1D4ED8`. Do not use Blue 500 — white-on-500 fails WCAG AA. |
 | `success` (emerald) | `#059669` | Paid, synced, done. Never the default button. |
-| `accent` (amber) | `#F59E0B` | Selected job / highlight. Ink is `accent-foreground` (`#111827`). |
+| `accent` (amber) | `#F59E0B` | Sparse highlight only. **Active job ≠ amber** (D6) — use **primary** indicator (left bar or `primary/10` + medium). Reserve amber/`warning` for late / past due. |
 | `warning` | `#D97706` | Late, past due, “ask before you do this”. Pale fill + dark ink. |
 | `danger` | `#DC2626` | Unpaid, expired entitlement, destructive confirm. |
 | `information` | `#0F766E` | Teal. Queued / syncing / in progress / trial. |
@@ -304,18 +311,21 @@ Status is never color alone (WCAG 1.4.1). Pair **label + color**; icon when spac
 
 | Domain state | Role | Label (sentence case) |
 | --- | --- | --- |
-| Booked | neutral / subtle | Booked |
+| Booked (includes pending + confirmed) | neutral / subtle | Booked — pending = “Needs review” **chip**, not own column (D5) |
 | Waiting | information | Waiting |
-| In chair | primary | In chair |
-| Late | warning | Late |
-| Paid | success | Paid |
-| Unpaid | danger | Unpaid |
+| In chair | primary | In chair — **never** amber accent (D6) |
+| Late | warning | Late (derived) |
+| Done | success / subtle | Done |
+| Paid | success | Paid — **Collect / Collections only**, not Today columns |
+| Unpaid | danger | Unpaid — **Collect / Collections only** |
 | Cash / GCash | no extra hue | The word Cash or GCash |
 | Sync queued | information | Queued |
 | Synced | success | Synced |
 | Trial | information | Trial |
 | Past due | warning | Past due |
 | Expired | danger | Expired |
+
+**Board columns (max 5):** Booked · Waiting · In chair · Late · Done. StatusBadge `tone="primary"` MUST use primary — not accent (D6).
 
 ### What not to copy from dentistry clichés
 
@@ -406,8 +416,7 @@ Post-login is a dashboard work surface, not a wrapping header of every utility.
 - Tablet+: left **rail** — Jobs (Today; owner also Collections), then
   Account (Settings). Settings holds Account (password and signed-in devices) and,
   for owners, Clinic (details), Integrations (bookings), and Members (staff).
-  Active job uses
-  `accent`, not a new hue. Header has a collapse control; collapsed rail is icons only.
+  Active job uses **primary** indicator (D6), not amber. Header has a collapse control; collapsed rail is icons only.
   Footer is a staff chip (avatar, name, email) that opens theme and sign out.
   Staff avatar is DiceBear Notionists Neutral, seeded by
   user id (stable per person, not reshuffled on login).
@@ -415,43 +424,50 @@ Post-login is a dashboard work surface, not a wrapping header of every utility.
   sign out live in the left sheet (same grouping as the tablet rail).
 - Sync stays an `information` banner above the canvas, never a toast.
 
-Today’s canvas: clinic date, live counts from the real board, then rows (phone) or
-column wells (tablet+). MUST NOT invent marketing stats.
+Today’s canvas: **attention strip** (D11), then rows (phone) or column wells (tablet+).
+MUST NOT invent marketing stats or peso KPIs on assistant Today until Collect ships (D10).
+
+**Attention strip (prescribe):**
+```
+{date} · {n} waiting · {n} late · {n} in chair · {n} booked
+[+ {n} new bookings when pending > 0]
+```
+Tap to filter. No “Arrived.” No ₱ on assistant Today. Services → Settings / Clinic — not a morning peer job (D10). Collections nav only when Collect exists; stub stays honest.
 
 ```
 Phone                               Tablet+
 ┌─────────────────────┐           ┌──────┬──────────────────┐
-│ ≡      Karon        │           │Karon │ Today  12 Sep    │
-│ Today      [Add]    │           │Today │ 2 waiting · 1 late│
-│ 9:30 Maria  Waiting │           │Coll. │ [Add patient]    │
-│ …                   │           │Sett. │ Booked │ Waiting │
-└─────────────────────┘           │      │        │         │
-  sheet: jobs / account / av      │av ▸  │        │         │
-                                  │v0.1  └──────────────────┘
+│ ≡   Karon  [Add]    │           │Karon │ Today · attention│
+│ Today               │           │Today │ [Add patient]    │
+│ Mon · 2 waiting · 1 late        │Coll.*│ Booked│Waiting│… │
+│ [2 new bookings]    │           │Sett. │ wells on sunken  │
+│ Maria     Waiting   │           │      │                  │
+│ [ In chair ]   [⋮]  │           │av ▸  │                  │
+└─────────────────────┘           └──────┴──────────────────┘
+* Collections only when Collect ships.
 ```
 
 ---
 
 ## Elevation & Depth
 
-Three planes. Shadows are forbidden on product chrome (`--shadow: none`).
+Three planes. No Material elevation theatre (`--shadow: none` on resting chrome).
 
 | Plane | Token | Use |
 | --- | --- | --- |
 | Default | `paper` | The canvas (`#FFFFFF`) |
-| Resting surface | `surface` color block | Cards, fields, board columns — fill, not hairline |
+| Resting surface | `surface` | Cards, fields — fill first |
+| Sunken well | `surface-sunken` (`#E5E7EB`) | Board columns / wells — **must differ** from surface (D2) |
 | Overlay | `surface` + dialog primitive | Modal, sheet, toast, select |
 
-- MUST group with color blocks (`bg-card` / `bg-muted`). MUST NOT use 1px `border` as
-  structure (`--surface-border-width: 0`).
-- MUST NOT put `box-shadow` on cards. Assistants do not need Material elevation
-  to know a row is tappable — they need 56px height and a clear name.
-- SHOULD use `surface-sunken` for today-board columns on wide screens (wells on paper),
-  not a stack of raised cards.
+- MUST group primarily with color blocks. MAY use 1px low-contrast separator when needed (D1).
+- MUST NOT put `box-shadow` / `shadow-md` / `border-l-4` kanban tells on cards. Drag overlay = opacity/ring.
+- Primary controls need **56px**; secondary/icon-only ≥44 (D3) — not “every control is 56.”
+- SHOULD use `surface-sunken` for today-board columns on wide screens (wells on paper).
 - Overlay (dialog / sheet) MAY use the shadcn overlay scrim. MUST keep the dialog
   titled (visible or `sr-only`).
-- Hover MAY scale (`--control-hover-scale: 1.05`, `--surface-hover-scale: 1.02`).
-  `prefers-reduced-motion: reduce` MUST set those scales to `1` and `--motion-duration` to `0`. Overlay motion stays `--overlay-duration` (see Motion).
+- Under `data-density="clinic"`: `--control-hover-scale: 1` and `--surface-hover-scale: 1` **always** (D4). Hover = background/color only.
+  `prefers-reduced-motion: reduce` MUST keep scales at `1` and `--motion-duration` at `0`. Overlay motion stays `--overlay-duration` (see Motion).
 
 ---
 
@@ -496,9 +512,15 @@ Appearances that exist today: `default` (primary), `outline`, `ghost`.
   MUST NOT use “Submit”, “OK”, or “Click here”.
 - MUST keep **one** primary button per section. A second action is `outline` or `ghost`.
 - MUST NOT paint Save as `success` or Collect as `warning`.
-- Clinic density: default height **56px** (`h-14` / `--control-min-height: 3.5rem`).
-  That still meets the 44px glove/chair floor. Compact (`sm`) is for marketing/admin
-  later or dense tables — MUST NOT be the chair default.
+- Clinic density **tiers** (D3) — replace “56px law for every control”:
+
+| Tier | Min height | Examples |
+| --- | --- | --- |
+| **Primary** | **56px** | Add patient, Collect, Accept booking, Save visit, next-status on focused row |
+| **Secondary** | ≥44px | Outline secondary, date control, week prev/next |
+| **Icon-only** | ≥44×44 hit | Overflow ⋮, close |
+
+  Shrinking Primary below 56 to “fit the card” = **P0 bug**. Secondary at 44 = compliant.
 - Disabled is `opacity-50` plus `pointer-events-none`. MUST also set `disabled` on the
   element so assistive tech knows.
 
@@ -518,6 +540,8 @@ Appearances that exist today: `default` (primary), `outline`, `ghost`.
 
 Empty is an invitation: heading + one sentence + primary action. No illustrations of
 teeth. Example: “No patients today” / “Add the first name from the Messenger thread.”
+`EmptyState` MUST accept optional `action?: ReactNode` (D9). Loading (Skeleton +
+`aria-busy`) and Error (Alert danger + retry) are first-class with Empty — error ≠ empty.
 
 ### AppShell (pattern, when built)
 
@@ -538,6 +562,17 @@ toast that might be screenshot-shared.
 
 ---
 
+## Calm interrupts (bookings) — D7
+
+Public booking inbox must not be silent or toast-spam.
+
+1. Subscribe (Realtime or short backoff); single `useBookingInbox` for badge + list.
+2. One short chime per new-request burst (settings-gated; default on desk); optional vibrate.
+3. `aria-live="polite"`: “New booking: {name} · {time}” — no diagnosis, no unpaid.
+4. Badge on Today + phone chrome when pending > 0.
+5. Offline: last-known pending + “Inbox needs network.”
+6. MUST NOT toast-spam; MUST NOT flash the whole board primary.
+
 ## Do's and Don'ts
 
 **Do**
@@ -547,7 +582,8 @@ toast that might be screenshot-shared.
 - Keep clinic words (tooth, GCash, unpaid) in `apps/clinic/src/features`, not in
   `@karon/design-system`.
 - Show offline as a calm `information` banner: “Saved on this device. Will sync when
-  online.” Offline is the product, not an error.
+  online.” Offline is the product target, not an error — coverage today = intake +
+  visit status; inbox needs network.
 
 **Don’t**
 
@@ -556,8 +592,8 @@ toast that might be screenshot-shared.
 - Use color as the only status.
 - Put patient name, mobile, odontogram, or GCash ref in `console.*` or Pino/SigNoz
   (NFR-21).
-- Scaffold Storybook or `apps/marketing` to “see the tokens”. Clinic is the catalog
-  until a third surface exists.
+- Require a public marketing Storybook for V1. MAY add package-level visual tests /
+  minimal catalog for Today primitives (D12). Do not scaffold `apps/marketing` empty.
 
 ---
 
@@ -622,7 +658,7 @@ Target WCAG 2.2 **AA**. Chair also has NFR-08 (gloves / one-hand). Lighthouse-mi
 
 - Contrast: body `text` on `paper` ≥ 4.5:1 (this palette: ~16:1). White on `primary`
   (`#2563EB`) meets AA; Blue 500 does not — do not “brighten” the brand fill.
-- Touch: clinic `data-density="clinic"` → controls **56px** (still ≥ 44px).
+- Touch: clinic `data-density="clinic"` → **Primary 56px**; Secondary / icon-only ≥ 44px (D3).
 - Keyboard: visible focus ring. Dialogs have a title. One `h1`.
 - Status: text + color. Prefer `role="status"` for sync/offline, not only a green dot.
 - MUST NOT rely on hover. The primary device is a phone.
@@ -642,7 +678,7 @@ then ~390, ~768, ~1280.
 | 768–1023 | Column wells | Two-pane if it still fits |
 | 1280+ | Same wells, not a new IA | Quote readable, not a dashboard wall |
 
-- MUST keep tap targets ≥ 44px at every width in clinic (clinic default is 56px).
+- MUST keep tap targets ≥ 44px at every width; Primary actions stay 56px (D3).
 - MUST account for long Filipino names wrapping; names MUST NOT overflow the row.
 - Landscape phone: the odontogram MAY scroll inside a bounded region; chrome MUST
   remain reachable.
@@ -666,4 +702,4 @@ token at once and tempts agents to redraw components. We follow that split:
 Before writing UI, list the tokens and primitives you will use (the `ads_plan` step).
 Then generate code that **imports** them.
 
-Dark theme is **on**: `data-theme="light" | "dark"` on `<html>`, `ThemeProvider` + `themeInitScript` in the clinic layout, preference in `localStorage` (`karon-theme`: light / dark / system). Prefer swapping tokens over `dark:` utilities. There is **no** look switch and **no** `karon-look` key. Chart ramps and a marketing display face remain omitted. Chair Azure and IBM Plex MUST NOT return.
+Dark theme is **on**: `data-theme="light" | "dark"` on `<html>`, `ThemeProvider` + `themeInitScript` in the clinic layout, preference in `localStorage` (`karon-theme`: light / dark / system). **First-run clinic default = light** (D8). Prefer swapping tokens over `dark:` utilities. There is **no** look switch and **no** `karon-look` key. Chart ramps and a marketing display face remain omitted. Chair Azure and IBM Plex MUST NOT return. Keep brand tokens: Blue 600, Outfit + latin-ext, emerald = success/paid/synced only, money `text` + tabular-nums, sentence case, offline information banner, name+mobile create, no SPI in toasts, WCAG AA, skip-link + focus ring, role-gated nav, motion-cut (no confetti).

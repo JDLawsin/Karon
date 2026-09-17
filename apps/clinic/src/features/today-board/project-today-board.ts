@@ -40,7 +40,6 @@ type TodayBoardRow = {
 type TodaySnapshot = {
   patientsToday: number;
   arrived: number;
-  outstandingPhp: number;
 };
 
 type TodayHuddle = {
@@ -55,7 +54,7 @@ const BOARD_STATUS_LABEL: Record<BoardStatus, string> = {
   late: "Late",
   waiting: "Waiting",
   in_chair: "In chair",
-  complete: "Complete"
+  complete: "Done"
 };
 
 const VISIT_STATUS_LABEL: Record<VisitStatus, string> = {
@@ -63,23 +62,9 @@ const VISIT_STATUS_LABEL: Record<VisitStatus, string> = {
   pending_review: "Pending review",
   waiting: "Waiting",
   in_chair: "In chair",
-  complete: "Complete",
+  complete: "Done",
   cancelled: "Cancelled",
   no_show: "No-show"
-};
-
-const paymentMethodOf = (payload: Record<string, unknown>) => {
-  const method = payload.method;
-
-  return method === "cash" || method === "gcash" || method === "unpaid"
-    ? method
-    : undefined;
-};
-
-const paymentAmountOf = (payload: Record<string, unknown>) => {
-  const amount = payload.amount;
-
-  return typeof amount === "number" && amount >= 0 ? amount : 0;
 };
 
 const calendarDateInClinic = (iso: string, timeZone = CLINIC_TZ) =>
@@ -133,13 +118,6 @@ const clinicLocalParts = (now: Date, timeZone = CLINIC_TZ) => {
 // ponytail: Manila is UTC+8 with no DST; use clinics.timezone offset when membership carries it
 const startsAtFromClinicLocal = (date: string, time: string) =>
   `${date}T${time.length === 5 ? `${time}:00` : time}+08:00`;
-
-const formatOutstanding = (php: number) =>
-  new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0
-  }).format(php);
 
 const countByBoardStatus = (rows: TodayBoardRow[]) => {
   const counts = {
@@ -245,8 +223,6 @@ const foldVisits = (events: ClinicEvent[]) => {
       eventIds: string[];
     }
   >();
-  let outstandingPhp = 0;
-
   for (const event of [...events].sort(compareEvents)) {
     if (event.type === "patient.created" || event.type === "patient.updated") {
       const payload = patientPayloadSchema.safeParse(event.payload);
@@ -295,21 +271,9 @@ const foldVisits = (events: ClinicEvent[]) => {
       continue;
     }
 
-    if (event.type !== "payment.recorded") {
-      continue;
-    }
-
-    const method = paymentMethodOf(event.payload);
-    const amount = paymentAmountOf(event.payload);
-
-    if (method === "unpaid") {
-      outstandingPhp += amount;
-    } else if (method === "cash" || method === "gcash") {
-      outstandingPhp -= amount;
-    }
   }
 
-  return { patients, visits, outstandingPhp: Math.max(0, outstandingPhp) };
+  return { patients, visits };
 };
 
 type FoldedClinic = ReturnType<typeof foldVisits>;
@@ -371,7 +335,7 @@ const projectFoldedBoard = (
   const today = viewDay ?? realToday;
   const nowMs = today === realToday ? now.getTime() : 0;
   const ids = new Set(outboxIds);
-  const { patients, visits, outstandingPhp } = folded;
+  const { patients, visits } = folded;
   const rows: TodayBoardRow[] = [];
   const leftoverByDate: TodayHuddle["leftoverByDate"] = {};
   let patientsToday = 0;
@@ -431,8 +395,7 @@ const projectFoldedBoard = (
           row.status === "waiting" ||
           row.status === "in_chair" ||
           row.status === "complete"
-      ).length,
-      outstandingPhp
+      ).length
     }
   };
 };
@@ -484,7 +447,6 @@ export {
   countByBoardStatus,
   formatClinicDate,
   formatClinicWeekday,
-  formatOutstanding,
   formatVisitTime,
   foldVisits,
   hasDuplicateMobile,

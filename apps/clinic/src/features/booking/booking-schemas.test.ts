@@ -10,11 +10,12 @@ import {
 } from "./booking-schemas";
 
 describe("isBookingHoneypotFilled", () => {
-  it("rejects a filled website field", () => {
-    expect(isBookingHoneypotFilled({ website: "https://spam.example" })).toBe(true);
-    expect(isBookingHoneypotFilled({ website: "  " })).toBe(false);
+  it("rejects the trap field without treating browser website autofill as a bot", () => {
+    expect(isBookingHoneypotFilled({ website: "https://patient.example" })).toBe(false);
+    expect(isBookingHoneypotFilled({ bookingReference: "spam" })).toBe(true);
+    expect(isBookingHoneypotFilled({ bookingReference: "  " })).toBe(false);
     expect(isBookingHoneypotFilled({ name: "Ana" })).toBe(false);
-    expect(isBookingHoneypotFilled({ website: 1 })).toBe(true);
+    expect(isBookingHoneypotFilled({ bookingReference: 1 })).toBe(true);
   });
 });
 

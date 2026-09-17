@@ -35,7 +35,12 @@ vi.mock("@/lib/auth/leave-clinic-session", () => ({
   leaveClinicSession: vi.fn(async () => {})
 }));
 
-import { IDLE_LOCK_ENABLED_EVENT, IDLE_WARN_MS, notifyIdleLockEnabled } from "./idle-lock";
+import {
+  IDLE_LAST_ACTIVE_KEY,
+  IDLE_LOCK_ENABLED_EVENT,
+  IDLE_WARN_MS,
+  notifyIdleLockEnabled
+} from "./idle-lock";
 import IdleLockGate from "./idle-lock-gate";
 
 const membership = {
@@ -68,8 +73,8 @@ describe("IdleLockGate", () => {
   });
 
   it("keeps a warned session when the user is still clicking", async () => {
-    sessionStorage.setItem(
-      `karon-idle-last-active:${userId}`,
+    localStorage.setItem(
+      `${IDLE_LAST_ACTIVE_KEY}:${userId}`,
       String(Date.now() - IDLE_WARN_MS)
     );
 
@@ -102,8 +107,8 @@ describe("IdleLockGate", () => {
 
   it("does not warn when idle lock is off on the account", async () => {
     authUser.idleLockEnabled = false;
-    sessionStorage.setItem(
-      `karon-idle-last-active:${userId}`,
+    localStorage.setItem(
+      `${IDLE_LAST_ACTIVE_KEY}:${userId}`,
       String(Date.now() - IDLE_WARN_MS)
     );
 
@@ -125,8 +130,8 @@ describe("IdleLockGate", () => {
   });
 
   it("stops warning when the account turns idle lock off", async () => {
-    sessionStorage.setItem(
-      `karon-idle-last-active:${userId}`,
+    localStorage.setItem(
+      `${IDLE_LAST_ACTIVE_KEY}:${userId}`,
       String(Date.now() - IDLE_WARN_MS)
     );
 
@@ -155,8 +160,8 @@ describe("IdleLockGate", () => {
   });
 
   it("stops warning when another tab turns idle lock off", async () => {
-    sessionStorage.setItem(
-      `karon-idle-last-active:${userId}`,
+    localStorage.setItem(
+      `${IDLE_LAST_ACTIVE_KEY}:${userId}`,
       String(Date.now() - IDLE_WARN_MS)
     );
 
@@ -174,6 +179,41 @@ describe("IdleLockGate", () => {
       new StorageEvent("storage", {
         key: IDLE_LOCK_ENABLED_EVENT,
         newValue: "0"
+      })
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("heading", { name: "Stay signed in?" })
+      ).not.toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole("heading", { name: "Session locked" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("stops warning when the user is active in another tab", async () => {
+    localStorage.setItem(
+      `${IDLE_LAST_ACTIVE_KEY}:${userId}`,
+      String(Date.now() - IDLE_WARN_MS)
+    );
+
+    render(
+      <IdleLockGate membership={membership} sessionActive userId={userId}>
+        Board
+      </IdleLockGate>
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Stay signed in?" })
+    ).toBeVisible();
+
+    const activeAt = Date.now();
+    localStorage.setItem(`${IDLE_LAST_ACTIVE_KEY}:${userId}`, String(activeAt));
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: `${IDLE_LAST_ACTIVE_KEY}:${userId}`,
+        newValue: String(activeAt)
       })
     );
 

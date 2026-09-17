@@ -14,7 +14,7 @@ const statusBadgeVariants = cva(
       tone: {
         neutral: "bg-muted text-foreground",
         info: "bg-info-subtle text-info",
-        primary: "bg-accent text-accent-foreground",
+        primary: "bg-primary text-primary-foreground",
         warning: "bg-warning-subtle text-warning-foreground",
         success: "bg-success-subtle text-success",
         danger: "bg-destructive-subtle text-destructive"

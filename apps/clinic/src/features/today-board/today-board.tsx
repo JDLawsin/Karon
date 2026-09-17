@@ -20,8 +20,7 @@ import BookingInbox from "@/features/booking/booking-inbox";
 import {
   calendarDateInClinic,
   formatClinicDate,
-  formatClinicWeekday,
-  formatOutstanding
+  formatClinicWeekday
 } from "@/features/today-board/project-today-board";
 import TodayHuddleBoard from "@/features/today-board/today-huddle-board";
 import { useTodayBoard } from "@/features/today-board/use-today-board";
@@ -69,6 +68,7 @@ const TodayBoard = () => {
   const {
     huddle,
     events,
+    patients,
     ready,
     now,
     autoConfirm,
@@ -80,6 +80,7 @@ const TodayBoard = () => {
   const isMobile = useIsMobile();
   const chromeSlot = useClinicChromeActions();
   const [open, setOpen] = useState(false);
+  const [pendingBookingCount, setPendingBookingCount] = useState(0);
   const selectedDay = viewDay ?? calendarDateInClinic(now.toISOString());
   const selectedAt = new Date(`${selectedDay}T12:00:00+08:00`);
   const viewingToday = selectedDay === calendarDateInClinic(now.toISOString());
@@ -145,13 +146,25 @@ const TodayBoard = () => {
               await addWalkInPatient(draft);
               setOpen(false);
             }}
+            patients={patients}
           />
         </DrawerContent>
       </Drawer>
+      {pendingBookingCount > 0 ? (
+        <a
+          className="flex min-h-(--control-min-height) min-w-0 items-center justify-between gap-3 rounded-lg bg-warning-subtle px-4 py-3 text-warning-foreground transition-transform duration-(--motion-duration) hover:scale-(--surface-hover-scale) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          href="#booking-inbox"
+        >
+          <span className="font-medium">
+            {pendingBookingCount} booking {pendingBookingCount === 1 ? "request" : "requests"}
+          </span>
+          <span className="shrink-0 text-sm">Open inbox</span>
+        </a>
+      ) : null}
       <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2.6fr)_minmax(16rem,0.85fr)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-4">
           {ready ? (
-            <ul className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
+            <ul className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
               <li className="min-w-0 rounded-lg bg-card px-3 py-3">
                 <p className="text-sm text-muted-foreground">
                   {viewingToday ? "Patients today" : "Patients this day"}
@@ -164,12 +177,6 @@ const TodayBoard = () => {
                 <p className="text-sm text-muted-foreground">Arrived</p>
                 <p className="text-2xl font-semibold tabular-nums">
                   {huddle.snapshot.arrived}
-                </p>
-              </li>
-              <li className="min-w-0 rounded-lg bg-card px-3 py-3">
-                <p className="text-sm text-muted-foreground">To collect</p>
-                <p className="text-2xl font-semibold tabular-nums">
-                  {formatOutstanding(huddle.snapshot.outstandingPhp)}
                 </p>
               </li>
             </ul>
@@ -186,7 +193,11 @@ const TodayBoard = () => {
           />
         </div>
         {ready ? (
-          <BookingInbox autoConfirm={autoConfirm} events={events} />
+          <BookingInbox
+            autoConfirm={autoConfirm}
+            events={events}
+            onPendingCountChange={setPendingBookingCount}
+          />
         ) : null}
       </div>
     </div>

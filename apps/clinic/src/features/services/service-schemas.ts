@@ -21,7 +21,26 @@ const serviceIconSchema = z
 const serviceFormSchema = z.object({
   name: z.string().trim().min(1, "Enter a service name.").max(80, "Use a shorter name."),
   description: serviceDescriptionSchema,
-  icon: serviceIconSchema
+  icon: serviceIconSchema,
+  priceMajor: z
+    .number({ error: "Enter a price." })
+    .min(0, "Price cannot be negative.")
+    .max(21_474_836.47, "Enter a lower price."),
+  durationMinutes: z
+    .number({ error: "Enter a duration." })
+    .int("Use whole minutes.")
+    .min(1, "Duration must be at least 1 minute.")
+    .max(1440, "Duration cannot exceed 24 hours.")
+});
+
+const currencyCodeSchema = z
+  .string()
+  .regex(/^[A-Z]{3}$/, "Currency must be a three-letter ISO code.");
+
+const servicePricingSchema = z.object({
+  priceMinor: z.int().min(0).max(2_147_483_647),
+  currencyCode: currencyCodeSchema,
+  durationMinutes: z.int().min(1).max(1440)
 });
 
 const clinicServiceRowSchema = z.object({
@@ -30,6 +49,9 @@ const clinicServiceRowSchema = z.object({
   name: z.string(),
   description: z.string().nullable(),
   icon: z.string().nullable(),
+  price_minor: z.int().min(0).nullable(),
+  currency_code: currencyCodeSchema.nullable(),
+  duration_minutes: z.int().min(1).max(1440).nullable(),
   created_at: z.string(),
   updated_at: z.string(),
   created_by: z.uuid(),
@@ -56,7 +78,9 @@ const parseClinicServices = (value: unknown) => {
 export {
   clinicServiceRowSchema,
   clinicServicesSchema,
+  currencyCodeSchema,
   parseClinicServices,
+  servicePricingSchema,
   serviceFormSchema
 };
 export type { ClinicServiceRow, ServiceFormValues };

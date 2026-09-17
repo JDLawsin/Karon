@@ -10,6 +10,7 @@ import {
   cn
 } from "@karon/design-system";
 import { EllipsisVertical } from "lucide-react";
+import Link from "next/link";
 import type { ComponentProps } from "react";
 
 import {
@@ -81,9 +82,11 @@ const TodayHuddleCard = ({
   const canCancel = transitionVisitStatus(row.storedStatus, "cancelled") !== null;
   const canNoShow = transitionVisitStatus(row.storedStatus, "no_show") !== null;
   const hasMenu = reverseTargets.length > 0 || canCancel || canNoShow;
+  const isInChair = row.status === "in_chair";
 
   return (
     <li
+      {...dragProps}
       className={cn(
         "flex min-w-0 flex-col gap-1.5 rounded-lg border border-border border-l-4 bg-background px-2.5 py-2",
         ACCENT[row.status],
@@ -92,7 +95,7 @@ const TodayHuddleCard = ({
         overlay && "shadow-md"
       )}
       ref={dragRef}
-      {...dragProps}
+      role="listitem"
     >
       <div className="flex min-w-0 items-start gap-2">
         <div className="min-w-0 flex-1">
@@ -150,10 +153,31 @@ const TodayHuddleCard = ({
       {row.syncState === "local" ? (
         <p className="text-xs text-info">On this device</p>
       ) : null}
-      {next && nextLabel ? (
+      {isInChair ? (
+        <div className="flex min-w-0 flex-col gap-2">
+          <Button asChild className="w-full px-2 hover:scale-100">
+            <Link
+              href={`/patients/${encodeURIComponent(row.patientId)}?visit=${encodeURIComponent(row.visitId)}`}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              Open visit
+            </Link>
+          </Button>
+          <Button
+            aria-label={`Mark ${row.name} done`}
+            className="w-full px-2 hover:scale-100"
+            onClick={() => onMark(row.visitId, "complete")}
+            onPointerDown={(event) => event.stopPropagation()}
+            type="button"
+            variant="outline"
+          >
+            Done
+          </Button>
+        </div>
+      ) : next && nextLabel ? (
         <Button
           aria-label={`Mark ${row.name} ${nextLabel.toLowerCase()}`}
-          className="h-9 min-h-9 w-full px-2 hover:scale-100"
+          className="w-full px-2 hover:scale-100"
           onClick={() => onMark(row.visitId, next)}
           onPointerDown={(event) => event.stopPropagation()}
           type="button"

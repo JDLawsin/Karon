@@ -1,7 +1,7 @@
 const IDLE_WARN_MS = 25 * 60 * 1000;
 const IDLE_LOCK_MS = 30 * 60 * 1000;
 const IDLE_HEARTBEAT_MS = 5 * 60 * 1000;
-const LAST_ACTIVE_KEY = "karon-idle-last-active";
+const IDLE_LAST_ACTIVE_KEY = "karon-idle-last-active";
 const IDLE_LOCK_ENABLED_EVENT = "karon-idle-lock-enabled";
 
 type IdlePhase = "ok" | "warn" | "lock";
@@ -24,7 +24,7 @@ const activityResetsIdle = (phase: IdlePhase) => phase !== "lock";
 
 const readStoredLastActive = (userId: string) => {
   try {
-    const raw = sessionStorage.getItem(`${LAST_ACTIVE_KEY}:${userId}`);
+    const raw = localStorage.getItem(`${IDLE_LAST_ACTIVE_KEY}:${userId}`);
     const value = raw ? Number(raw) : NaN;
 
     return Number.isFinite(value) ? value : null;
@@ -35,7 +35,7 @@ const readStoredLastActive = (userId: string) => {
 
 const writeStoredLastActive = (userId: string, at: number) => {
   try {
-    sessionStorage.setItem(`${LAST_ACTIVE_KEY}:${userId}`, String(at));
+    localStorage.setItem(`${IDLE_LAST_ACTIVE_KEY}:${userId}`, String(at));
   } catch {
     return;
   }
@@ -43,7 +43,7 @@ const writeStoredLastActive = (userId: string, at: number) => {
 
 const clearStoredLastActive = (userId: string) => {
   try {
-    sessionStorage.removeItem(`${LAST_ACTIVE_KEY}:${userId}`);
+    localStorage.removeItem(`${IDLE_LAST_ACTIVE_KEY}:${userId}`);
   } catch {
     return;
   }
@@ -65,6 +65,7 @@ const notifyIdleLockEnabled = (enabled: boolean) => {
 
 export {
   IDLE_HEARTBEAT_MS,
+  IDLE_LAST_ACTIVE_KEY,
   IDLE_LOCK_ENABLED_EVENT,
   IDLE_LOCK_MS,
   IDLE_WARN_MS,

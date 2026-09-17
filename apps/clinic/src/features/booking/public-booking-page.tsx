@@ -14,7 +14,9 @@ import {
   Label,
   Skeleton,
   ThemeToggle,
-  cn
+  cn,
+  showErrorToast,
+  showSuccessToast
 } from "@karon/design-system";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -125,14 +127,42 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [note, setNote] = useState("");
-  const [website, setWebsite] = useState("");
+  const [bookingReference, setBookingReference] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [dateWindowSize, setDateWindowSize] = useState(3);
+  const [canScrollServicesLeft, setCanScrollServicesLeft] = useState(false);
+  const [canScrollServicesRight, setCanScrollServicesRight] = useState(false);
+  const serviceScrollRef = useRef<HTMLDivElement>(null);
   const turnstileRef = useRef<HTMLDivElement>(null);
+
+  const updateServiceScrollEdges = useCallback(() => {
+    const node = serviceScrollRef.current;
+
+    if (!node) {
+      return;
+    }
+
+    setCanScrollServicesLeft(node.scrollLeft > 1);
+    setCanScrollServicesRight(
+      node.scrollLeft + node.clientWidth < node.scrollWidth - 1
+    );
+  }, []);
+
+  const scrollServices = (direction: "left" | "right") => {
+    const node = serviceScrollRef.current;
+
+    if (!node) {
+      return;
+    }
+
+    node.scrollBy({
+      behavior: "smooth",
+      left: (direction === "left" ? -1 : 1) * Math.max(node.clientWidth - 48, 160)
+    });
+  };
 
   useEffect(() => {
     const update = () => setDateWindowSize(bookingDateWindowSize());
@@ -142,6 +172,29 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
 
     return () => window.removeEventListener("resize", update);
   }, []);
+
+  useEffect(() => {
+    const node = serviceScrollRef.current;
+
+    if (!node) {
+      return;
+    }
+
+    const observer = new ResizeObserver(updateServiceScrollEdges);
+    const content = node.firstElementChild;
+
+    observer.observe(node);
+    if (content) {
+      observer.observe(content);
+    }
+    updateServiceScrollEdges();
+    window.addEventListener("resize", updateServiceScrollEdges);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateServiceScrollEdges);
+    };
+  }, [page?.services.length, updateServiceScrollEdges]);
 
   const load = useCallback(
     async (nextDate?: string, brickOnFail = true) => {
@@ -154,14 +207,15 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
           setMissing(true);
           setPage(null);
         } else {
-          setError("Could not load times for that day.");
+          showErrorToast("Could not load times for that day.", {
+            id: "public-booking-load-error"
+          });
         }
 
         return false;
       }
 
       setMissing(false);
-      setError(null);
       setPage(json);
       setDate(json.date ?? "");
       setServiceId((current) =>
@@ -261,13 +315,11 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
   const onDateChange = async (next: string) => {
     setStartsAt("");
     setPending(true);
-    setError(null);
     await load(next, false);
     setPending(false);
   };
 
   const submit = async () => {
-    setError(null);
     setPending(true);
     const response = await fetch(`/api/book/${encodeURIComponent(slug)}`, {
       method: "POST",
@@ -280,7 +332,7 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
         mobile,
         startsAt,
         serviceId,
-        website,
+        bookingReference,
         ...(TURNSTILE_SITE_KEY ? { turnstileToken } : {}),
         ...(note.trim() ? { note: note.trim() } : {})
       })
@@ -290,7 +342,10 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
 
     if (!response.ok) {
       setConfirmOpen(false);
-      setError(json.success ? json.data.error : "Could not send that booking.");
+      showErrorToast(
+        json.success ? json.data.error : "Could not send that booking.",
+        { id: "public-booking-submit-error" }
+      );
       if (response.status === 409 && date) {
         await load(date, false);
       }
@@ -299,6 +354,10 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
 
     setConfirmOpen(false);
     setDone(true);
+    showSuccessToast("Booking request sent", {
+      description: `${page?.clinicName ?? "The clinic"} will confirm.`,
+      id: "public-booking-submit-success"
+    });
   };
 
   const selectedService = page?.services.find((service) => service.id === serviceId);
@@ -421,31 +480,64 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
                     aria-hidden="true"
                     className="pointer-events-none absolute left-[-10000px] top-auto h-px w-px overflow-hidden"
                   >
-                    <label htmlFor="book-website">Company website</label>
+                    <label htmlFor="book-reference">Leave this field empty</label>
                     <input
                       autoComplete="off"
-                      id="book-website"
-                      name="website"
+                      id="book-reference"
+                      name="booking-reference"
                       tabIndex={-1}
-                      onChange={(event) => setWebsite(event.target.value)}
-                      value={website}
+                      onChange={(event) => setBookingReference(event.target.value)}
+                      value={bookingReference}
                     />
                   </div>
                   <fieldset className="flex min-w-0 flex-col gap-2">
                     <legend className="text-sm font-medium">Service</legend>
-                    <div className="flex min-w-0 flex-wrap gap-2">
-                      {page.services.map((service) => (
-                        <button
-                          aria-pressed={serviceId === service.id}
-                          className={chipClassName(serviceId === service.id)}
-                          disabled={pending}
-                          key={service.id}
-                          onClick={() => setServiceId(service.id)}
-                          type="button"
-                        >
-                          {service.name}
-                        </button>
-                      ))}
+                    <div className="flex min-w-0 items-center gap-1">
+                      <Button
+                        aria-label="Previous service"
+                        className="size-11 min-h-11 shrink-0 self-center px-0 [&_svg]:size-5"
+                        disabled={pending || !canScrollServicesLeft}
+                        onClick={() => scrollServices("left")}
+                        type="button"
+                        variant="ghost"
+                      >
+                        <ChevronLeft />
+                      </Button>
+                      <div
+                        aria-label="Available services"
+                        className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        onScroll={updateServiceScrollEdges}
+                        ref={serviceScrollRef}
+                        role="group"
+                      >
+                        <div className="flex w-max flex-nowrap gap-2">
+                          {page.services.map((service) => (
+                            <button
+                              aria-pressed={serviceId === service.id}
+                              className={cn(
+                                chipClassName(serviceId === service.id),
+                                "whitespace-nowrap"
+                              )}
+                              disabled={pending}
+                              key={service.id}
+                              onClick={() => setServiceId(service.id)}
+                              type="button"
+                            >
+                              {service.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <Button
+                        aria-label="Next service"
+                        className="size-11 min-h-11 shrink-0 self-center px-0 [&_svg]:size-5"
+                        disabled={pending || !canScrollServicesRight}
+                        onClick={() => scrollServices("right")}
+                        type="button"
+                        variant="ghost"
+                      >
+                        <ChevronRight />
+                      </Button>
                     </div>
                   </fieldset>
                   <fieldset className="flex min-w-0 flex-col gap-2">
@@ -576,7 +668,6 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
                       value={note}
                     />
                   </div>
-                  {error ? <Alert title={error} variant="danger" /> : null}
                   <Button disabled={!canReview} type="submit">
                     Review booking
                   </Button>

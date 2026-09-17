@@ -3,12 +3,12 @@ import { describe, expect, it } from "vitest";
 import { parseThemePreference, resolveTheme } from "./theme";
 
 describe("parseThemePreference", () => {
-  it("accepts light and dark, and treats anything else as system", () => {
+  it("defaults first-run and invalid preferences to light", () => {
     expect(parseThemePreference("light")).toBe("light");
     expect(parseThemePreference("dark")).toBe("dark");
     expect(parseThemePreference("system")).toBe("system");
-    expect(parseThemePreference(null)).toBe("system");
-    expect(parseThemePreference("nope")).toBe("system");
+    expect(parseThemePreference(null)).toBe("light");
+    expect(parseThemePreference("nope")).toBe("light");
   });
 });
 

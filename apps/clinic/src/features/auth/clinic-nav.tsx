@@ -24,6 +24,7 @@ import {
   Moon,
   Settings,
   Sun,
+  Users,
   Wallet
 } from "lucide-react";
 import Link from "next/link";
@@ -33,7 +34,7 @@ import type { ReactNode } from "react";
 import ClinicStaffAvatar from "@/features/auth/clinic-staff-avatar";
 import type { ClinicRole } from "@/features/auth/resolve-auth-destination";
 
-type JobHref = "/today" | "/services" | "/owner/today";
+type JobHref = "/today" | "/patients" | "/services" | "/owner/today";
 
 type JobItem = {
   href: JobHref;
@@ -54,6 +55,12 @@ const JOBS: Record<JobHref, JobItem> = {
     label: "Services",
     name: "Services",
     icon: BriefcaseMedical
+  },
+  "/patients": {
+    href: "/patients",
+    label: "Patients",
+    name: "Patients",
+    icon: Users
   },
   "/owner/today": {
     href: "/owner/today",
@@ -83,10 +90,11 @@ const themeIcon: Record<ThemePreference, ReactNode> = {
 
 const jobsFor = (role: ClinicRole): JobItem[] =>
   role === "owner"
-    ? [JOBS["/today"], JOBS["/services"], JOBS["/owner/today"]]
-    : [JOBS["/today"], JOBS["/services"]];
+    ? [JOBS["/today"], JOBS["/patients"], JOBS["/services"], JOBS["/owner/today"]]
+    : [JOBS["/today"], JOBS["/patients"], JOBS["/services"]];
 
-const isCurrentPath = (pathname: string, href: string) => pathname === href;
+const isCurrentPath = (pathname: string, href: string) =>
+  pathname === href || pathname.startsWith(`${href}/`);
 
 type JobNavProps = {
   role: ClinicRole;

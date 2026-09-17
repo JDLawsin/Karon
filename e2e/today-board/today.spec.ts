@@ -14,7 +14,10 @@ const fakeWalkIn = () => {
   };
 };
 
-const interceptEmptyBoard = async (page: Page) => {
+const interceptEmptyBoard = async (
+  page: Page,
+  bookingRequests: unknown[] = []
+) => {
   await page.route("**/rest/v1/clinic_events**", async (route) => {
     if (route.request().method() === "GET") {
       await route.fulfill({
@@ -44,7 +47,7 @@ const interceptEmptyBoard = async (page: Page) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: "[]"
+        body: JSON.stringify(bookingRequests)
       });
       return;
     }
@@ -76,7 +79,30 @@ test.describe("today board", { tag: "@assistant" }, () => {
     await expect(page.getByRole("heading", { name: "Today", level: 1 })).toBeVisible();
     await expect(page.getByText("No patients this day")).toBeVisible();
     await expect(page.getByRole("button", { name: "Add patient" })).toBeVisible();
+    await expect(page.getByText("To collect", { exact: true })).toHaveCount(0);
     await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
+  });
+
+  test("opens pending booking requests from the attention strip", async ({ page }) => {
+    await interceptEmptyBoard(page, [
+      {
+        id: "33333333-3333-4333-8333-333333333333",
+        name: "E2E Booking Patient",
+        mobile: "09170000001",
+        service_name: "Checkup",
+        note: null,
+        starts_at: "2026-09-18T02:00:00.000Z"
+      }
+    ]);
+    const today = new TodayBoardPage(page);
+    await today.goto();
+
+    const attention = page.getByRole("link", { name: /1 booking request/ });
+    await expect(attention).toBeVisible();
+    await attention.click();
+
+    await expect(page).toHaveURL(/#booking-inbox$/);
+    await expect(page.getByRole("heading", { name: "New bookings" })).toBeVisible();
   });
 
   test("adds a walk-in as confirmed", { tag: "@integration" }, async ({ page }) => {
@@ -86,7 +112,7 @@ test.describe("today board", { tag: "@assistant" }, () => {
     await today.addWalkIn(person.name, person.mobile);
 
     await expect(
-      today.row(person.name).getByText(/Confirmed|Late/)
+      today.row(person.name).getByRole("button", { name: `Mark ${person.name} waiting` })
     ).toBeVisible();
   });
 
@@ -97,14 +123,24 @@ test.describe("today board", { tag: "@assistant" }, () => {
     await today.addWalkIn(person.name, person.mobile);
 
     await page.getByRole("button", { name: `Mark ${person.name} waiting` }).click();
-    await expect(today.row(person.name).getByText("Waiting")).toBeVisible();
+    await expect(
+      today.row(person.name).getByRole("button", { name: `Mark ${person.name} in chair` })
+    ).toBeVisible();
 
     await page.getByRole("button", { name: `Mark ${person.name} in chair` }).click();
-    await expect(today.row(person.name).getByText("In chair")).toBeVisible();
+    await expect(today.row(person.name).getByRole("link", { name: "Open visit" })).toBeVisible();
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "Today", level: 1 })).toBeVisible();
-    await expect(today.row(person.name).getByText("In chair")).toBeVisible();
+    await expect(today.row(person.name).getByRole("link", { name: "Open visit" })).toBeVisible();
+    await expect(today.row(person.name).getByRole("button", { name: `Mark ${person.name} done` })).toBeVisible();
+
+    await today.openVisit(person.name);
+    await expect(page).toHaveURL(/\/patients\/.+\?visit=.+/);
+    await expect(page.getByRole("heading", { name: person.name, level: 1 })).toBeVisible();
+    const currentVisit = page.getByRole("region", { name: "Current visit" });
+    await expect(currentVisit).toBeVisible();
+    await expect(currentVisit.getByText("In chair", { exact: true })).toBeVisible();
   });
 
   test("keeps the local board in airplane mode", { tag: "@integration" }, async ({
@@ -118,7 +154,7 @@ test.describe("today board", { tag: "@assistant" }, () => {
     await page.context().setOffline(true);
 
     await expect(page.getByRole("heading", { name: "Today", level: 1 })).toBeVisible();
-    await expect(page.getByText(person.name, { exact: true })).toBeVisible();
+    await expect(today.row(person.name)).toBeVisible();
     await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
   });
 

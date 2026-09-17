@@ -136,6 +136,10 @@ const useTodayBoard = (viewDay?: string) => {
   }, [membership.tenantId]);
 
   const folded = useMemo(() => foldVisits(events), [events]);
+  const patients = useMemo(
+    () => [...folded.patients.entries()].map(([id, patient]) => ({ id, ...patient })),
+    [folded]
+  );
   const huddle = useMemo(
     () => projectFoldedBoard(folded, now, undefined, outboxIds, viewDay),
     [folded, now, outboxIds, viewDay]
@@ -150,6 +154,7 @@ const useTodayBoard = (viewDay?: string) => {
     name: string;
     mobile: string;
     startsAt: string;
+    patientId?: string;
   }) => {
     const db = await openClinicDb(membership.tenantId);
 
@@ -159,6 +164,7 @@ const useTodayBoard = (viewDay?: string) => {
       name: draft.name,
       mobile: draft.mobile,
       startsAt: draft.startsAt,
+      patientId: draft.patientId,
       autoConfirm
     });
   };
@@ -188,6 +194,7 @@ const useTodayBoard = (viewDay?: string) => {
   return {
     huddle,
     events,
+    patients,
     ready,
     now,
     autoConfirm,

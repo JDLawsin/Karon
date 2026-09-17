@@ -16,7 +16,7 @@ const verifyTurnstileToken = async ({
   production = process.env.NODE_ENV === "production",
   fetchImpl = fetch
 }: VerifyTurnstileInput) => {
-  // ponytail: skip Siteverify in local/dev when unset so yarn dev still books
+  // ponytail: local development may omit Turnstile; production fails closed.
   if (!secret) {
     return !production;
   }

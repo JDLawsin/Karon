@@ -28,9 +28,10 @@ type InboxRow = {
 type Props = {
   autoConfirm: boolean;
   events: ClinicEvent[];
+  onPendingCountChange?: (count: number) => void;
 };
 
-const BookingInbox = ({ autoConfirm, events }: Props) => {
+const BookingInbox = ({ autoConfirm, events, onPendingCountChange }: Props) => {
   const { membership, userId } = useClinicSession();
   const [rows, setRows] = useState<InboxRow[]>([]);
   const [matchById, setMatchById] = useState<Record<string, string>>({});
@@ -38,6 +39,10 @@ const BookingInbox = ({ autoConfirm, events }: Props) => {
   const [busyId, setBusyId] = useState<string | null>(null);
   const busyRef = useRef(false);
   const patients = patientsFromEvents(events);
+
+  useEffect(() => {
+    onPendingCountChange?.(rows.length);
+  }, [onPendingCountChange, rows.length]);
 
   useEffect(() => {
     const supabase = createBrowserSupabase();
@@ -201,6 +206,7 @@ const BookingInbox = ({ autoConfirm, events }: Props) => {
         "flex min-w-0 flex-col gap-3 rounded-lg bg-card p-3 lg:sticky lg:top-4",
         rows.length === 0 && "max-lg:hidden"
       )}
+      id="booking-inbox"
     >
       <h2 className="text-sm font-medium">New bookings</h2>
       {actionError ? <Alert title={actionError} variant="danger" /> : null}

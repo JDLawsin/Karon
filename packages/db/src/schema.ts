@@ -4,9 +4,11 @@ import {
   check,
   foreignKey,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -40,6 +42,7 @@ export const clinics = pgTable(
     name: text("name").notNull(),
     region: text("region").notNull().default("ph"),
     timezone: text("timezone").notNull().default("Asia/Manila"),
+    currencyCode: text("currency_code").notNull().default("PHP"),
     phone: text("phone"),
     email: text("email"),
     address: jsonb("address")
@@ -61,6 +64,10 @@ export const clinics = pgTable(
     check(
       "clinics_timezone_length",
       sql`char_length(btrim(${table.timezone})) between 1 and 64`
+    ),
+    check(
+      "clinics_currency_code_format",
+      sql`${table.currencyCode} ~ '^[A-Z]{3}$'`
     )
   ]
 ).enableRLS();
@@ -75,6 +82,9 @@ export const clinicServices = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     icon: text("icon"),
+    priceMinor: integer("price_minor"),
+    currencyCode: text("currency_code"),
+    durationMinutes: integer("duration_minutes"),
     createdAt: timestamptz("created_at").defaultNow().notNull(),
     updatedAt: timestamptz("updated_at").defaultNow().notNull(),
     createdBy: uuid("created_by").notNull(),
@@ -107,6 +117,23 @@ export const clinicServices = pgTable(
     check(
       "clinic_services_icon_length",
       sql`${table.icon} is null or char_length(${table.icon}) <= 64`
+    ),
+    check(
+      "clinic_services_price_non_negative",
+      sql`${table.priceMinor} is null or ${table.priceMinor} >= 0`
+    ),
+    check(
+      "clinic_services_currency_code_format",
+      sql`${table.currencyCode} is null or ${table.currencyCode} ~ '^[A-Z]{3}$'`
+    ),
+    check(
+      "clinic_services_duration_bounds",
+      sql`${table.durationMinutes} is null or ${table.durationMinutes} between 1 and 1440`
+    ),
+    check(
+      "clinic_services_pricing_complete",
+      sql`(${table.priceMinor} is null and ${table.currencyCode} is null)
+        or (${table.priceMinor} is not null and ${table.currencyCode} is not null and ${table.durationMinutes} is not null)`
     )
   ]
 ).enableRLS();
@@ -268,6 +295,48 @@ export const clinicEvents = pgTable(
         'visit.status_changed',
         'reminder.queued'
       )`
+    )
+  ]
+).enableRLS();
+
+export const patients = pgTable(
+  "patients",
+  {
+    id: uuid("id").notNull(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => clinics.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    mobile: text("mobile").notNull(),
+    mobileDigits: text("mobile_digits").notNull(),
+    email: text("email"),
+    sourceEventId: uuid("source_event_id").notNull(),
+    sourceOccurredAt: timestamptz("source_occurred_at").notNull(),
+    createdAt: timestamptz("created_at").defaultNow().notNull(),
+    updatedAt: timestamptz("updated_at").defaultNow().notNull()
+  },
+  (table) => [
+    primaryKey({ columns: [table.tenantId, table.id] }),
+    index("patients_tenant_name_idx").on(table.tenantId, sql`lower(${table.name})`),
+    index("patients_tenant_mobile_digits_idx").on(
+      table.tenantId,
+      table.mobileDigits
+    ),
+    check(
+      "patients_name_length",
+      sql`char_length(btrim(${table.name})) between 1 and 120`
+    ),
+    check(
+      "patients_mobile_length",
+      sql`char_length(btrim(${table.mobile})) between 1 and 20`
+    ),
+    check(
+      "patients_mobile_digits_length",
+      sql`char_length(${table.mobileDigits}) between 7 and 15`
+    ),
+    check(
+      "patients_email_length",
+      sql`${table.email} is null or char_length(${table.email}) <= 254`
     )
   ]
 ).enableRLS();
@@ -434,5 +503,6 @@ export type ClinicSession = typeof clinicSessions.$inferSelect;
 export type TrustedDevice = typeof trustedDevices.$inferSelect;
 export type AuditEvent = typeof auditEvents.$inferSelect;
 export type ClinicEvent = typeof clinicEvents.$inferSelect;
+export type Patient = typeof patients.$inferSelect;
 export type BookingLink = typeof bookingLinks.$inferSelect;
 export type BookingRequest = typeof bookingRequests.$inferSelect;

@@ -3,18 +3,18 @@ import { describe, expect, it, vi } from "vitest";
 import { TURNSTILE_SITEVERIFY_URL, verifyTurnstileToken } from "./booking-turnstile";
 
 describe("verifyTurnstileToken", () => {
-  it("skips Siteverify when the secret is unset outside production", async () => {
+  it("skips Siteverify only outside production when the secret is unset", async () => {
     await expect(
       verifyTurnstileToken({ token: undefined, secret: "", production: false })
     ).resolves.toBe(true);
-  });
-
-  it("fails closed in production when the secret or token is missing", async () => {
     await expect(
       verifyTurnstileToken({ token: "tok", secret: "", production: true })
     ).resolves.toBe(false);
+  });
+
+  it("fails closed when Turnstile is configured and the token is missing", async () => {
     await expect(
-      verifyTurnstileToken({ token: undefined, secret: "secret", production: true })
+      verifyTurnstileToken({ token: undefined, secret: "secret" })
     ).resolves.toBe(false);
   });
 
@@ -27,7 +27,6 @@ describe("verifyTurnstileToken", () => {
       verifyTurnstileToken({
         token: "tok",
         secret: "secret",
-        production: true,
         fetchImpl
       })
     ).resolves.toBe(true);
@@ -46,7 +45,6 @@ describe("verifyTurnstileToken", () => {
       verifyTurnstileToken({
         token: "tok",
         secret: "secret",
-        production: true,
         fetchImpl
       })
     ).resolves.toBe(false);

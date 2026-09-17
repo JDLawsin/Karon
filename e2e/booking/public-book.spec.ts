@@ -37,8 +37,46 @@ test.describe("public booking link", () => {
     await expect(dialog.getByRole("button", { name: "Send request" })).toBeEnabled();
     await dialog.getByRole("button", { name: "Send request" }).click();
 
+    await expect(
+      page.getByRole("status").getByText("Booking request sent")
+    ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Request sent" })).toBeVisible();
-    await expect(page.getByText(/Happy Teeth will confirm/)).toBeVisible();
+    await expect(
+      page.getByText("This is a request. Happy Teeth will confirm.")
+    ).toBeVisible();
+  });
+
+  test("shows a failed request in an error toast", async ({ page }) => {
+    const booking = new PublicBookingPage(page);
+    await booking.mockApi("Could not send that booking.");
+    await booking.goto();
+
+    await page.getByRole("button", { name: "Cleaning" }).click();
+    await page.getByRole("button", { name: "Mon, Sep 14" }).click();
+    await page.getByRole("button", { name: "9:00 AM" }).click();
+    await booking.fillContact();
+    await page.getByRole("button", { name: "Review booking" }).click();
+    await page.getByRole("button", { name: "Send request" }).click();
+
+    await expect(
+      page.getByRole("alert").getByText("Could not send that booking.")
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Request sent" })).toHaveCount(0);
+  });
+
+  test("scrolls services with arrow controls", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    const booking = new PublicBookingPage(page);
+    await booking.mockApi();
+    await booking.goto();
+
+    const previous = page.getByRole("button", { name: "Previous service" });
+    const next = page.getByRole("button", { name: "Next service" });
+
+    await expect(previous).toBeDisabled();
+    await expect(next).toBeEnabled();
+    await next.click();
+    await expect(previous).toBeEnabled();
   });
 
   for (const width of [320, 768, 1280] as const) {

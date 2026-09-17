@@ -66,13 +66,12 @@ const readSavedAvatarStyle = (value: unknown) => {
 const StaffAvatarPreferenceProvider = ({ userId, children }: ProviderProps) => {
   const [savedSeed, setSavedSeed] = useState<string | null>(null);
   const [savedStyle, setSavedStyle] = useState<StaffAvatarStyleId | null>(null);
-  const [ready, setReady] = useState(false);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const supabase = createBrowserSupabase();
-    setReady(false);
 
     void supabase.auth
       .getUser()
@@ -87,7 +86,7 @@ const StaffAvatarPreferenceProvider = ({ userId, children }: ProviderProps) => {
       .catch(() => undefined)
       .finally(() => {
         if (!cancelled) {
-          setReady(true);
+          setLoadedUserId(userId);
         }
       });
 
@@ -98,6 +97,7 @@ const StaffAvatarPreferenceProvider = ({ userId, children }: ProviderProps) => {
 
   const resolvedSeed = resolveStaffAvatarSeed(userId, savedSeed);
   const resolvedStyle = resolveStaffAvatarStyle(savedStyle);
+  const ready = loadedUserId === userId;
 
   const saveAvatar = useCallback(async ({ seed, style }: StaffAvatarPreferenceInput) => {
     const parsedSeed = staffAvatarSeedSchema.safeParse(seed);

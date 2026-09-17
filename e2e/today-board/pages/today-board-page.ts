@@ -11,14 +11,20 @@ class TodayBoardPage {
   async addWalkIn(name: string, mobile: string) {
     await this.page.getByRole("button", { name: "Add patient" }).click();
     const drawer = this.page.getByRole("dialog", { name: "Add patient" });
-    await drawer.getByLabel("Name").fill(name);
+    await drawer.getByLabel("Full name").fill(name);
     await drawer.getByLabel("Mobile").fill(mobile);
     await drawer.getByRole("button", { name: "Add patient" }).click();
-    await this.page.getByText(name, { exact: true }).waitFor();
+    await this.row(name).waitFor();
+  }
+
+  async openVisit(name: string) {
+    await this.row(name).getByRole("link", { name: "Open visit" }).click();
   }
 
   row(name: string) {
-    return this.page.getByRole("listitem").filter({ hasText: name });
+    return this.page
+      .getByRole("listitem")
+      .filter({ hasText: name, visible: true });
   }
 }
 

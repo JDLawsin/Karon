@@ -28,12 +28,14 @@ describe("parseAuthClaims", () => {
     ).toEqual({
       userId: "11111111-1111-4111-8111-111111111111",
       aal: "aal2",
-      passwordRecovery: false
+      passwordRecovery: false,
+      authSessionId: null
     });
     expect(parseAuthClaims({ sub: "not-a-uuid" })).toEqual({
       userId: null,
       aal: null,
-      passwordRecovery: false
+      passwordRecovery: false,
+      authSessionId: null
     });
   });
 
@@ -67,7 +69,8 @@ describe("parseAuthClaims", () => {
     ).toEqual({
       userId: "11111111-1111-4111-8111-111111111111",
       aal: "aal1",
-      passwordRecovery: true
+      passwordRecovery: true,
+      authSessionId: null
     });
   });
 });

@@ -3,8 +3,12 @@ export const THEME_STORAGE_KEY = "karon-theme";
 export type ThemePreference = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
 
+export const DEFAULT_THEME_PREFERENCE: ThemePreference = "light";
+
 export const parseThemePreference = (value: string | null): ThemePreference =>
-  value === "light" || value === "dark" ? value : "system";
+  value === "light" || value === "dark" || value === "system"
+    ? value
+    : DEFAULT_THEME_PREFERENCE;
 
 export const resolveTheme = (
   preference: ThemePreference,
@@ -18,4 +22,4 @@ export const applyResolvedTheme = (resolved: ResolvedTheme): void => {
   root.style.colorScheme = resolved;
 };
 
-export const themeInitScript = `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var v=localStorage.getItem(k);var p=v==="light"||v==="dark"?v:"system";var d=p==="dark"||(p==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=d?"dark":"light";var e=document.documentElement;e.dataset.theme=r;e.style.colorScheme=r;}catch(err){}})();`;
+export const themeInitScript = `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var v=localStorage.getItem(k);var p=v==="light"||v==="dark"||v==="system"?v:${JSON.stringify(DEFAULT_THEME_PREFERENCE)};var d=p==="dark"||(p==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=d?"dark":"light";var e=document.documentElement;e.dataset.theme=r;e.style.colorScheme=r;}catch(err){}})();`;

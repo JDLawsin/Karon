@@ -9,7 +9,13 @@ const publicBookingPayload = {
   phone: "09171234567",
   address: "123 Osmena Blvd, Cebu City",
   logoUrl: null,
-  services: [{ id: "clean", name: "Cleaning" }],
+  services: [
+    { id: "clean", name: "Cleaning" },
+    { id: "exam", name: "Dental examination" },
+    { id: "filling", name: "Tooth filling" },
+    { id: "extraction", name: "Tooth extraction" },
+    { id: "whitening", name: "Teeth whitening" }
+  ],
   dates: ["2026-09-14", "2026-09-15"],
   date: "2026-09-14",
   slots: [
@@ -24,7 +30,7 @@ const publicBookingPayload = {
 class PublicBookingPage {
   constructor(private readonly page: Page) {}
 
-  async mockApi() {
+  async mockApi(postError?: string) {
     await this.page.addInitScript(() => {
       const turnstile = {
         render: (
@@ -45,9 +51,9 @@ class PublicBookingPage {
     await this.page.route("**/api/book/**", async (route) => {
       if (route.request().method() === "POST") {
         await route.fulfill({
-          status: 200,
+          status: postError ? 400 : 200,
           contentType: "application/json",
-          body: JSON.stringify({ ok: true })
+          body: JSON.stringify(postError ? { error: postError } : { ok: true })
         });
         return;
       }

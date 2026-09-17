@@ -563,15 +563,16 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(otherOwnerAfter?.revoked_at).toBeNull();
   });
 
-  it("lets a member insert clinic events and hides other clinics", async () => {
+  it("projects patient events and hides other clinics from event and patient searches", async () => {
     const assistant = await createAuthedClient(users[1]!.email);
     const eventId = randomUUID();
+    const patientId = randomUUID();
     const { error: insertError } = await assistant.client.from("clinic_events").insert({
       id: eventId,
       tenant_id: clinicIds[0],
       actor_user_id: users[1]!.id,
       event_type: "patient.created",
-      record_id: randomUUID(),
+      record_id: patientId,
       payload: { name: "Test Patient", mobile: "09170000000" },
       occurred_at: new Date().toISOString()
     });
@@ -579,11 +580,13 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(insertError).toBeNull();
 
     const otherId = randomUUID();
+    const otherPatientId = randomUUID();
     const { error: otherInsertError } = await admin.from("clinic_events").insert({
       id: otherId,
       tenant_id: clinicIds[1],
       actor_user_id: users[2]!.id,
       event_type: "patient.created",
+      record_id: otherPatientId,
       payload: { name: "Other Clinic", mobile: "09171111111" },
       occurred_at: new Date().toISOString()
     });
@@ -602,6 +605,47 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
 
     expect(otherError).toBeNull();
     expect(otherClinic).toEqual([]);
+
+    const { data: ownPatients, error: ownPatientsError } = await assistant.client
+      .from("patients")
+      .select("id, name, mobile")
+      .eq("id", patientId);
+
+    expect(ownPatientsError).toBeNull();
+    expect(ownPatients).toEqual([
+      { id: patientId, name: "Test Patient", mobile: "09170000000" }
+    ]);
+
+    const { data: projected, error: projectedError } = await assistant.client
+      .from("patients")
+      .select("name, mobile")
+      .eq("tenant_id", clinicIds[0]);
+
+    expect(projectedError).toBeNull();
+    expect(projected).toContainEqual({
+      name: "Test Patient",
+      mobile: "09170000000"
+    });
+
+    const { data: hiddenPatients, error: hiddenPatientsError } = await assistant.client
+      .from("patients")
+      .select("id")
+      .eq("tenant_id", clinicIds[1]);
+
+    expect(hiddenPatientsError).toBeNull();
+    expect(hiddenPatients).toEqual([]);
+
+    const { error: directWriteError } = await assistant.client.from("patients").insert({
+      id: randomUUID(),
+      tenant_id: clinicIds[0],
+      name: "Bypass Patient",
+      mobile: "09172222222",
+      mobile_digits: "09172222222",
+      source_event_id: randomUUID(),
+      source_occurred_at: new Date().toISOString()
+    });
+
+    expect(directWriteError?.code).toBe("42501");
   });
 
   it("hides payment.recorded from assistants and lets the owner read it", async () => {
@@ -744,69 +788,167 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(tokenColumn ?? []).toEqual([]);
   });
 
-  it("lets members CRUD own clinic services and hides other clinics", async () => {
+  it("lets assistants read services, returns 403 on writes, and lets owners manage pricing", async () => {
     const ownId = randomUUID();
     const otherId = randomUUID();
     const serviceName = `Service ${suffix}`;
     const assistant = await createAuthedClient(users[1]!.email);
 
-    const { data: created, error: createError } = await assistant.client
-      .from("clinic_services")
-      .insert({
+    const { error: seedOtherError } = await admin.from("clinic_services").insert([
+      {
         id: ownId,
         tenant_id: clinicIds[0],
         name: serviceName,
-        created_by: users[1]!.id,
-        updated_by: users[1]!.id
-      })
-      .select("id")
-      .single();
-
-    expect(createError).toBeNull();
-    expect(created?.id).toBe(ownId);
-
-    const { error: seedOtherError } = await admin.from("clinic_services").insert({
-      id: otherId,
-      tenant_id: clinicIds[1],
-      name: "Other clinic service",
-      created_by: users[2]!.id,
-      updated_by: users[2]!.id
-    });
+        created_by: users[0]!.id,
+        updated_by: users[0]!.id
+      },
+      {
+        id: otherId,
+        tenant_id: clinicIds[1],
+        name: "Other clinic service",
+        created_by: users[2]!.id,
+        updated_by: users[2]!.id
+      }
+    ]);
 
     expect(seedOtherError).toBeNull();
 
     const { data: visible, error: selectError } = await assistant.client
       .from("clinic_services")
-      .select("id, name");
+      .select("id, name, price_minor, currency_code, duration_minutes");
 
     expect(selectError).toBeNull();
     expect(visible?.map((row) => row.id)).toEqual([ownId]);
+    expect(visible?.[0]).toMatchObject({
+      price_minor: null,
+      currency_code: null,
+      duration_minutes: null
+    });
+
+    const { error: createError } = await assistant.client.from("clinic_services").insert({
+      tenant_id: clinicIds[0],
+      name: `${serviceName} assistant`,
+      price_minor: 100_000,
+      currency_code: "PHP",
+      duration_minutes: 30,
+      created_by: users[1]!.id,
+      updated_by: users[1]!.id
+    });
+
+    expect(createError?.code).toBe("42501");
 
     const { error: updateError } = await assistant.client
       .from("clinic_services")
       .update({
-        name: `${serviceName} updated`,
+        price_minor: 150_000,
+        currency_code: "PHP",
+        duration_minutes: 45,
         updated_by: users[1]!.id
       })
-      .eq("id", ownId);
-
-    expect(updateError).toBeNull();
-
-    const { data: crossUpdated, error: crossUpdateError } = await assistant.client
-      .from("clinic_services")
-      .update({ name: "Hacked" })
-      .eq("id", otherId)
+      .eq("id", ownId)
       .select("id");
 
-    expect(crossUpdated ?? []).toEqual([]);
-    expect(crossUpdateError?.code).toBe("42501");
+    expect(updateError?.code).toBe("42501");
 
     const { error: deleteError } = await assistant.client
       .from("clinic_services")
       .delete()
+      .eq("id", ownId)
+      .select("id");
+
+    expect(deleteError?.code).toBe("42501");
+
+    const owner = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(owner.client);
+
+    const { data: priced, error: ownerUpdateError } = await owner.client
+      .from("clinic_services")
+      .update({
+        price_minor: 150_000,
+        currency_code: "PHP",
+        duration_minutes: 45,
+        updated_by: users[0]!.id
+      })
+      .eq("id", ownId)
+      .select("price_minor, currency_code, duration_minutes")
+      .single();
+
+    expect(ownerUpdateError).toBeNull();
+    expect(priced).toEqual({
+      price_minor: 150_000,
+      currency_code: "PHP",
+      duration_minutes: 45
+    });
+
+    const { error: negativePriceError } = await owner.client
+      .from("clinic_services")
+      .update({ price_minor: -1, updated_by: users[0]!.id })
       .eq("id", ownId);
 
-    expect(deleteError).toBeNull();
+    expect(negativePriceError?.code).toBe("23514");
+
+    const { error: invalidDurationError } = await owner.client
+      .from("clinic_services")
+      .update({ duration_minutes: 0, updated_by: users[0]!.id })
+      .eq("id", ownId);
+
+    expect(invalidDurationError?.code).toBe("23514");
+
+    const { error: invalidCurrencyError } = await owner.client
+      .from("clinic_services")
+      .update({
+        price_minor: 160_000,
+        currency_code: "USD",
+        updated_by: users[0]!.id
+      })
+      .eq("id", ownId);
+
+    expect(invalidCurrencyError?.code).toBe("22023");
+
+    const { error: malformedClinicCurrencyError } = await owner.client
+      .from("clinics")
+      .update({ currency_code: "php" })
+      .eq("id", clinicIds[0]);
+
+    expect(malformedClinicCurrencyError?.code).toBe("23514");
+
+    const { error: clinicCurrencyUpdateError } = await owner.client
+      .from("clinics")
+      .update({ currency_code: "USD" })
+      .eq("id", clinicIds[0]);
+
+    expect(clinicCurrencyUpdateError).toBeNull();
+
+    const { data: historical, error: durationUpdateError } = await owner.client
+      .from("clinic_services")
+      .update({ duration_minutes: 60, updated_by: users[0]!.id })
+      .eq("id", ownId)
+      .select("currency_code, duration_minutes")
+      .single();
+
+    expect(durationUpdateError).toBeNull();
+    expect(historical).toEqual({ currency_code: "PHP", duration_minutes: 60 });
+
+    const { data: repriced, error: repriceError } = await owner.client
+      .from("clinic_services")
+      .update({
+        price_minor: 160_000,
+        currency_code: "USD",
+        updated_by: users[0]!.id
+      })
+      .eq("id", ownId)
+      .select("price_minor, currency_code")
+      .single();
+
+    expect(repriceError).toBeNull();
+    expect(repriced).toEqual({ price_minor: 160_000, currency_code: "USD" });
+
+    const { error: ownerDeleteError } = await owner.client
+      .from("clinic_services")
+      .delete()
+      .eq("id", ownId);
+
+    expect(ownerDeleteError).toBeNull();
   });
 
   it("lets members read own calendar imports and hides other clinics", async () => {

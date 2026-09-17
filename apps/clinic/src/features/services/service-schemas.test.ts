@@ -6,6 +6,11 @@ import {
   matchDentalServiceSuggestion
 } from "./service-catalog";
 import { isServiceIconKey } from "./service-icons";
+import {
+  formatServicePrice,
+  priceMajorToMinor,
+  priceMinorToMajor
+} from "./service-money";
 import { parseClinicServices, serviceFormSchema } from "./service-schemas";
 
 describe("serviceFormSchema", () => {
@@ -13,7 +18,9 @@ describe("serviceFormSchema", () => {
     const parsed = serviceFormSchema.safeParse({
       name: "Tooth extraction",
       description: "Simple removal of a tooth under local anesthesia.",
-      icon: "extraction"
+      icon: "extraction",
+      priceMajor: 1500,
+      durationMinutes: 45
     });
 
     expect(parsed.success).toBe(true);
@@ -22,10 +29,39 @@ describe("serviceFormSchema", () => {
   it("rejects unknown icons", () => {
     const parsed = serviceFormSchema.safeParse({
       name: "Tooth extraction",
-      icon: "stethoscope"
+      icon: "stethoscope",
+      priceMajor: 1500,
+      durationMinutes: 45
     });
 
     expect(parsed.success).toBe(false);
+  });
+
+  it.each([
+    { priceMajor: -1, durationMinutes: 30 },
+    { priceMajor: 1000, durationMinutes: 0 }
+  ])("rejects invalid pricing %#", ({ priceMajor, durationMinutes }) => {
+    expect(
+      serviceFormSchema.safeParse({
+        name: "Cleaning",
+        priceMajor,
+        durationMinutes
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("service money", () => {
+  it("converts and formats minor units in the clinic currency", () => {
+    expect(priceMajorToMinor(1500.5, "PHP")).toBe(150_050);
+    expect(priceMajorToMinor(10.01, "PHP")).toBe(1001);
+    expect(priceMinorToMajor(150_050, "PHP")).toBe(1500.5);
+    expect(formatServicePrice(150_050, "PHP")).toContain("1,500.50");
+  });
+
+  it("rejects unsupported precision and malformed currency codes", () => {
+    expect(() => priceMajorToMinor(10.001, "PHP")).toThrow(/decimal places/);
+    expect(() => priceMajorToMinor(10, "php")).toThrow();
   });
 });
 
@@ -61,6 +97,9 @@ describe("parseClinicServices", () => {
           name: "Cleaning",
           description: null,
           icon: null,
+          price_minor: null,
+          currency_code: null,
+          duration_minutes: null,
           created_at: "2026-09-14T00:00:00.000Z",
           updated_at: "2026-09-14T00:00:00.000Z",
           created_by: "c1eebc99-9c0b-4ef8-bb6d-6bb9bd380a33",

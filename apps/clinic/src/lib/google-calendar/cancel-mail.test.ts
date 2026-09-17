@@ -14,13 +14,14 @@ const VISIT = "44444444-4444-4444-8444-444444444444";
 const event = (
   type: ClinicEvent["type"],
   recordId: string,
-  payload: ClinicEvent["payload"]
+  payload: ClinicEvent["payload"],
+  occurredAt: string
 ): ClinicEvent => ({
   id: randomUUID(),
   tenantId: TENANT,
   actorUserId: ACTOR,
   recordId,
-  occurredAt: new Date().toISOString(),
+  occurredAt,
   type,
   payload
 });
@@ -30,13 +31,18 @@ const notebook: ClinicEvent[] = [
     name: "Ana Cruz",
     mobile: "09171234567",
     email: "ana@example.com"
-  }),
+  }, "2026-09-12T03:00:00.000Z"),
   event("appointment.set", VISIT, {
     patientId: PATIENT,
     startsAt: "2026-09-12T04:00:00.000Z",
     status: "confirmed"
-  }),
-  event("visit.status_changed", VISIT, { status: "cancelled" })
+  }, "2026-09-12T03:01:00.000Z"),
+  event(
+    "visit.status_changed",
+    VISIT,
+    { status: "cancelled" },
+    "2026-09-12T03:02:00.000Z"
+  )
 ];
 
 describe("cancelMailTo", () => {

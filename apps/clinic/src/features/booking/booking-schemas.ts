@@ -94,11 +94,11 @@ const bookingReplayRowSchema = z.object({
 });
 
 const isBookingHoneypotFilled = (body: unknown) => {
-  if (!body || typeof body !== "object" || !("website" in body)) {
+  if (!body || typeof body !== "object" || !("bookingReference" in body)) {
     return false;
   }
 
-  const value = body.website;
+  const value = body.bookingReference;
 
   if (value == null) {
     return false;

@@ -2,28 +2,40 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
 import { expect, test } from "../fixtures/extended-test";
+import { ServicesPage } from "./pages/services-page";
 
-test.use({ storageState: resolve(process.cwd(), "e2e/.auth/assistant.json") });
+test.describe("assistant service access", () => {
+  test.use({ storageState: resolve(process.cwd(), "e2e/.auth/assistant.json") });
 
-test(
-  "assistant can add and delete a service",
-  { tag: "@integration" },
-  async ({ page }) => {
-    const name = `E2E Service ${randomUUID().slice(0, 8)}`;
+  test("assistant can view prices but cannot edit services", async ({ page }) => {
+    const services = new ServicesPage(page);
 
-    await page.goto("/services", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "Services", level: 1 })).toBeVisible();
+    await services.goto();
+    await expect(page.getByRole("button", { name: "Add service" })).toHaveCount(0);
+    await services.expectServicePricing("E2E Cleaning", "₱1,200.00", "45 min");
+    await services.openService("E2E Cleaning");
 
-    await page.getByRole("button", { name: "Add service" }).click();
-    await page.getByLabel("Name", { exact: true }).fill(name);
-    await page.locator("form").getByRole("button", { name: "Add service" }).click();
+    const drawer = page.getByRole("dialog");
+    await expect(drawer.getByLabel("Price (PHP)")).toBeDisabled();
+    await expect(drawer.getByLabel("Default duration (minutes)")).toBeDisabled();
+    await expect(drawer.getByRole("button", { name: "Save changes" })).toHaveCount(0);
+  });
+});
 
-    await expect(page.getByText(name)).toBeVisible();
+test.describe("owner service access", () => {
+  test.use({ storageState: resolve(process.cwd(), "e2e/.auth/owner.json") });
 
-    await page.getByRole("button", { name: `Actions for ${name}` }).click();
-    await page.getByRole("menuitem", { name: "Delete" }).click();
-    await page.getByRole("button", { name: "Delete" }).click();
+  test(
+    "owner can add a priced service and remove it",
+    { tag: "@integration" },
+    async ({ page }) => {
+      const name = `E2E Service ${randomUUID().slice(0, 8)}`;
+      const services = new ServicesPage(page);
 
-    await expect(page.getByText(name)).not.toBeVisible();
-  }
-);
+      await services.goto();
+      await services.addService(name, "2500", "60");
+      await services.expectServicePricing(name, "₱2,500.00", "60 min");
+      await services.deleteService(name);
+    }
+  );
+});

@@ -40,15 +40,25 @@ const addBooking = async (db: ClinicDb, input: BookingInput) => {
   const patientId = input.patientId ?? crypto.randomUUID();
   const visitId = crypto.randomUUID();
   const events = [];
+  const localPatient = input.patientId
+    ? await db.events
+        .where("recordId")
+        .equals(patientId)
+        .and(
+          (event) =>
+            event.type === "patient.created" || event.type === "patient.updated"
+        )
+        .first()
+    : undefined;
 
-  if (!input.patientId) {
+  if (!localPatient) {
     events.push({
       id: crypto.randomUUID(),
       tenantId: input.tenantId,
       actorUserId: input.actorUserId,
       recordId: patientId,
       occurredAt,
-      type: "patient.created" as const,
+      type: input.patientId ? ("patient.updated" as const) : ("patient.created" as const),
       payload: patientPayloadSchema.parse({
         name: input.name,
         mobile: input.mobile,
