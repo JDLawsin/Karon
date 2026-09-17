@@ -14,6 +14,63 @@ const fakeWalkIn = () => {
   };
 };
 
+const fakeBookingRequest = () => ({
+  id: randomUUID(),
+  name: "E2E Booking Patient",
+  mobile: "09170000001",
+  service_name: "Checkup",
+  note: null,
+  starts_at: "2026-09-18T02:00:00.000Z"
+});
+
+const installFakeAudio = async (page: Page) => {
+  await page.addInitScript(() => {
+    class FakeAudioContext {
+      currentTime = 0;
+      destination = {};
+      state: AudioContextState = "running";
+
+      constructor() {
+        const target = window as typeof window & { __e2eChimeAttempts?: number };
+        target.__e2eChimeAttempts = (target.__e2eChimeAttempts ?? 0) + 1;
+      }
+
+      createGain() {
+        return {
+          connect() {},
+          gain: {
+            exponentialRampToValueAtTime() {},
+            setValueAtTime() {}
+          }
+        };
+      }
+
+      createOscillator() {
+        return {
+          connect() {},
+          frequency: {
+            exponentialRampToValueAtTime() {},
+            setValueAtTime() {}
+          },
+          start() {},
+          stop() {},
+          type: "sine"
+        };
+      }
+
+      close() {
+        this.state = "closed";
+        return Promise.resolve();
+      }
+    }
+
+    Object.defineProperty(window, "AudioContext", {
+      configurable: true,
+      value: FakeAudioContext
+    });
+  });
+};
+
 const interceptEmptyBoard = async (
   page: Page,
   bookingRequests: unknown[] = []
@@ -84,16 +141,7 @@ test.describe("today board", { tag: "@assistant" }, () => {
   });
 
   test("opens pending booking requests from the attention strip", async ({ page }) => {
-    await interceptEmptyBoard(page, [
-      {
-        id: "33333333-3333-4333-8333-333333333333",
-        name: "E2E Booking Patient",
-        mobile: "09170000001",
-        service_name: "Checkup",
-        note: null,
-        starts_at: "2026-09-18T02:00:00.000Z"
-      }
-    ]);
+    await interceptEmptyBoard(page, [fakeBookingRequest()]);
     const today = new TodayBoardPage(page);
     await today.goto();
 
@@ -103,6 +151,40 @@ test.describe("today board", { tag: "@assistant" }, () => {
 
     await expect(page).toHaveURL(/#booking-inbox$/);
     await expect(page.getByRole("heading", { name: "New bookings" })).toBeVisible();
+  });
+
+  test("live signal keeps visuals while this clinic browser is muted", async ({ page }) => {
+    const bookingRequests: unknown[] = [];
+    await installFakeAudio(page);
+    await interceptEmptyBoard(page, bookingRequests);
+    const today = new TodayBoardPage(page);
+    await today.goto();
+    await expect(page.getByText("No new bookings", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Mute" }).click();
+    await expect(page.getByText("Muted by you", { exact: true })).toBeVisible();
+    bookingRequests.push(fakeBookingRequest());
+    await page.evaluate(() => window.dispatchEvent(new Event("online")));
+
+    await expect(page.getByRole("link", { name: /1 booking request/ })).toBeVisible();
+    await expect(page.getByText("1 pending", { exact: true })).toBeVisible();
+    await expect.poll(() =>
+      page.evaluate(
+        () =>
+          (window as typeof window & { __e2eChimeAttempts?: number })
+            .__e2eChimeAttempts ?? 0
+      )
+    ).toBe(0);
+
+    await page.getByRole("button", { name: "Turn on" }).click();
+    await expect(page.getByText("Soft chime on", { exact: true })).toBeVisible();
+    await expect.poll(() =>
+      page.evaluate(
+        () =>
+          (window as typeof window & { __e2eChimeAttempts?: number })
+            .__e2eChimeAttempts ?? 0
+      )
+    ).toBe(1);
   });
 
   test("adds a walk-in as confirmed", { tag: "@integration" }, async ({ page }) => {

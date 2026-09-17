@@ -29,6 +29,11 @@ const inboxRowSchema = z.object({
   starts_at: z.string()
 });
 
+const liveInboxRowSchema = inboxRowSchema.extend({
+  tenant_id: z.uuid(),
+  status: z.enum(["pending", "accepted", "declined"])
+});
+
 const bookingLinkRowSchema = z.object({
   id: z.uuid(),
   tenant_id: z.uuid()
@@ -143,6 +148,7 @@ export {
   bookingTurnstileTokenOf,
   clinicBookingRowSchema,
   inboxRowSchema,
+  liveInboxRowSchema,
   isBookingHoneypotFilled,
   publicBookingPageSchema,
   publicBookingSubmitSchema

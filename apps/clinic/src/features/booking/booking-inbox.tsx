@@ -1,10 +1,12 @@
 "use client";
 
-import { Alert, Button, cn } from "@karon/design-system";
+import { Alert, Button, StatusBadge } from "@karon/design-system";
+import { Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { inboxRowSchema } from "@/features/booking/booking-schemas";
+import type { InboxRow } from "@/features/booking/booking-inbox-live";
 import { visitOccupiesSlot } from "@/features/booking/booking-slots";
+import { useLiveBookingRequests } from "@/features/booking/use-live-booking-requests";
 import { addBooking } from "@/features/today-board/local";
 import {
   CLINIC_TZ,
@@ -16,15 +18,6 @@ import { openClinicDb } from "@/lib/db/clinic-db";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { ClinicEvent } from "@/lib/sync/event-schema";
 
-type InboxRow = {
-  id: string;
-  name: string;
-  mobile: string;
-  serviceName: string;
-  note: string | null;
-  startsAt: string;
-};
-
 type Props = {
   autoConfirm: boolean;
   events: ClinicEvent[];
@@ -33,7 +26,16 @@ type Props = {
 
 const BookingInbox = ({ autoConfirm, events, onPendingCountChange }: Props) => {
   const { membership, userId } = useClinicSession();
-  const [rows, setRows] = useState<InboxRow[]>([]);
+  const {
+    rows,
+    ready,
+    loadError,
+    soundState,
+    setSoundMuted,
+    enableSound,
+    removeRow,
+    restoreRow
+  } = useLiveBookingRequests(membership.tenantId);
   const [matchById, setMatchById] = useState<Record<string, string>>({});
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -43,39 +45,6 @@ const BookingInbox = ({ autoConfirm, events, onPendingCountChange }: Props) => {
   useEffect(() => {
     onPendingCountChange?.(rows.length);
   }, [onPendingCountChange, rows.length]);
-
-  useEffect(() => {
-    const supabase = createBrowserSupabase();
-
-    void (async () => {
-      const { data } = await supabase
-        .from("booking_requests")
-        .select("id, name, mobile, service_name, note, starts_at")
-        .eq("tenant_id", membership.tenantId)
-        .eq("status", "pending")
-        .order("starts_at", { ascending: true });
-      const parsed = (data ?? []).flatMap((row) => {
-        const result = inboxRowSchema.safeParse(row);
-
-        if (!result.success) {
-          return [];
-        }
-
-        return [
-          {
-            id: result.data.id,
-            name: result.data.name,
-            mobile: result.data.mobile,
-            serviceName: result.data.service_name,
-            note: result.data.note,
-            startsAt: result.data.starts_at
-          }
-        ];
-      });
-
-      setRows(parsed);
-    })();
-  }, [membership.tenantId, events.length]);
 
   const mark = async (row: InboxRow, status: "accepted" | "declined") => {
     const supabase = createBrowserSupabase();
@@ -97,7 +66,7 @@ const BookingInbox = ({ autoConfirm, events, onPendingCountChange }: Props) => {
     }
 
     setActionError(null);
-    setRows((current) => current.filter((item) => item.id !== row.id));
+    removeRow(row.id);
     return true;
   };
 
@@ -115,11 +84,7 @@ const BookingInbox = ({ autoConfirm, events, onPendingCountChange }: Props) => {
       .eq("tenant_id", membership.tenantId)
       .eq("status", "accepted");
 
-    setRows((current) =>
-      current.some((item) => item.id === row.id)
-        ? current
-        : [...current, row].sort((left, right) => left.startsAt.localeCompare(right.startsAt))
-    );
+    restoreRow(row);
   };
 
   const accept = async (
@@ -201,17 +166,61 @@ const BookingInbox = ({ autoConfirm, events, onPendingCountChange }: Props) => {
   };
 
   return (
-    <section
-      className={cn(
-        "flex min-w-0 flex-col gap-3 rounded-lg bg-card p-3 lg:sticky lg:top-4",
-        rows.length === 0 && "max-lg:hidden"
-      )}
-      id="booking-inbox"
-    >
-      <h2 className="text-sm font-medium">New bookings</h2>
+    <section className="flex min-w-0 flex-col gap-3 rounded-lg bg-card p-3 lg:sticky lg:top-4" id="booking-inbox">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <h2 className="mr-auto text-sm font-medium">New bookings</h2>
+        <StatusBadge aria-live="polite" tone={rows.length > 0 ? "warning" : "neutral"}>
+          {`${rows.length} pending`}
+        </StatusBadge>
+        <StatusBadge tone={soundState === "on" ? "info" : "neutral"}>
+          {soundState === "on" ? "Soft chime on" : "Sound off"}
+        </StatusBadge>
+        <Button
+          aria-pressed={soundState !== "on"}
+          className="min-h-11"
+          onClick={() => {
+            if (soundState !== "on") {
+              void enableSound();
+              return;
+            }
+
+            setSoundMuted(true);
+          }}
+          type="button"
+          variant="outline"
+        >
+          {soundState === "on" ? (
+            <VolumeX aria-hidden className="size-4" />
+          ) : (
+            <Volume2 aria-hidden className="size-4" />
+          )}
+          {soundState === "on" ? "Mute" : "Turn on"}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Sound setting is saved on this clinic browser.
+      </p>
+      {soundState === "blocked" ? (
+        <Alert title="Sound blocked" variant="info">
+          <div className="flex min-w-0 flex-col items-start gap-2">
+            <p>Badge and attention strip are still active.</p>
+            <Button className="min-h-11" onClick={() => void enableSound()} type="button" variant="outline">
+              Enable sound
+            </Button>
+          </div>
+        </Alert>
+      ) : null}
+      {soundState === "muted" ? (
+        <Alert title="Muted by you" variant="info">
+          Badge and attention strip stay active.
+        </Alert>
+      ) : null}
+      {loadError ? <Alert title={loadError} variant="danger" /> : null}
       {actionError ? <Alert title={actionError} variant="danger" /> : null}
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No new bookings</p>
+        <p className="text-sm text-muted-foreground">
+          {ready ? "No new bookings" : "Checking for new bookings…"}
+        </p>
       ) : (
         <ul className="flex min-w-0 flex-col gap-3">
           {rows.map((row) => (

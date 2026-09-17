@@ -152,6 +152,7 @@ const TodayBoard = () => {
       </Drawer>
       {pendingBookingCount > 0 ? (
         <a
+          aria-live="polite"
           className="flex min-h-(--control-min-height) min-w-0 items-center justify-between gap-3 rounded-lg bg-warning-subtle px-4 py-3 text-warning-foreground transition-transform duration-(--motion-duration) hover:scale-(--surface-hover-scale) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href="#booking-inbox"
         >
