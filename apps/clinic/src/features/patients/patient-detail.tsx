@@ -85,9 +85,6 @@ const PatientDetail = ({ patient, visit, visits }: Props) => (
     </section>
 
     <div className="grid min-w-0 grid-cols-1 gap-3 xl:grid-cols-2">
-      <EmptyState title="Chart not started">
-        Tooth chart entries will appear here after they are recorded.
-      </EmptyState>
       <EmptyState title="No quote yet">
         Quotes will appear here after they are recorded.
       </EmptyState>

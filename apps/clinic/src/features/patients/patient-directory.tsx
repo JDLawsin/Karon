@@ -185,7 +185,7 @@ const PatientDirectory = ({ selectedPatientId }: Props) => {
             selectedPatientId ? "block" : "hidden md:block"
           }`}
         >
-          {workspace.patient ? (
+          {workspace.patient && selectedPatientId ? (
             <div className="flex min-w-0 flex-col gap-4">
               <Button asChild className="w-fit md:hidden" variant="outline">
                 <Link href="/patients">
@@ -202,6 +202,11 @@ const PatientDirectory = ({ selectedPatientId }: Props) => {
                 )}
                 visits={workspace.visits}
               />
+              <Button asChild variant="outline">
+                <Link href={`/patients/${encodeURIComponent(selectedPatientId)}`}>
+                  Open chart
+                </Link>
+              </Button>
             </div>
           ) : selectedPatientId && searchingOnline ? (
             <p aria-live="polite" className="text-muted-foreground">

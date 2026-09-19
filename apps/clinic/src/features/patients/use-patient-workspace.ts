@@ -65,7 +65,7 @@ const usePatientWorkspace = (patientId: string, visitId?: string) => {
     return { patient, visit, visits: patientVisits };
   }, [events, patientId, visitId]);
 
-  return { ...workspace, ready };
+  return { ...workspace, events, ready };
 };
 
 export { usePatientWorkspace };

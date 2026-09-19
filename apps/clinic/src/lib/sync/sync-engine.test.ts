@@ -100,10 +100,10 @@ describe("sync engine", () => {
   it("pulls a remote event without deleting a local sibling", async () => {
     const db = await openClinicDb(TENANT, DEK);
     const recordId = randomUUID();
-    const local = makeEvent("chart.appended", { recordId });
+    const local = makeEvent("quote.created", { recordId });
     await recordClinicEvent(db, local);
 
-    const remote = makeEvent("chart.appended", { recordId });
+    const remote = makeEvent("quote.created", { recordId });
     const { supabase } = mockSupabase({
       rows: [
         {

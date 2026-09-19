@@ -198,7 +198,7 @@ test.describe("today board", { tag: "@assistant" }, () => {
     ).toBeVisible();
   });
 
-  test("marks a walk-in in chair", { tag: "@integration" }, async ({ page }) => {
+  test("charts an in-chair visit and keeps its history", { tag: "@integration" }, async ({ page }) => {
     const today = new TodayBoardPage(page);
     const person = fakeWalkIn();
     await today.goto();
@@ -223,6 +223,47 @@ test.describe("today board", { tag: "@assistant" }, () => {
     const currentVisit = page.getByRole("region", { name: "Current visit" });
     await expect(currentVisit).toBeVisible();
     await expect(currentVisit.getByText("In chair", { exact: true })).toBeVisible();
+
+    await page.route("**/rest/v1/clinic_events**", async (route) => {
+      if (route.request().method() === "POST") {
+        await route.fulfill({ status: 201, contentType: "application/json", body: "" });
+        return;
+      }
+
+      await route.continue();
+    });
+
+    const chart = page.getByRole("region", { name: "Odontogram" });
+    await chart.getByRole("option", { name: "16" }).click();
+    await chart.getByLabel("Condition or procedure").selectOption("procedure:filling");
+    await chart.getByLabel("Visit note").fill("Composite restoration placed.");
+    await chart.getByRole("button", { name: "Add chart entry" }).click();
+
+    await expect(chart.getByText("Tooth 16", { exact: true })).toBeVisible();
+    await expect(chart.getByRole("list").getByText("Filling", { exact: true })).toBeVisible();
+    await expect(chart.getByText("Composite restoration placed.")).toBeVisible();
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByText("Composite restoration placed.")).toBeVisible();
+
+    for (const width of [320, 768, 1280] as const) {
+      await page.setViewportSize({ width, height: 800 });
+      await expect(page.getByRole("region", { name: "Odontogram" })).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+        )
+      ).toBe(false);
+    }
+
+    await page.context().setOffline(true);
+    await page.getByRole("option", { name: "26" }).click();
+    await page.getByLabel("Condition or procedure").selectOption("condition:caries");
+    await page.getByLabel("Visit note").fill("Should not be queued.");
+    await page.getByRole("button", { name: "Add chart entry" }).click();
+    await expect(
+      page.getByRole("alert").getByText("Charting needs a connection right now. Reconnect and try again.")
+    ).toBeVisible();
   });
 
   test("keeps the local board in airplane mode", { tag: "@integration" }, async ({

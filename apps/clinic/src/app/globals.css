@@ -1,3 +1,4 @@
+@import "react-advanced-odontogram/style.css" layer(odontogram);
 @import "tailwindcss";
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 /* Form-only below 1280px and on coarse pointers (iPad / Android tablets). */
@@ -9,3 +10,31 @@
  * theme: Flat (DESIGN.md) · nav: N3 side-rail · mobile: sheet
  * enrichment: none · design-system: DESIGN.md · designed-as-app
  */
+
+/* The library chart is intrinsically wide. Keep it inside its bounded scroller. */
+.karon-odontogram {
+  --karon-odontogram-card: var(--card);
+}
+
+.karon-odontogram .odontogram-root {
+  min-width: 42rem;
+}
+
+.karon-odontogram .chart {
+  background: var(--karon-odontogram-card);
+  border-color: var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.karon-odontogram :is(.chart-mode-toggle, .proposed-legend, .chart-actions) {
+  display: none;
+}
+
+.karon-odontogram .tooth-tile {
+  background: color-mix(
+    in srgb,
+    var(--karon-odontogram-card) 90%,
+    transparent
+  );
+  min-height: 6.25rem;
+}

@@ -648,6 +648,72 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(directWriteError?.code).toBe("42501");
   });
 
+  it("lets owner and assistant append valid chart events and audits without note text", async () => {
+    const owner = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(owner.client);
+    const assistant = await createAuthedClient(users[1]!.email);
+    const patientId = randomUUID();
+    const visitId = randomUUID();
+    const events = [
+      { client: owner.client, actorUserId: users[0]!.id, toothCode: "16" },
+      { client: assistant.client, actorUserId: users[1]!.id, toothCode: "26" }
+    ];
+
+    for (const event of events) {
+      const eventId = randomUUID();
+      const recordId = randomUUID();
+      const { error } = await event.client.from("clinic_events").insert({
+        id: eventId,
+        tenant_id: clinicIds[0],
+        actor_user_id: event.actorUserId,
+        event_type: "chart.appended",
+        record_id: recordId,
+        payload: {
+          patientId,
+          visitId,
+          toothCode: event.toothCode,
+          finding: { kind: "condition", code: "caries" },
+          note: "Sensitive chart note"
+        },
+        occurred_at: new Date().toISOString()
+      });
+
+      expect(error).toBeNull();
+
+      const { data: audit } = await admin
+        .from("audit_events")
+        .select("actor_user_id, event_type, record_id, metadata")
+        .eq("record_id", recordId)
+        .single();
+
+      expect(audit).toMatchObject({
+        actor_user_id: event.actorUserId,
+        event_type: "chart.appended",
+        record_id: recordId,
+        metadata: { patient_id: patientId, visit_id: visitId, note_length: 20 }
+      });
+      expect(JSON.stringify(audit)).not.toContain("Sensitive chart note");
+    }
+
+    const { error: invalidError } = await assistant.client.from("clinic_events").insert({
+      id: randomUUID(),
+      tenant_id: clinicIds[0],
+      actor_user_id: users[1]!.id,
+      event_type: "chart.appended",
+      record_id: randomUUID(),
+      payload: {
+        patientId,
+        visitId,
+        toothCode: "51",
+        finding: { kind: "condition", code: "unknown" },
+        note: "Invalid"
+      },
+      occurred_at: new Date().toISOString()
+    });
+
+    expect(invalidError?.code).toBe("22023");
+  });
+
   it("hides payment.recorded from assistants and lets the owner read it", async () => {
     const assistant = await createAuthedClient(users[1]!.email);
     const paymentId = randomUUID();

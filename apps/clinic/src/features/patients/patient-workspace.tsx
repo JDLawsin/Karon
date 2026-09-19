@@ -7,6 +7,8 @@ import {
 } from "@karon/design-system";
 import Link from "next/link";
 
+import Odontogram from "@/features/odontogram/odontogram";
+import { useOdontogram } from "@/features/odontogram/use-odontogram";
 import PatientDetail from "@/features/patients/patient-detail";
 import NextVisitPanel from "@/features/patients/next-visit-panel";
 import { usePatientWorkspace } from "@/features/patients/use-patient-workspace";
@@ -17,7 +19,19 @@ type Props = {
 };
 
 const PatientWorkspace = ({ patientId, visitId }: Props) => {
-  const { patient, visit, visits, ready } = usePatientWorkspace(patientId, visitId);
+  const { patient, visit, visits, events, ready } = usePatientWorkspace(patientId, visitId);
+  const { append, entries, saving } = useOdontogram(patientId, visit?.id, events);
+  const visitLabels = Object.fromEntries(
+    visits.map((item) => [
+      item.id,
+      `Visit · ${new Intl.DateTimeFormat("en-PH", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "Asia/Manila"
+      }).format(new Date(item.startsAt))}`
+    ])
+  );
 
   if (!ready) {
     return (
@@ -53,6 +67,13 @@ const PatientWorkspace = ({ patientId, visitId }: Props) => {
         </Button>
       </PageHeader>
       <PatientDetail patient={patient} visit={visit} visits={visits} />
+      <Odontogram
+        canChart={visit?.status === "in_chair"}
+        entries={entries}
+        onAppend={append}
+        saving={saving}
+        visitLabels={visitLabels}
+      />
       <NextVisitPanel patientId={patientId} />
     </div>
   );

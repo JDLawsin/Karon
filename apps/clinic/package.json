@@ -50,6 +50,7 @@
     "next": "16.3.4",
     "pino": "^10.3.1",
     "react": "19.2.8",
+    "react-advanced-odontogram": "patch:react-advanced-odontogram@npm%3A2.5.0#~/.yarn/patches/react-advanced-odontogram-npm-2.5.0-863da2269e.patch",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.87.0",
     "serialize-error": "^13.0.1",
