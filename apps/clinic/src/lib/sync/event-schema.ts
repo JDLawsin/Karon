@@ -32,14 +32,16 @@ const patientPayloadSchema = z.object({
   email: z.string().trim().email().max(254).optional()
 });
 
-const appointmentSetPayloadSchema = z.object({
-  patientId: z.uuid(),
-  startsAt: z.string().min(1),
-  status: visitStatusSchema.optional(),
-  googleEventId: z.string().min(1).optional(),
-  serviceName: z.string().trim().min(1).max(80).optional(),
-  note: z.string().trim().max(500).optional()
-});
+const appointmentSetPayloadSchema = z
+  .object({
+    patientId: z.uuid(),
+    startsAt: z.iso.datetime({ offset: true }),
+    status: visitStatusSchema.optional(),
+    googleEventId: z.string().min(1).optional(),
+    serviceName: z.string().trim().min(1).max(80).optional(),
+    note: z.string().trim().max(500).optional()
+  })
+  .strict();
 
 const visitStatusChangedPayloadSchema = z.object({
   status: visitStatusSchema

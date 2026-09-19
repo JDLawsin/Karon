@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 
 import PatientDetail from "@/features/patients/patient-detail";
+import NextVisitPanel from "@/features/patients/next-visit-panel";
 import { usePatientWorkspace } from "@/features/patients/use-patient-workspace";
 
 type Props = {
@@ -52,6 +53,7 @@ const PatientWorkspace = ({ patientId, visitId }: Props) => {
         </Button>
       </PageHeader>
       <PatientDetail patient={patient} visit={visit} visits={visits} />
+      <NextVisitPanel patientId={patientId} />
     </div>
   );
 };
