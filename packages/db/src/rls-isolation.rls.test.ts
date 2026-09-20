@@ -714,6 +714,145 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(invalidError?.code).toBe("22023");
   });
 
+  it("lets owner and assistant create valid quotes and rejects broken totals", async () => {
+    const owner = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(owner.client);
+    const assistant = await createAuthedClient(users[1]!.email);
+    const patientId = randomUUID();
+    const visitId = randomUUID();
+    const serviceId = randomUUID();
+    const serviceName = `Quote service ${suffix}`;
+    const { error: serviceError } = await admin.from("clinic_services").insert({
+      id: serviceId,
+      tenant_id: clinicIds[0],
+      name: serviceName,
+      created_by: users[0]!.id,
+      updated_by: users[0]!.id
+    });
+    const events = [
+      { client: owner.client, actorUserId: users[0]!.id },
+      { client: assistant.client, actorUserId: users[1]!.id }
+    ];
+
+    expect(serviceError).toBeNull();
+
+    for (const event of events) {
+      const eventId = randomUUID();
+      const recordId = randomUUID();
+      const row = {
+        id: eventId,
+        tenant_id: clinicIds[0],
+        actor_user_id: event.actorUserId,
+        event_type: "quote.created",
+        record_id: recordId,
+        payload: {
+          patientId,
+          visitId,
+          status: "accepted",
+          lines: [
+            {
+              serviceId,
+              serviceName,
+              qty: 2,
+              amountMinor: 150_000,
+              currency: "PHP"
+            }
+          ],
+          totalMinor: 300_000,
+          currency: "PHP"
+        },
+        occurred_at: new Date().toISOString()
+      };
+      const writes = await Promise.all([
+        event.client
+          .from("clinic_events")
+          .upsert(row, { onConflict: "id", ignoreDuplicates: true }),
+        event.client
+          .from("clinic_events")
+          .upsert(row, { onConflict: "id", ignoreDuplicates: true })
+      ]);
+
+      expect(writes.map(({ error }) => error)).toEqual([null, null]);
+
+      const { data: audits } = await admin
+        .from("audit_events")
+        .select("actor_user_id, event_type, record_id, metadata")
+        .eq("record_id", recordId);
+
+      expect(audits).toEqual([
+        expect.objectContaining({
+          actor_user_id: event.actorUserId,
+          event_type: "quote.created",
+          record_id: recordId,
+          metadata: {
+            patient_id: patientId,
+            visit_id: visitId,
+            line_count: 1,
+            currency: "PHP"
+          }
+        })
+      ]);
+      expect(JSON.stringify(audits)).not.toContain(serviceName);
+      expect(JSON.stringify(audits)).not.toContain("300000");
+    }
+
+    const { error: invalidError } = await assistant.client.from("clinic_events").insert({
+      id: randomUUID(),
+      tenant_id: clinicIds[0],
+      actor_user_id: users[1]!.id,
+      event_type: "quote.created",
+      record_id: randomUUID(),
+      payload: {
+        patientId,
+        visitId,
+        status: "accepted",
+        lines: [
+          {
+            serviceId,
+            serviceName,
+            qty: 2,
+            amountMinor: 150_000,
+            currency: "PHP"
+          }
+        ],
+        totalMinor: 1,
+        currency: "PHP"
+      },
+      occurred_at: new Date().toISOString()
+    });
+
+    expect(invalidError?.code).toBe("22023");
+
+    const { error: nullStatusError } = await assistant.client
+      .from("clinic_events")
+      .insert({
+        id: randomUUID(),
+        tenant_id: clinicIds[0],
+        actor_user_id: users[1]!.id,
+        event_type: "quote.created",
+        record_id: randomUUID(),
+        payload: {
+          patientId,
+          visitId,
+          status: null,
+          lines: [
+            {
+              serviceId,
+              serviceName,
+              qty: 2,
+              amountMinor: 150_000,
+              currency: "PHP"
+            }
+          ],
+          totalMinor: 300_000,
+          currency: "PHP"
+        },
+        occurred_at: new Date().toISOString()
+      });
+
+    expect(nullStatusError?.code).toBe("22023");
+  });
+
   it("hides payment.recorded from assistants and lets the owner read it", async () => {
     const assistant = await createAuthedClient(users[1]!.email);
     const paymentId = randomUUID();
@@ -755,9 +894,9 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
       id: eventId,
       tenant_id: clinicIds[0],
       actor_user_id: users[1]!.id,
-      event_type: "quote.created",
+      event_type: "patient.created",
       record_id: randomUUID(),
-      payload: {},
+      payload: { name: "Append Only", mobile: "09173334444" },
       occurred_at: new Date().toISOString()
     });
 

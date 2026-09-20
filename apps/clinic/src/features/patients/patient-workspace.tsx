@@ -12,6 +12,9 @@ import { useOdontogram } from "@/features/odontogram/use-odontogram";
 import PatientDetail from "@/features/patients/patient-detail";
 import NextVisitPanel from "@/features/patients/next-visit-panel";
 import { usePatientWorkspace } from "@/features/patients/use-patient-workspace";
+import QuoteBuilder from "@/features/quotes/quote-builder";
+import { useQuotes } from "@/features/quotes/use-quotes";
+import { useClinicServices } from "@/features/services/use-clinic-services";
 
 type Props = {
   patientId: string;
@@ -21,6 +24,13 @@ type Props = {
 const PatientWorkspace = ({ patientId, visitId }: Props) => {
   const { patient, visit, visits, events, ready } = usePatientWorkspace(patientId, visitId);
   const { append, entries, saving } = useOdontogram(patientId, visit?.id, events);
+  const {
+    services,
+    currencyCode,
+    loading: loadingServices,
+    error: serviceError
+  } = useClinicServices();
+  const { accept, quotes, saving: savingQuote } = useQuotes(patientId, visit?.id, events);
   const visitLabels = Object.fromEntries(
     visits.map((item) => [
       item.id,
@@ -73,6 +83,16 @@ const PatientWorkspace = ({ patientId, visitId }: Props) => {
         onAppend={append}
         saving={saving}
         visitLabels={visitLabels}
+      />
+      <QuoteBuilder
+        canQuote={visit?.status === "in_chair"}
+        currencyCode={currencyCode}
+        loadingServices={loadingServices}
+        onAccept={accept}
+        quotes={quotes}
+        saving={savingQuote}
+        serviceError={serviceError}
+        services={services}
       />
       <NextVisitPanel patientId={patientId} />
     </div>

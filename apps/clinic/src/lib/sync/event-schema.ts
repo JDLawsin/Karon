@@ -90,6 +90,50 @@ const chartAppendedPayloadSchema = z
   })
   .strict();
 
+const moneyMinorSchema = z.int().min(0).max(2_147_483_647);
+const quoteCurrencySchema = z.string().regex(/^[A-Z]{3}$/);
+const quoteLineSchema = z
+  .object({
+    serviceId: z.uuid(),
+    serviceName: z.string().trim().min(1).max(80),
+    qty: z.int().min(1).max(99),
+    amountMinor: moneyMinorSchema,
+    currency: quoteCurrencySchema
+  })
+  .strict();
+const quoteCreatedPayloadSchema = z
+  .object({
+    patientId: z.uuid(),
+    visitId: z.uuid(),
+    status: z.literal("accepted"),
+    lines: z.array(quoteLineSchema).min(1).max(50),
+    totalMinor: moneyMinorSchema,
+    currency: quoteCurrencySchema
+  })
+  .strict()
+  .superRefine((quote, ctx) => {
+    if (quote.lines.some((line) => line.currency !== quote.currency)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "All quote lines must use the quote currency",
+        path: ["lines"]
+      });
+    }
+
+    const totalMinor = quote.lines.reduce(
+      (total, line) => total + line.qty * line.amountMinor,
+      0
+    );
+
+    if (!Number.isSafeInteger(totalMinor) || totalMinor !== quote.totalMinor) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Quote total must equal the sum of its lines",
+        path: ["totalMinor"]
+      });
+    }
+  });
+
 const visitStatusSchema = z
   .enum([...VISIT_STATUSES, "booked"])
   .transform((status) => (status === "booked" ? "confirmed" : status));
@@ -178,6 +222,17 @@ const clinicEventSchema = z
       return;
     }
 
+    if (value.type === "quote.created") {
+      if (
+        value.recordId === null ||
+        !quoteCreatedPayloadSchema.safeParse(value.payload).success
+      ) {
+        payloadIssue(ctx, "Invalid quote payload");
+      }
+
+      return;
+    }
+
     if (value.type === "reminder.queued") {
       const parsed = reminderQueuedPayloadSchema.safeParse(value.payload);
 
@@ -204,6 +259,8 @@ type VisitStatus = (typeof VISIT_STATUSES)[number];
 type AdultFdiToothCode = (typeof ADULT_FDI_TOOTH_CODES)[number];
 type ChartFinding = z.infer<typeof chartFindingSchema>;
 type ChartAppendedPayload = z.infer<typeof chartAppendedPayloadSchema>;
+type QuoteLine = z.infer<typeof quoteLineSchema>;
+type QuoteCreatedPayload = z.infer<typeof quoteCreatedPayloadSchema>;
 
 const toClinicEvent = (row: z.infer<typeof clinicEventRowSchema>): ClinicEvent => ({
   id: row.id,
@@ -228,6 +285,8 @@ export {
   clinicEventRowSchema,
   clinicEventSchema,
   patientPayloadSchema,
+  quoteCreatedPayloadSchema,
+  quoteLineSchema,
   reminderQueuedPayloadSchema,
   toClinicEvent,
   visitStatusChangedPayloadSchema,
@@ -239,5 +298,7 @@ export type {
   ChartFinding,
   ClinicEvent,
   ClinicEventType,
+  QuoteCreatedPayload,
+  QuoteLine,
   VisitStatus
 };

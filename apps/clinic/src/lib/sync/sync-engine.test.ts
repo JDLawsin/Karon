@@ -24,7 +24,24 @@ const makeEvent = (
   payload:
     type === "patient.created" || type === "patient.updated"
       ? { name: "Ana Cruz", mobile: "09171234567" }
-      : {},
+      : type === "quote.created"
+        ? {
+            patientId: randomUUID(),
+            visitId: randomUUID(),
+            status: "accepted",
+            lines: [
+              {
+                serviceId: randomUUID(),
+                serviceName: "Cleaning",
+                qty: 1,
+                amountMinor: 150_000,
+                currency: "PHP"
+              }
+            ],
+            totalMinor: 150_000,
+            currency: "PHP"
+          }
+        : {},
   ...overrides
 });
 
@@ -112,7 +129,7 @@ describe("sync engine", () => {
           actor_user_id: remote.actorUserId,
           event_type: remote.type,
           record_id: remote.recordId,
-          payload: { note: "other device" },
+          payload: remote.payload,
           occurred_at: remote.occurredAt,
           received_at: "2026-09-12T00:00:00.000Z"
         }
@@ -149,7 +166,7 @@ describe("sync engine", () => {
           actor_user_id: first.actorUserId,
           event_type: first.type,
           record_id: first.recordId,
-          payload: {},
+          payload: first.payload,
           occurred_at: first.occurredAt,
           received_at: "2026-09-12T00:00:00.000Z"
         },
@@ -160,7 +177,7 @@ describe("sync engine", () => {
           actor_user_id: later.actorUserId,
           event_type: later.type,
           record_id: later.recordId,
-          payload: {},
+          payload: later.payload,
           occurred_at: later.occurredAt,
           received_at: "2026-09-12T00:00:02.000Z"
         }

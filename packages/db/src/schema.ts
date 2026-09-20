@@ -258,7 +258,8 @@ export const auditEvents = pgTable(
         'service.deleted',
         'booking.accepted',
         'booking.declined',
-        'chart.appended'
+        'chart.appended',
+        'quote.created'
       )`
     )
   ]
