@@ -30,7 +30,8 @@ const files = [
   "packages/db/drizzle/0021_patient_projection.sql",
   "packages/db/drizzle/0022_live_booking_inbox.sql",
   "packages/db/drizzle/0023_chart_events.sql",
-  "packages/db/drizzle/0024_quote_events.sql"
+  "packages/db/drizzle/0024_quote_events.sql",
+  "packages/db/drizzle/0025_payment_events.sql"
 ];
 
 const splitSql = (contents: string) => {

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   chartAppendedPayloadSchema,
   clinicEventSchema,
+  paymentRecordedPayloadSchema,
   quoteCreatedPayloadSchema
 } from "./event-schema";
 
@@ -92,6 +93,43 @@ describe("quote.created payload", () => {
         occurredAt: "2026-09-20T01:00:00.000Z",
         type: "quote.created",
         payload: VALID_QUOTE
+      }).success
+    ).toBe(false);
+  });
+});
+
+const VALID_PAYMENT = {
+  patientId: "11111111-1111-4111-8111-111111111111",
+  visitId: "22222222-2222-4222-8222-222222222222",
+  amountMinor: 200_000,
+  currency: "PHP",
+  method: "gcash"
+} as const;
+
+describe("payment.recorded payload", () => {
+  it("accepts an abstracted payment method with strict money fields", () => {
+    expect(paymentRecordedPayloadSchema.parse(VALID_PAYMENT)).toEqual(VALID_PAYMENT);
+  });
+
+  it.each([
+    [{ ...VALID_PAYMENT, amountMinor: 0, method: "cash" }, "zero cash"],
+    [{ ...VALID_PAYMENT, method: "bank_transfer" }, "unknown method"],
+    [{ ...VALID_PAYMENT, currency: "php" }, "invalid currency"],
+    [{ ...VALID_PAYMENT, extra: true }, "unknown key"]
+  ])("rejects %s (%s)", (payload) => {
+    expect(paymentRecordedPayloadSchema.safeParse(payload).success).toBe(false);
+  });
+
+  it("rejects a payment event whose record id is missing", () => {
+    expect(
+      clinicEventSchema.safeParse({
+        id: "33333333-3333-4333-8333-333333333333",
+        tenantId: "44444444-4444-4444-8444-444444444444",
+        actorUserId: "55555555-5555-4555-8555-555555555555",
+        recordId: null,
+        occurredAt: "2026-09-20T01:00:00.000Z",
+        type: "payment.recorded",
+        payload: VALID_PAYMENT
       }).success
     ).toBe(false);
   });

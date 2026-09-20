@@ -134,6 +134,17 @@ const quoteCreatedPayloadSchema = z
     }
   });
 
+const PAYMENT_METHODS = ["cash", "gcash", "maya", "card", "other", "unpaid"] as const;
+const paymentRecordedPayloadSchema = z
+  .object({
+    patientId: z.uuid(),
+    visitId: z.uuid(),
+    amountMinor: moneyMinorSchema.min(1),
+    currency: quoteCurrencySchema,
+    method: z.enum(PAYMENT_METHODS)
+  })
+  .strict();
+
 const visitStatusSchema = z
   .enum([...VISIT_STATUSES, "booked"])
   .transform((status) => (status === "booked" ? "confirmed" : status));
@@ -233,6 +244,17 @@ const clinicEventSchema = z
       return;
     }
 
+    if (value.type === "payment.recorded") {
+      if (
+        value.recordId === null ||
+        !paymentRecordedPayloadSchema.safeParse(value.payload).success
+      ) {
+        payloadIssue(ctx, "Invalid payment payload");
+      }
+
+      return;
+    }
+
     if (value.type === "reminder.queued") {
       const parsed = reminderQueuedPayloadSchema.safeParse(value.payload);
 
@@ -261,6 +283,8 @@ type ChartFinding = z.infer<typeof chartFindingSchema>;
 type ChartAppendedPayload = z.infer<typeof chartAppendedPayloadSchema>;
 type QuoteLine = z.infer<typeof quoteLineSchema>;
 type QuoteCreatedPayload = z.infer<typeof quoteCreatedPayloadSchema>;
+type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+type PaymentRecordedPayload = z.infer<typeof paymentRecordedPayloadSchema>;
 
 const toClinicEvent = (row: z.infer<typeof clinicEventRowSchema>): ClinicEvent => ({
   id: row.id,
@@ -278,6 +302,7 @@ export {
   ADULT_FDI_TOOTH_CODES,
   CHART_CONDITION_CODES,
   CHART_PROCEDURE_CODES,
+  PAYMENT_METHODS,
   VISIT_STATUSES,
   appointmentSetPayloadSchema,
   chartAppendedPayloadSchema,
@@ -285,6 +310,7 @@ export {
   clinicEventRowSchema,
   clinicEventSchema,
   patientPayloadSchema,
+  paymentRecordedPayloadSchema,
   quoteCreatedPayloadSchema,
   quoteLineSchema,
   reminderQueuedPayloadSchema,
@@ -300,5 +326,7 @@ export type {
   ClinicEventType,
   QuoteCreatedPayload,
   QuoteLine,
+  PaymentMethod,
+  PaymentRecordedPayload,
   VisitStatus
 };

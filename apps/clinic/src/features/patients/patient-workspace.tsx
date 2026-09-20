@@ -9,6 +9,8 @@ import Link from "next/link";
 
 import Odontogram from "@/features/odontogram/odontogram";
 import { useOdontogram } from "@/features/odontogram/use-odontogram";
+import CollectPayment from "@/features/payments/collect-payment";
+import { useCollect } from "@/features/payments/use-collect";
 import PatientDetail from "@/features/patients/patient-detail";
 import NextVisitPanel from "@/features/patients/next-visit-panel";
 import { usePatientWorkspace } from "@/features/patients/use-patient-workspace";
@@ -31,6 +33,13 @@ const PatientWorkspace = ({ patientId, visitId }: Props) => {
     error: serviceError
   } = useClinicServices();
   const { accept, quotes, saving: savingQuote } = useQuotes(patientId, visit?.id, events);
+  const {
+    balance,
+    balanceError,
+    balanceLoading,
+    collect,
+    saving: savingPayment
+  } = useCollect(patientId, visit?.id);
   const visitLabels = Object.fromEntries(
     visits.map((item) => [
       item.id,
@@ -93,6 +102,13 @@ const PatientWorkspace = ({ patientId, visitId }: Props) => {
         saving={savingQuote}
         serviceError={serviceError}
         services={services}
+      />
+      <CollectPayment
+        balance={balance}
+        balanceError={balanceError}
+        balanceLoading={balanceLoading}
+        onCollect={collect}
+        saving={savingPayment}
       />
       <NextVisitPanel patientId={patientId} />
     </div>

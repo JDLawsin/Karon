@@ -84,10 +84,7 @@ const PatientDetail = ({ patient, visit, visits }: Props) => (
       )}
     </section>
 
-    <div className="grid min-w-0 grid-cols-1 gap-3 xl:grid-cols-2">
-      <EmptyState title="No payments recorded">
-        Payment history stays empty until Collect records a payment.
-      </EmptyState>
+    <div className="min-w-0">
       {visits.length === 0 ? (
         <EmptyState title="No visits yet">
           Visits will appear here after they are scheduled or started.

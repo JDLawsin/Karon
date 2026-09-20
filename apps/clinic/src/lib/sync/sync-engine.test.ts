@@ -145,7 +145,7 @@ describe("sync engine", () => {
 
   it("does not throw when the db is closed before drain", async () => {
     const db = await openClinicDb(TENANT, DEK);
-    await recordClinicEvent(db, makeEvent("payment.recorded"));
+    await recordClinicEvent(db, makeEvent("patient.created"));
     closeClinicDb();
     const { supabase, upsert } = mockSupabase();
 

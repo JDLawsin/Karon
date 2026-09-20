@@ -856,17 +856,87 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
   it("hides payment.recorded from assistants and lets the owner read it", async () => {
     const assistant = await createAuthedClient(users[1]!.email);
     const paymentId = randomUUID();
-    const { error: insertError } = await assistant.client.from("clinic_events").insert({
+    const recordId = randomUUID();
+    const patientId = randomUUID();
+    const visitId = randomUUID();
+    const serviceId = randomUUID();
+    const serviceName = `Collect service ${suffix}`;
+    const { error: serviceError } = await admin.from("clinic_services").insert({
+      id: serviceId,
+      tenant_id: clinicIds[0],
+      name: serviceName,
+      created_by: users[0]!.id,
+      updated_by: users[0]!.id
+    });
+    const { error: quoteError } = await admin.from("clinic_events").insert({
+      id: randomUUID(),
+      tenant_id: clinicIds[0],
+      actor_user_id: users[0]!.id,
+      event_type: "quote.created",
+      record_id: randomUUID(),
+      payload: {
+        patientId,
+        visitId,
+        status: "accepted",
+        lines: [
+          {
+            serviceId,
+            serviceName,
+            qty: 1,
+            amountMinor: 280_000,
+            currency: "PHP"
+          }
+        ],
+        totalMinor: 280_000,
+        currency: "PHP"
+      },
+      occurred_at: new Date(Date.now() - 1_000).toISOString()
+    });
+
+    expect(serviceError).toBeNull();
+    expect(quoteError).toBeNull();
+
+    const payment = {
       id: paymentId,
       tenant_id: clinicIds[0],
       actor_user_id: users[1]!.id,
       event_type: "payment.recorded",
-      record_id: randomUUID(),
-      payload: { method: "cash" },
+      record_id: recordId,
+      payload: {
+        patientId,
+        visitId,
+        amountMinor: 200_000,
+        currency: "PHP",
+        method: "cash"
+      },
       occurred_at: new Date().toISOString()
-    });
+    };
+    const { error: paymentError } = await assistant.client
+      .from("clinic_events")
+      .insert(payment);
+    const { error: duplicateError } = await assistant.client
+      .from("clinic_events")
+      .insert(payment);
 
-    expect(insertError).toBeNull();
+    expect(paymentError).toBeNull();
+    expect(duplicateError?.code).toBe("23505");
+
+    const { data: balance, error: balanceError } = await assistant.client
+      .rpc("get_visit_balance", {
+        p_tenant_id: clinicIds[0]!,
+        p_patient_id: patientId,
+        p_visit_id: visitId
+      })
+      .single();
+
+    expect(balanceError).toBeNull();
+    expect(balance).toEqual({
+      quote_id: expect.any(String),
+      quote_total_minor: 280_000,
+      paid_minor: 200_000,
+      remaining_minor: 80_000,
+      currency: "PHP"
+    });
 
     const { data: assistantRows, error: assistantSelectError } = await assistant.client
       .from("clinic_events")
@@ -885,6 +955,78 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
 
     expect(ownerSelectError).toBeNull();
     expect(ownerRows?.map((row) => row.id)).toEqual([paymentId]);
+
+    const { data: audits } = await admin
+      .from("audit_events")
+      .select("actor_user_id, event_type, record_id, metadata")
+      .eq("record_id", recordId);
+
+    expect(audits).toEqual([
+      expect.objectContaining({
+        actor_user_id: users[1]!.id,
+        event_type: "payment.recorded",
+        record_id: recordId,
+        metadata: {
+          patient_id: patientId,
+          visit_id: visitId,
+          method: "cash",
+          currency: "PHP"
+        }
+      })
+    ]);
+    expect(JSON.stringify(audits)).not.toContain("200000");
+
+    const otherClinicOwner = await createAuthedClient(users[2]!.email);
+    const { error: crossClinicBalanceError } = await otherClinicOwner.client.rpc(
+      "get_visit_balance",
+      {
+        p_tenant_id: clinicIds[0]!,
+        p_patient_id: patientId,
+        p_visit_id: visitId
+      }
+    );
+
+    expect(crossClinicBalanceError?.code).toBe("42501");
+
+    const { error: crossClinicWriteError } = await otherClinicOwner.client
+      .from("clinic_events")
+      .insert({
+        ...payment,
+        id: randomUUID(),
+        actor_user_id: users[2]!.id,
+        record_id: randomUUID()
+      });
+
+    expect(crossClinicWriteError?.code).toBe("42501");
+
+    const { error: zeroCashError } = await assistant.client.from("clinic_events").insert({
+      ...payment,
+      id: randomUUID(),
+      record_id: randomUUID(),
+      payload: { ...payment.payload, amountMinor: 0 }
+    });
+
+    expect(zeroCashError?.code).toBe("22023");
+
+    const { error: overpaymentError } = await assistant.client
+      .from("clinic_events")
+      .insert({
+        ...payment,
+        id: randomUUID(),
+        record_id: randomUUID(),
+        payload: { ...payment.payload, amountMinor: 80_001 }
+      });
+
+    expect(overpaymentError?.code).toBe("22023");
+
+    const { error: extraKeyError } = await assistant.client.from("clinic_events").insert({
+      ...payment,
+      id: randomUUID(),
+      record_id: randomUUID(),
+      payload: { ...payment.payload, screenshotUrl: "https://example.test/receipt" }
+    });
+
+    expect(extraKeyError?.code).toBe("22023");
   });
 
   it("rejects clinic_events updates and deletes from a member JWT", async () => {
