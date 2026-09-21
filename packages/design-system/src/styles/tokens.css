@@ -67,6 +67,9 @@
   --heading-tracking: -0.02em;
   --toast-width: min(100vw - 2rem, 24rem);
   --toast-offset: 1rem;
+  --scrollbar-size: 0.75rem;
+  --scrollbar-thumb: color-mix(in srgb, var(--muted-foreground) 45%, transparent);
+  --scrollbar-thumb-hover: var(--muted-foreground);
 
   --odon-background: var(--background);
   --odon-foreground: var(--foreground);

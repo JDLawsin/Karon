@@ -278,7 +278,7 @@ const TodayHuddleBoard = ({
           >
             <ChevronLeft />
           </Button>
-          <div className="min-w-0 flex-1 overflow-x-auto">
+          <div className="karon-scroll-region-x min-w-0 flex-1 overflow-x-auto">
             <div
               aria-label="Clinic week"
               className="grid min-w-88 grid-cols-7 gap-1"
@@ -422,7 +422,7 @@ const TodayHuddleBoard = ({
               );
             })}
           </div>
-          <div className="hidden min-w-0 overflow-x-auto md:block">
+          <div className="karon-scroll-region-x hidden min-w-0 overflow-x-auto md:block">
             <div
               className="grid min-w-6xl gap-2"
               style={{

@@ -13,7 +13,7 @@ type Props = {
 const AuthShell = ({ title, children, wide = false }: Props) => (
   <main
     className={cn(
-      "relative z-[1] grid min-h-screen min-w-0 bg-background",
+      "relative z-[1] grid min-h-dvh min-w-0 bg-background",
       wide
         ? "auth-split:grid-cols-[minmax(0,40rem)_minmax(0,1fr)]"
         : "auth-split:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]"

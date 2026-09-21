@@ -164,7 +164,7 @@ const Odontogram = ({ entries, visitLabels, canChart, saving, onAppend }: Props)
 
       <div
         aria-label="Adult teeth"
-        className="karon-odontogram min-w-0 overflow-x-auto rounded-lg"
+        className="karon-odontogram karon-scroll-region-x min-w-0 overflow-x-auto rounded-lg"
         onClick={syncSelectedTooth}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") syncSelectedTooth(event);

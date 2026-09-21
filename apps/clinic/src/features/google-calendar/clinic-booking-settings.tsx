@@ -315,7 +315,7 @@ const ClinicBookingSettings = () => {
               nothing imports.
             </DrawerDescription>
           </DrawerHeader>
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto px-6 pb-6">
+          <div className="karon-scroll-region-y flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto px-6 pb-6">
             {reconnect ? (
               <Alert title="Reconnect Google Calendar to list your calendars." />
             ) : null}

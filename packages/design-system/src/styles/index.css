@@ -10,6 +10,10 @@
     overflow-x: clip;
   }
 
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     position: relative;
     background: var(--background);
@@ -17,6 +21,62 @@
     font-family: var(--font-sans);
     min-height: 100dvh;
   }
+}
+
+:where(html, body, .karon-scroll-region-x, .karon-scroll-region-y) {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-width: thin;
+}
+
+:where(
+  html,
+  body,
+  .karon-scroll-region-x,
+  .karon-scroll-region-y
+)::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+:where(
+  html,
+  body,
+  .karon-scroll-region-x,
+  .karon-scroll-region-y
+)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:where(
+  html,
+  body,
+  .karon-scroll-region-x,
+  .karon-scroll-region-y
+)::-webkit-scrollbar-thumb {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  background: var(--scrollbar-thumb);
+  background-clip: padding-box;
+}
+
+:where(
+  html,
+  body,
+  .karon-scroll-region-x,
+  .karon-scroll-region-y
+)::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+.karon-scroll-region-x {
+  overscroll-behavior-inline: contain;
+}
+
+.karon-scroll-region-y {
+  overscroll-behavior-block: contain;
+  scrollbar-gutter: stable;
 }
 
 /* Scroll-lock pads the document by the scrollbar width and paints a strip that shifts the shell. */

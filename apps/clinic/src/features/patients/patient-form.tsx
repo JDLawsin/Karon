@@ -95,7 +95,7 @@ const PatientForm = ({
       })}
       ref={markHydrated}
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-2 pr-1">
+      <div className="karon-scroll-region-y flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-2 pr-1">
         <div className="flex flex-col gap-2">
           <Label htmlFor="patient-name">Full name</Label>
           <Input

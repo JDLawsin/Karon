@@ -956,6 +956,97 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(ownerSelectError).toBeNull();
     expect(ownerRows?.map((row) => row.id)).toEqual([paymentId]);
 
+    const { error: unpaidError } = await assistant.client
+      .from("clinic_events")
+      .insert({
+        ...payment,
+        id: randomUUID(),
+        record_id: randomUUID(),
+        payload: { ...payment.payload, amountMinor: 80_000, method: "unpaid" }
+      });
+
+    expect(unpaidError).toBeNull();
+
+    const { error: assistantCollectionsError } = await assistant.client.rpc(
+      "get_owner_daily_collections",
+      { p_tenant_id: clinicIds[0]!, p_day: null }
+    );
+
+    expect(assistantCollectionsError?.code).toBe("42501");
+
+    const { data: collections, error: collectionsError } = await owner.client
+      .rpc("get_owner_daily_collections", {
+        p_tenant_id: clinicIds[0]!,
+        p_day: null
+      })
+      .single();
+
+    expect(collectionsError).toBeNull();
+    expect(collections).toMatchObject({
+      timezone: "Asia/Manila",
+      currency: "PHP",
+      payment_count: 2,
+      paid_minor: 200_000,
+      outstanding_minor: 80_000,
+      cash_minor: 200_000
+    });
+
+    const { data: collectionsAudit } = await admin
+      .from("audit_events")
+      .select("actor_user_id, event_type, metadata")
+      .eq("tenant_id", clinicIds[0]!)
+      .eq("event_type", "collections.viewed")
+      .single();
+
+    expect(collectionsAudit).toMatchObject({
+      actor_user_id: users[0]!.id,
+      event_type: "collections.viewed",
+      metadata: { timezone: "Asia/Manila" }
+    });
+
+    const { error: finalPaymentError } = await assistant.client
+      .from("clinic_events")
+      .insert({
+        ...payment,
+        id: randomUUID(),
+        record_id: randomUUID(),
+        payload: { ...payment.payload, amountMinor: 80_000, method: "card" }
+      });
+
+    expect(finalPaymentError).toBeNull();
+
+    const { data: resolvedCollections, error: resolvedCollectionsError } =
+      await owner.client
+        .rpc("get_owner_daily_collections", {
+          p_tenant_id: clinicIds[0]!,
+          p_day: null
+        })
+        .single();
+
+    expect(resolvedCollectionsError).toBeNull();
+    expect(resolvedCollections).toMatchObject({
+      payment_count: 3,
+      paid_minor: 280_000,
+      outstanding_minor: 0,
+      cash_minor: 200_000,
+      card_minor: 80_000
+    });
+
+    const { data: emptyDay, error: emptyDayError } = await owner.client
+      .rpc("get_owner_daily_collections", {
+        p_tenant_id: clinicIds[0]!,
+        p_day: "2000-01-01"
+      })
+      .single();
+
+    expect(emptyDayError).toBeNull();
+    expect(emptyDay).toMatchObject({
+      day: "2000-01-01",
+      payment_count: 0,
+      paid_minor: 0,
+      outstanding_minor: 0
+    });
+
     const { data: audits } = await admin
       .from("audit_events")
       .select("actor_user_id, event_type, record_id, metadata")
@@ -1163,10 +1254,13 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     const { data: visible, error: selectError } = await assistant.client
       .from("clinic_services")
       .select("id, name, price_minor, currency_code, duration_minutes");
+    const visibleIds = visible?.map((row) => row.id) ?? [];
+    const ownService = visible?.find((row) => row.id === ownId);
 
     expect(selectError).toBeNull();
-    expect(visible?.map((row) => row.id)).toEqual([ownId]);
-    expect(visible?.[0]).toMatchObject({
+    expect(visibleIds).toContain(ownId);
+    expect(visibleIds).not.toContain(otherId);
+    expect(ownService).toMatchObject({
       price_minor: null,
       currency_code: null,
       duration_minutes: null

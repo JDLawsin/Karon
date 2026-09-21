@@ -13,7 +13,8 @@ type AuditEventType =
   | "access.denied"
   | "service.created"
   | "service.updated"
-  | "service.deleted";
+  | "service.deleted"
+  | "collections.viewed";
 
 type AuditWrite = {
   tenantId: string;

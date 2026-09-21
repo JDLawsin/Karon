@@ -6,7 +6,7 @@ export const metadata = {
 };
 
 const OfflinePage = () => (
-  <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-4 px-6">
+  <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-4 px-6">
     <p className="text-sm font-medium text-primary">Offline</p>
     <h1 className="text-3xl font-semibold tracking-tight">
       The clinic is still available.

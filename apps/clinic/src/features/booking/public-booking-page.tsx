@@ -380,7 +380,7 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
   return (
     <>
       <PublicBookingBackdrop />
-      <main className="relative mx-auto flex min-h-screen w-full min-w-0 max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
+      <main className="relative mx-auto flex min-h-dvh w-full min-w-0 max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
         <header className="flex min-w-0 justify-end">
           <ThemeToggle />
         </header>
@@ -505,7 +505,7 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
                       </Button>
                       <div
                         aria-label="Available services"
-                        className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        className="karon-scroll-region-x min-w-0 flex-1 overflow-x-auto scroll-smooth"
                         onScroll={updateServiceScrollEdges}
                         ref={serviceScrollRef}
                         role="group"
@@ -679,7 +679,7 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
                     }}
                     open={confirmOpen}
                   >
-                    <AlertDialogContent className="max-h-[min(90dvh,40rem)] overflow-y-auto">
+                    <AlertDialogContent className="karon-scroll-region-y max-h-[min(90dvh,40rem)] overflow-y-auto">
                       <AlertDialogTitle>Check your booking</AlertDialogTitle>
                       <AlertDialogDescription>
                         This is a request. {page.clinicName} will confirm.

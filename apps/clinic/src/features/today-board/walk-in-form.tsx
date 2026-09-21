@@ -89,7 +89,7 @@ const WalkInForm = ({ isDuplicateMobile, onSave, patients }: Props) => {
       })}
       ref={markHydrated}
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
+      <div className="karon-scroll-region-y flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
         <Alert title="Works offline" variant="info">
           Saved on this device. Will sync when online.
         </Alert>

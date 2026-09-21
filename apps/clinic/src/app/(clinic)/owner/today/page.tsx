@@ -1,9 +1,15 @@
-import OwnerTodayStub from "@/features/owner-today/owner-today-stub";
+import OwnerCollectionsPage from "@/features/owner-collections/owner-collections-page";
 
 export const metadata = {
-  title: "Today's collections"
+  title: "Daily collections"
 };
 
-const OwnerTodayPage = () => <OwnerTodayStub />;
+type Props = {
+  searchParams: Promise<{ day?: string | string[] }>;
+};
+
+const OwnerTodayPage = ({ searchParams }: Props) => (
+  <OwnerCollectionsPage searchParams={searchParams} />
+);
 
 export default OwnerTodayPage;

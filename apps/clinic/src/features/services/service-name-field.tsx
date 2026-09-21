@@ -126,7 +126,7 @@ const ServiceNameField = ({
       {showList ? (
         <ul
           className={cn(
-            "absolute top-full z-10 mt-1 max-h-64 w-full min-w-0 overflow-y-auto rounded-md border-(length:var(--surface-border-width)) border-border bg-popover p-1 shadow-md"
+            "karon-scroll-region-y absolute top-full z-10 mt-1 max-h-64 w-full min-w-0 overflow-y-auto rounded-md border-(length:var(--surface-border-width)) border-border bg-popover p-1 shadow-md"
           )}
           id={listId}
           role="listbox"

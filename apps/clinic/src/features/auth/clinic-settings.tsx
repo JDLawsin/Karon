@@ -184,7 +184,7 @@ const ClinicSettings = () => {
               Enter your current password, then choose a new one.
             </DrawerDescription>
           </DrawerHeader>
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-6">
+          <div className="karon-scroll-region-y flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-6">
             <UpdatePasswordForm passwordRecovery={false} />
           </div>
         </DrawerContent>
