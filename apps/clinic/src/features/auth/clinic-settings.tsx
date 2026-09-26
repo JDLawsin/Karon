@@ -25,6 +25,7 @@ import ClinicDetailsForm, {
 } from "@/features/auth/clinic-details-form";
 import ClinicStaffAvatar from "@/features/auth/clinic-staff-avatar";
 import IdleLockSettings from "@/features/auth/idle-lock-settings";
+import SyncOfflineSettings from "@/features/auth/sync-offline-settings";
 import UpdatePasswordForm from "@/features/auth/update-password-form";
 import ClinicBookingSettings from "@/features/booking/clinic-booking-settings";
 import ClinicStaff from "@/features/staff/clinic-staff";
@@ -75,6 +76,7 @@ const ClinicSettings = () => {
         />
       </Card>
       <IdleLockSettings />
+      <SyncOfflineSettings />
     </div>
   );
 

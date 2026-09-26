@@ -1,24 +1,25 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { liveQuery } from "dexie";
+import { useEffect, useMemo, useState } from "react";
 
 import { recordPayment, type RecordPaymentInput } from "@/features/payments/local";
-import { parseCollectBalance } from "@/features/payments/payment-balance";
+import {
+  applyPendingPayments,
+  collectBalanceForVisit,
+  collectBalanceSnapshotKey,
+  parseCollectBalance,
+  parseCollectBalanceSnapshot,
+  type CollectBalance
+} from "@/features/payments/payment-balance";
 import { useClinicSession } from "@/lib/auth/clinic-session";
 import { openClinicDb } from "@/lib/db/clinic-db";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
-import type { ClinicEvent } from "@/lib/sync/event-schema";
-
-const toInsertRow = (event: ClinicEvent) => ({
-  id: event.id,
-  tenant_id: event.tenantId,
-  actor_user_id: event.actorUserId,
-  event_type: event.type,
-  record_id: event.recordId,
-  payload: event.payload,
-  occurred_at: event.occurredAt
-});
+import {
+  quoteCreatedPayloadSchema,
+  type ClinicEvent
+} from "@/lib/sync/event-schema";
 
 const visitBalanceKey = (tenantId: string, patientId: string, visitId?: string) =>
   ["visit-balance", tenantId, patientId, visitId] as const;
@@ -28,8 +29,7 @@ const fetchVisitBalance = async (
   patientId: string,
   visitId: string
 ) => {
-  const supabase = createBrowserSupabase();
-  const { data, error } = await supabase
+  const { data, error } = await createBrowserSupabase()
     .rpc("get_visit_balance", {
       p_tenant_id: tenantId,
       p_patient_id: patientId,
@@ -41,33 +41,152 @@ const fetchVisitBalance = async (
     throw new Error("Could not load the remaining balance. Check the connection and try again.");
   }
 
-  return data ? parseCollectBalance(data) : null;
+  const db = await openClinicDb(tenantId);
+  const key = collectBalanceSnapshotKey(patientId, visitId);
+
+  if (!data) {
+    await db.meta.delete(key);
+    return null;
+  }
+
+  const balance = parseCollectBalance(data);
+  await db.meta.put({ key, value: JSON.stringify(balance) });
+  return balance;
 };
 
 const useCollect = (
   patientId: string,
-  visitId: string | undefined
+  visitId: string | undefined,
+  events: readonly ClinicEvent[]
 ) => {
-  const { membership, userId } = useClinicSession();
+  const { membership, syncStatus, userId } = useClinicSession();
   const [saving, setSaving] = useState(false);
+  const [localState, setLocalState] = useState<{
+    optimisticIds: ReadonlySet<string>;
+    snapshot: CollectBalance | null;
+    ready: boolean;
+  }>({ optimisticIds: new Set(), snapshot: null, ready: false });
   const queryClient = useQueryClient();
-  const queryKey = visitBalanceKey(membership.tenantId, patientId, visitId);
+  const queryKey = useMemo(
+    () => visitBalanceKey(membership.tenantId, patientId, visitId),
+    [membership.tenantId, patientId, visitId]
+  );
+  const localBalance = useMemo(
+    () =>
+      visitId ? collectBalanceForVisit(events, patientId, visitId) : null,
+    [events, patientId, visitId]
+  );
   const balanceQuery = useQuery({
-    enabled: Boolean(visitId),
+    enabled: syncStatus.online && Boolean(visitId),
     queryKey,
     queryFn: () => fetchVisitBalance(membership.tenantId, patientId, visitId!)
   });
-  const balance = balanceQuery.data ?? null;
+
+  useEffect(() => {
+    if (!visitId) {
+      return;
+    }
+
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+
+    void (async () => {
+      const db = await openClinicDb(membership.tenantId);
+
+      if (cancelled) {
+        return;
+      }
+
+      const key = collectBalanceSnapshotKey(patientId, visitId);
+      const subscription = liveQuery(async () => {
+        const [outbox, snapshot] = await Promise.all([
+          db.outbox.toArray(),
+          db.meta.get(key)
+        ]);
+        return {
+          optimisticIds: new Set(
+            outbox.filter(({ attempts }) => attempts === 0).map(({ id }) => id)
+          ),
+          snapshot: parseCollectBalanceSnapshot(snapshot?.value)
+        };
+      }).subscribe({
+        next: (state) => {
+          if (!cancelled) {
+            setLocalState({ ...state, ready: true });
+          }
+        },
+        error: () => {
+          if (!cancelled) {
+            setLocalState({ optimisticIds: new Set(), snapshot: null, ready: true });
+          }
+        }
+      });
+      unsubscribe = () => subscription.unsubscribe();
+    })();
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [membership.tenantId, patientId, visitId]);
+
+  const optimisticKey = [...localState.optimisticIds].sort().join(":");
+
+  useEffect(() => {
+    if (syncStatus.online && visitId && localState.ready) {
+      void queryClient.invalidateQueries({ queryKey });
+    }
+  }, [localState.ready, optimisticKey, queryClient, queryKey, syncStatus.online, visitId]);
+
+  const hasPendingQuote = events.some((event) => {
+    if (event.type !== "quote.created" || !localState.optimisticIds.has(event.id)) {
+      return false;
+    }
+
+    const payload = quoteCreatedPayloadSchema.safeParse(event.payload);
+    return (
+      payload.success &&
+      payload.data.patientId === patientId &&
+      payload.data.visitId === visitId
+    );
+  });
+  const authoritativeBalance = syncStatus.online
+    ? (balanceQuery.data ?? null)
+    : localState.snapshot;
+  const pendingQuoteBalance =
+    hasPendingQuote &&
+    localBalance &&
+    authoritativeBalance?.currency === localBalance.currency
+      ? {
+          ...localBalance,
+          paidMinor: authoritativeBalance.paidMinor,
+          remainingMinor: Math.max(
+            localBalance.quoteTotalMinor - authoritativeBalance.paidMinor,
+            0
+          )
+        }
+      : null;
+  const useLocalProjection =
+    !authoritativeBalance && (!syncStatus.online || hasPendingQuote);
+  const baseBalance = pendingQuoteBalance ??
+    authoritativeBalance ??
+    (useLocalProjection ? localBalance : null);
+  const balance =
+    baseBalance && !useLocalProjection
+      ? applyPendingPayments(
+          baseBalance,
+          events,
+          localState.optimisticIds,
+          patientId,
+          visitId ?? ""
+        )
+      : baseBalance;
 
   const collect = async (
     input: Pick<RecordPaymentInput, "amountMinor" | "currency" | "method">
   ) => {
     if (!visitId || !balance) {
       throw new Error("Accept a quote for this visit before collecting payment.");
-    }
-
-    if (!navigator.onLine) {
-      throw new Error("Payments need a connection right now. Reconnect and try again.");
     }
 
     if (input.currency !== balance.currency || input.amountMinor > balance.remainingMinor) {
@@ -78,7 +197,6 @@ const useCollect = (
 
     try {
       const db = await openClinicDb(membership.tenantId);
-      const supabase = createBrowserSupabase();
 
       await recordPayment(
         db,
@@ -88,16 +206,8 @@ const useCollect = (
           visitId,
           tenantId: membership.tenantId,
           actorUserId: userId
-        },
-        async (event) => {
-          const { error } = await supabase.from("clinic_events").insert(toInsertRow(event));
-
-          if (error && error.code !== "23505") {
-            throw new Error("Could not record the payment. Check the connection and try again.");
-          }
         }
       );
-      await queryClient.invalidateQueries({ queryKey });
     } finally {
       setSaving(false);
     }
@@ -106,8 +216,12 @@ const useCollect = (
   return {
     balance,
     balanceError:
-      balanceQuery.error instanceof Error ? balanceQuery.error.message : null,
-    balanceLoading: Boolean(visitId) && balanceQuery.isLoading,
+      syncStatus.online && balanceQuery.error instanceof Error
+        ? balanceQuery.error.message
+        : null,
+    balanceLoading:
+      Boolean(visitId) &&
+      (!localState.ready || (syncStatus.online && balanceQuery.isFetching)),
     collect,
     saving
   };

@@ -1,6 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { dropClinicStores } from "@/lib/db/clinic-db";
+import {
+  dropClinicStores,
+  pendingClinicOutboxCount
+} from "@/lib/db/clinic-db";
+
+type LeaveClinicSessionOptions = {
+  discardPending?: boolean;
+};
+
+type LeaveClinicSessionResult =
+  | { status: "blocked"; pendingCount: number }
+  | { status: "left" };
 
 const clearClinicPageCaches = async () => {
   if (typeof caches === "undefined") {
@@ -26,12 +37,23 @@ const clearGoogleOauthCookie = async () => {
   }
 };
 
-const leaveClinicSession = async (supabase: SupabaseClient) => {
+const leaveClinicSession = async (
+  supabase: SupabaseClient,
+  options: LeaveClinicSessionOptions = {}
+): Promise<LeaveClinicSessionResult> => {
+  const pendingCount = await pendingClinicOutboxCount();
+
+  if (pendingCount > 0 && !options.discardPending) {
+    return { status: "blocked", pendingCount };
+  }
+
   await supabase.rpc("revoke_my_session");
   await clearClinicPageCaches();
   await dropClinicStores();
   await clearGoogleOauthCookie();
   await supabase.auth.signOut({ scope: "local" });
+  return { status: "left" };
 };
 
 export { clearClinicPageCaches, leaveClinicSession };
+export type { LeaveClinicSessionOptions, LeaveClinicSessionResult };

@@ -261,8 +261,9 @@ test.describe("today board", { tag: "@assistant" }, () => {
     await page.getByLabel("Condition or procedure").selectOption("condition:caries");
     await page.getByLabel("Visit note").fill("Should not be queued.");
     await page.getByRole("button", { name: "Add chart entry" }).click();
+    await expect(page.getByText("Should not be queued.")).toBeVisible();
     await expect(
-      page.getByRole("alert").getByText("Charting needs a connection right now. Reconnect and try again.")
+      page.getByRole("status").filter({ hasText: "Will sync when online" })
     ).toBeVisible();
   });
 

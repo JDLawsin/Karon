@@ -140,32 +140,39 @@ test.describe("visit quote", { tag: "@assistant" }, () => {
         ).toBe(false);
       }
 
-      await page.getByRole("button", { name: "Accept quote" }).click();
-      await expect(page.getByRole("alert")).toContainText("Add at least one service");
+      const quoteRegion = page.getByRole("region", { name: "Quote", exact: true });
+      await quoteRegion.getByRole("button", { name: "Accept quote" }).click();
+      await expect(quoteRegion.getByRole("alert")).toContainText(
+        "Add at least one service"
+      );
 
-      await page.getByLabel("Service").selectOption({ label: "Consultation" });
-      await page.getByRole("button", { name: "Add line" }).click();
-      await expect(page.getByRole("alert")).toContainText(
+      await quoteRegion.getByLabel("Service").selectOption({ label: "Consultation" });
+      await quoteRegion.getByRole("button", { name: "Add line" }).click();
+      await expect(quoteRegion.getByRole("alert")).toContainText(
         "Enter a price for Consultation"
       );
-      await page.getByLabel(/Price for Consultation/).fill("300");
-      await page.getByRole("button", { name: "Add line" }).click();
+      await quoteRegion.getByLabel(/Price for Consultation/).fill("300");
+      await quoteRegion.getByRole("button", { name: "Add line" }).click();
 
       await quote.addService("Cleaning");
-      await page.getByLabel("Cleaning quantity").fill("2");
-      await page.getByLabel("Cleaning unit price (PHP)").fill("1600");
-      await expect(page.getByText("₱3,500.00")).toBeVisible();
-      await page.getByRole("button", { name: "Accept quote" }).click();
+      await quoteRegion.getByLabel("Cleaning quantity").fill("2");
+      await quoteRegion.getByLabel("Cleaning unit price (PHP)").fill("1600");
+      await expect(quoteRegion.getByText("₱3,500.00")).toBeVisible();
+      await quoteRegion.getByRole("button", { name: "Accept quote" }).click();
 
       await expect(page.getByText("Accepted")).toBeVisible();
-      await expect(page.getByText("Total ₱3,500.00")).toBeVisible();
-      expect(remoteEvents.at(-1)).toMatchObject({
+      await expect(
+        quoteRegion.getByText("Total ₱3,500.00", { exact: true })
+      ).toBeVisible();
+      await expect.poll(() => remoteEvents.at(-1)).toMatchObject({
         event_type: "quote.created",
         payload: { totalMinor: 350_000, currency: "PHP", status: "accepted" }
       });
 
       await page.reload({ waitUntil: "domcontentloaded" });
-      await expect(page.getByText("Total ₱3,500.00")).toBeVisible();
+      await expect(
+        quoteRegion.getByText("Total ₱3,500.00", { exact: true })
+      ).toBeVisible();
     }
   );
 });

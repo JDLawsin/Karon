@@ -1,11 +1,10 @@
 import type { ClinicDb } from "@/lib/db/clinic-db";
-import { clientLog } from "@/lib/logger/client";
 import {
   clinicEventSchema,
   paymentRecordedPayloadSchema,
-  type ClinicEvent,
   type PaymentMethod
 } from "@/lib/sync/event-schema";
+import { recordClinicEvent } from "@/lib/sync/sync-engine";
 
 type RecordPaymentInput = {
   tenantId: string;
@@ -18,12 +17,9 @@ type RecordPaymentInput = {
   now?: Date;
 };
 
-type WriteRemotePaymentEvent = (event: ClinicEvent) => Promise<void>;
-
 const recordPayment = async (
   db: ClinicDb,
-  input: RecordPaymentInput,
-  writeRemote: WriteRemotePaymentEvent
+  input: RecordPaymentInput
 ) => {
   const event = clinicEventSchema.parse({
     id: crypto.randomUUID(),
@@ -41,18 +37,10 @@ const recordPayment = async (
     })
   });
 
-  await writeRemote(event);
-
-  try {
-    await db.events.put(event);
-  } catch {
-    clientLog
-      .withMetadata({ eventId: event.id, type: event.type })
-      .error("payment.local_mirror_failed");
-  }
+  await recordClinicEvent(db, event);
 
   return event;
 };
 
 export { recordPayment };
-export type { RecordPaymentInput, WriteRemotePaymentEvent };
+export type { RecordPaymentInput };

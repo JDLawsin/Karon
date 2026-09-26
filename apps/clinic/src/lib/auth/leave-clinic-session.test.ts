@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { dropClinicStores } from "@/lib/db/clinic-db";
+import {
+  dropClinicStores,
+  pendingClinicOutboxCount
+} from "@/lib/db/clinic-db";
 
 import { clearClinicPageCaches, leaveClinicSession } from "./leave-clinic-session";
 
 vi.mock("@/lib/db/clinic-db", () => ({
-  dropClinicStores: vi.fn()
+  dropClinicStores: vi.fn(),
+  pendingClinicOutboxCount: vi.fn(async () => 0)
 }));
 
 describe("clearClinicPageCaches", () => {
@@ -26,16 +30,32 @@ describe("clearClinicPageCaches", () => {
 });
 
 describe("leaveClinicSession", () => {
+  it("blocks before revoking or wiping when clinic work is pending", async () => {
+    vi.mocked(pendingClinicOutboxCount).mockResolvedValueOnce(2);
+    const rpc = vi.fn();
+    const signOut = vi.fn();
+
+    await expect(
+      leaveClinicSession({ rpc, auth: { signOut } } as never)
+    ).resolves.toEqual({ status: "blocked", pendingCount: 2 });
+
+    expect(rpc).not.toHaveBeenCalled();
+    expect(dropClinicStores).not.toHaveBeenCalled();
+    expect(signOut).not.toHaveBeenCalled();
+  });
+
   it("revokes the clinic session before a local sign-out", async () => {
     const rpc = vi.fn(async () => ({ data: true, error: null }));
     const signOut = vi.fn(async () => ({ error: null }));
     const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await leaveClinicSession({
-      rpc,
-      auth: { signOut }
-    } as never);
+    await expect(
+      leaveClinicSession({
+        rpc,
+        auth: { signOut }
+      } as never)
+    ).resolves.toEqual({ status: "left" });
 
     expect(rpc).toHaveBeenCalledWith("revoke_my_session");
     expect(dropClinicStores).toHaveBeenCalled();
@@ -47,6 +67,24 @@ describe("leaveClinicSession", () => {
     expect(rpc.mock.invocationCallOrder[0]).toBeLessThan(
       signOut.mock.invocationCallOrder[0]!
     );
+    vi.unstubAllGlobals();
+  });
+
+  it("wipes pending work only after explicit destructive confirmation", async () => {
+    vi.mocked(pendingClinicOutboxCount).mockResolvedValueOnce(1);
+    const rpc = vi.fn(async () => ({ data: true, error: null }));
+    const signOut = vi.fn(async () => ({ error: null }));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 200 })));
+
+    await expect(
+      leaveClinicSession(
+        { rpc, auth: { signOut } } as never,
+        { discardPending: true }
+      )
+    ).resolves.toEqual({ status: "left" });
+
+    expect(dropClinicStores).toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 });

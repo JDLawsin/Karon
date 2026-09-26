@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import Dexie from "dexie";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { closeClinicDb, openClinicDb } from "@/lib/db/clinic-db";
 
@@ -18,10 +18,9 @@ afterEach(async () => {
   await Dexie.delete("karon-crypto");
 });
 
-describe("online chart append", () => {
-  it("persists remotely before mirroring the event into encrypted local history", async () => {
+describe("offline chart append", () => {
+  it("atomically stores encrypted local history and an outbox row", async () => {
     const db = await openClinicDb(TENANT, DEK);
-    const writeRemote = vi.fn().mockResolvedValue(undefined);
 
     const event = await appendChartEntry(
       db,
@@ -34,60 +33,10 @@ describe("online chart append", () => {
         finding: { kind: "procedure", code: "filling" },
         note: "Composite restoration placed.",
         now: new Date("2026-09-19T01:00:00.000Z")
-      },
-      writeRemote
+      }
     );
 
-    expect(writeRemote).toHaveBeenCalledWith(event);
     expect(await db.events.get(event.id)).toEqual(event);
-    expect(await db.outbox.count()).toBe(0);
-  });
-
-  it("does not create local history or an outbox row when the server write fails", async () => {
-    const db = await openClinicDb(TENANT, DEK);
-    const writeRemote = vi.fn().mockRejectedValue(new Error("offline"));
-
-    await expect(
-      appendChartEntry(
-        db,
-        {
-          tenantId: TENANT,
-          actorUserId: ACTOR,
-          patientId: PATIENT,
-          visitId: VISIT,
-          toothCode: "16",
-          finding: { kind: "condition", code: "caries" },
-          note: "Occlusal lesion noted."
-        },
-        writeRemote
-      )
-    ).rejects.toThrow("offline");
-
-    expect(await db.events.count()).toBe(0);
-    expect(await db.outbox.count()).toBe(0);
-  });
-
-  it("keeps the remote save successful when the local history mirror fails", async () => {
-    const writeRemote = vi.fn().mockResolvedValue(undefined);
-    const db = {
-      events: { put: vi.fn().mockRejectedValue(new Error("Dexie unavailable")) }
-    };
-
-    await expect(
-      appendChartEntry(
-        db as never,
-        {
-          tenantId: TENANT,
-          actorUserId: ACTOR,
-          patientId: PATIENT,
-          visitId: VISIT,
-          toothCode: "16",
-          finding: { kind: "condition", code: "caries" },
-          note: "Occlusal lesion noted."
-        },
-        writeRemote
-      )
-    ).resolves.toMatchObject({ type: "chart.appended" });
-    expect(writeRemote).toHaveBeenCalledOnce();
+    expect(await db.outbox.get(event.id)).toMatchObject({ id: event.id, attempts: 0 });
   });
 });

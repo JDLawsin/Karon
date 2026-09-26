@@ -77,6 +77,8 @@ describe("ClinicSettings", () => {
     expect(screen.queryByRole("tab", { name: "Members" })).toBeNull();
     expect(screen.getByRole("button", { name: "Change password" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Session lock" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Sync & offline" })).toBeTruthy();
+    expect(screen.getByText("Synced")).toBeTruthy();
     expect(
       screen.getByRole("switch", { name: "Lock after 30 minutes idle" })
     ).toBeTruthy();

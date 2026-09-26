@@ -2,7 +2,7 @@
 
 Offline-first-target **PWA** for small dental clinics (Cebu / PH beachhead). Buyer = dentist. Daily user = assistant. **SaaS**, not custom per clinic. Cebuano *karon* = now / today.
 
-**Offline-first target; current offline coverage = intake + visit status only.**
+**Offline-first PWA.** Local-first writers cover intake, visit status, chart, quote, collect, and next visit; public booking and owner reporting still require network.
 
 Chair loop is the product **intent**. Shipped today: auth → Today huddle → services → public `/book` ([ADR 0007](docs/adr/0007-booking-system-of-record.md) **(private)** when present). Marketing and platform admin apps are **TODO** — do not scaffold empty shells.
 

@@ -190,7 +190,7 @@ const CollectPayment = ({
             </p>
           ) : null}
           <p className="text-xs text-muted-foreground">
-            Payments need a connection until protected offline sync ships.
+            Saves on this device first and syncs with the same payment ID.
           </p>
         </form>
       ) : (

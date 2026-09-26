@@ -32,7 +32,7 @@ vi.mock("@/lib/auth/audit", () => ({
 }));
 
 vi.mock("@/lib/auth/leave-clinic-session", () => ({
-  leaveClinicSession: vi.fn(async () => {})
+  leaveClinicSession: vi.fn(async () => ({ status: "left" }))
 }));
 
 import {
@@ -41,6 +41,7 @@ import {
   IDLE_WARN_MS,
   notifyIdleLockEnabled
 } from "./idle-lock";
+import { leaveClinicSession } from "@/lib/auth/leave-clinic-session";
 import IdleLockGate from "./idle-lock-gate";
 
 const membership = {
@@ -70,6 +71,30 @@ describe("IdleLockGate", () => {
     expect(
       await screen.findByRole("heading", { name: "Session locked" })
     ).toBeVisible();
+  });
+
+  it("protects pending work instead of completing the idle-lock wipe", async () => {
+    vi.mocked(leaveClinicSession).mockResolvedValueOnce({
+      status: "blocked",
+      pendingCount: 2
+    });
+
+    render(
+      <IdleLockGate
+        membership={membership}
+        pendingCount={2}
+        sessionActive={false}
+        userId={userId}
+      >
+        Board
+      </IdleLockGate>
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Unsynced work is protected" })
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Export pending work" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Discard pending work..." })).toBeVisible();
   });
 
   it("keeps a warned session when the user is still clicking", async () => {

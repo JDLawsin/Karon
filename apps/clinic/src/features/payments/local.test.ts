@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import Dexie from "dexie";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { closeClinicDb, openClinicDb } from "@/lib/db/clinic-db";
 
@@ -18,10 +18,9 @@ afterEach(async () => {
   await Dexie.delete("karon-crypto");
 });
 
-describe("online payment record", () => {
-  it("persists remotely before its encrypted local mirror without an outbox row", async () => {
+describe("offline payment record", () => {
+  it("atomically stores the payment and its idempotent outbox row", async () => {
     const db = await openClinicDb(TENANT, DEK);
-    const writeRemote = vi.fn().mockResolvedValue(undefined);
 
     const payment = await recordPayment(
       db,
@@ -34,36 +33,10 @@ describe("online payment record", () => {
         currency: "PHP",
         method: "cash",
         now: new Date("2026-09-20T01:00:00.000Z")
-      },
-      writeRemote
+      }
     );
 
-    expect(writeRemote).toHaveBeenCalledWith(payment);
     expect(await db.events.get(payment.id)).toEqual(payment);
-    expect(await db.outbox.count()).toBe(0);
-  });
-
-  it("does not create local history or an outbox row when the server write fails", async () => {
-    const db = await openClinicDb(TENANT, DEK);
-    const writeRemote = vi.fn().mockRejectedValue(new Error("offline"));
-
-    await expect(
-      recordPayment(
-        db,
-        {
-          tenantId: TENANT,
-          actorUserId: ACTOR,
-          patientId: PATIENT,
-          visitId: VISIT,
-          amountMinor: 200_000,
-          currency: "PHP",
-          method: "cash"
-        },
-        writeRemote
-      )
-    ).rejects.toThrow("offline");
-
-    expect(await db.events.count()).toBe(0);
-    expect(await db.outbox.count()).toBe(0);
+    expect(await db.outbox.get(payment.id)).toMatchObject({ id: payment.id, attempts: 0 });
   });
 });

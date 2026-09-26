@@ -100,8 +100,8 @@ const NextVisitPanel = ({ patientId }: Props) => {
         </p>
       </div>
 
-      <Alert title="Internet connection required" variant="info">
-        Next-visit scheduling is online only until protected offline sync ships.
+      <Alert title="Offline ready" variant="info">
+        Saves on this device first. Online scheduling also checks live booking conflicts.
       </Alert>
 
       <form className="flex min-w-0 flex-col gap-4" onSubmit={handleSubmit}>

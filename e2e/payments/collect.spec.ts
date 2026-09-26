@@ -64,13 +64,14 @@ const interceptCollectData = async (page: Page) => {
             currency: "PHP"
           }
         ],
-        totalMinor: 280_000,
+        totalMinor: 300_000,
         currency: "PHP"
       },
       "2026-09-20T01:02:00.000Z"
     )
   ];
   const paymentWrites: Record<string, unknown>[] = [];
+  const existingPaidMinor = 20_000;
 
   await page.route("**/rest/v1/clinic_services**", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
@@ -97,16 +98,16 @@ const interceptCollectData = async (page: Page) => {
       return payload.method === "unpaid"
         ? total
         : total + (payload.amountMinor as number);
-    }, 0);
+    }, existingPaidMinor);
 
     await route.fulfill({
       status: 200,
       contentType: "application/vnd.pgrst.object+json",
       body: JSON.stringify({
         quote_id: "20000000-0000-4000-8000-000000000004",
-        quote_total_minor: 280_000,
+        quote_total_minor: 300_000,
         paid_minor: paidMinor,
-        remaining_minor: 280_000 - paidMinor,
+        remaining_minor: 300_000 - paidMinor,
         currency: "PHP"
       })
     });
@@ -142,6 +143,11 @@ test.describe("collect payment", { tag: "@assistant" }, () => {
       const paymentWrites = await interceptCollectData(page);
       const collect = new CollectPage(page);
       await collect.goto(PATIENT, VISIT);
+      await expect(
+        page
+          .getByRole("region", { name: "Collect" })
+          .getByText("₱2,800.00", { exact: true })
+      ).toBeVisible();
 
       for (const width of [320, 768, 1280] as const) {
         await page.setViewportSize({ width, height: 900 });
@@ -172,11 +178,15 @@ test.describe("collect payment", { tag: "@assistant" }, () => {
       });
 
       await collect.record("Unpaid", "800");
-      await expect(page.getByText("₱800.00", { exact: true })).toHaveCount(2);
+      await expect(page.getByRole("button", { name: "Unpaid" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      );
+      await expect(page.getByText("₱800.00", { exact: true })).toHaveCount(1);
 
       await collect.record("Card", "800");
       await expect(page.getByText("Paid in full")).toBeVisible();
-      expect(paymentWrites).toHaveLength(3);
+      await expect.poll(() => paymentWrites.length).toBe(3);
 
       await page.reload({ waitUntil: "domcontentloaded" });
       await expect(page.getByText("Paid in full")).toBeVisible();

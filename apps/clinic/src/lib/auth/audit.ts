@@ -7,6 +7,7 @@ type AuditEventType =
   | "auth.mfa_enrolled"
   | "auth.session_revoked"
   | "auth.idle_lock"
+  | "auth.outbox_discarded"
   | "auth.password_changed"
   | "member.invited"
   | "member.removed"

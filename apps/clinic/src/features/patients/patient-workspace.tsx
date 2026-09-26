@@ -39,7 +39,7 @@ const PatientWorkspace = ({ patientId, visitId }: Props) => {
     balanceLoading,
     collect,
     saving: savingPayment
-  } = useCollect(patientId, visit?.id);
+  } = useCollect(patientId, visit?.id, events);
   const visitLabels = Object.fromEntries(
     visits.map((item) => [
       item.id,

@@ -5,6 +5,11 @@ const sync = vi.hoisted(() => ({
   online: false,
   pendingCount: 1
 }));
+const leave = vi.hoisted(() => ({
+  result: { status: "left" } as
+    | { status: "left" }
+    | { status: "blocked"; pendingCount: number }
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -38,6 +43,10 @@ vi.mock("@/lib/supabase/browser", () => ({
 
 vi.mock("@/lib/sync/use-clinic-sync", () => ({
   useClinicSync: () => ({ online: sync.online, pendingCount: sync.pendingCount })
+}));
+
+vi.mock("@/lib/auth/leave-clinic-session", () => ({
+  leaveClinicSession: vi.fn(async () => leave.result)
 }));
 
 vi.mock("@/features/auth/idle-lock-gate", () => ({
@@ -79,6 +88,7 @@ describe("ClinicShell", () => {
   beforeEach(() => {
     sync.online = false;
     sync.pendingCount = 1;
+    leave.result = { status: "left" };
   });
 
   it("shows an info banner when the outbox cannot sync", () => {
@@ -154,6 +164,27 @@ describe("ClinicShell", () => {
     expect(document.querySelector('[data-slot="sidebar-inset"]')?.className).toContain(
       "rounded-lg"
     );
+  });
+
+  it("blocks sign-out with export and stay options while work is pending", async () => {
+    leave.result = { status: "blocked", pendingCount: 2 };
+    renderShell();
+
+    const accountMenu = screen.getByRole("button", { name: "Account menu" });
+    fireEvent.pointerDown(accountMenu, { button: 0, pointerType: "mouse" });
+    fireEvent.click(accountMenu);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sign out" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Unsynced work is protected" })
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Export pending work" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Stay signed in" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Discard pending work..." }));
+    expect(
+      screen.getByRole("heading", { name: "Discard 2 pending changes?" })
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Discard and sign out" })).toBeVisible();
   });
 
   it("collapses the desktop rail when the toggle is pressed", () => {

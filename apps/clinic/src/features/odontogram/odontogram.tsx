@@ -246,7 +246,7 @@ const Odontogram = ({ entries, visitLabels, canChart, saving, onAppend }: Props)
               {saving ? "Saving..." : "Add chart entry"}
             </Button>
             <p className="text-xs text-muted-foreground">
-              Charting needs a connection until protected offline sync ships.
+              Saves on this device first and syncs when a connection is available.
             </p>
           </div>
         </form>

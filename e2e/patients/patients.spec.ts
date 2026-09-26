@@ -149,13 +149,13 @@ test.describe("patient directory", { tag: "@assistant" }, () => {
         }
 
         const body = route.request().postDataJSON() as Record<string, unknown>;
+        const saved = {
+          ...body,
+          received_at: new Date().toISOString()
+        };
+        remoteEvents.push(saved);
 
         if (body.event_type === "appointment.set") {
-          const saved = {
-            ...body,
-            received_at: "2026-09-18T02:00:00.000Z"
-          };
-          remoteEvents.push(saved);
           await route.fulfill({
             status: 201,
             contentType: "application/vnd.pgrst.object+json",
@@ -164,7 +164,11 @@ test.describe("patient directory", { tag: "@assistant" }, () => {
           return;
         }
 
-        await route.fulfill({ status: 201, body: "" });
+        await route.fulfill({
+          status: 201,
+          contentType: "application/vnd.pgrst.object+json",
+          body: JSON.stringify(saved)
+        });
       });
 
       const patients = new PatientsPage(page);
@@ -221,8 +225,17 @@ test.describe("patient directory", { tag: "@assistant" }, () => {
       await expect(page.getByText(reminder, { exact: true })).toBeVisible();
 
       await page.goto("/today", { waitUntil: "domcontentloaded" });
-      await page.getByLabel(/Clinic date,/).first().fill(date);
-      await expect(page.getByText(patient.name, { exact: true })).toHaveCount(2);
+      await expect(page.getByRole("heading", { name: "Today", level: 1 })).toBeVisible();
+      for (let day = 0; day < 14; day += 1) {
+        await page.getByRole("button", { name: "Next day" }).click();
+      }
+      await expect(page.getByRole("textbox", { name: /Clinic date,/ })).toHaveValue(date);
+      await expect(
+        page.getByRole("button", {
+          name: `More actions for ${patient.name}`,
+          exact: true
+        })
+      ).toHaveCount(2);
     }
   );
 });

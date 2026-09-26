@@ -27,11 +27,13 @@ import {
 import type { Membership } from "@/features/auth/resolve-auth-destination";
 import { writeAuditEvent } from "@/lib/auth/audit";
 import { leaveClinicSession } from "@/lib/auth/leave-clinic-session";
+import { exportPendingClinicWork } from "@/lib/auth/pending-work-export";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 type Props = {
   membership: Membership;
   userId: string;
+  pendingCount?: number;
   sessionActive: boolean;
   children: ReactNode;
 };
@@ -39,6 +41,7 @@ type Props = {
 const IdleLockGate = ({
   membership,
   userId,
+  pendingCount = 0,
   sessionActive,
   children
 }: Props) => {
@@ -47,6 +50,9 @@ const IdleLockGate = ({
   const wasDisabledRef = useRef(false);
   const [phase, setPhase] = useState<IdlePhase>(sessionActive ? "ok" : "lock");
   const [idleLockEnabled, setIdleLockEnabled] = useState<boolean | null>(null);
+  const [protectedCount, setProtectedCount] = useState<number | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -242,7 +248,11 @@ const IdleLockGate = ({
         actorUserId: userId,
         eventType: "auth.idle_lock"
       });
-      await leaveClinicSession(supabase);
+      const result = await leaveClinicSession(supabase);
+
+      if (result.status === "blocked") {
+        setProtectedCount(result.pendingCount);
+      }
     };
 
     void lock();
@@ -253,12 +263,42 @@ const IdleLockGate = ({
     writeStoredLastActive(userId, lastActiveRef.current);
     phaseRef.current = "ok";
     setPhase("ok");
+    setProtectedCount(null);
+    setConfirmDiscard(false);
+    setLeaveError(null);
     void createBrowserSupabase().rpc("touch_my_session");
+  };
+
+  const finishLock = async (discardPending = false) => {
+    const supabase = createBrowserSupabase();
+    setLeaveError(null);
+
+    try {
+      if (discardPending) {
+        await writeAuditEvent(supabase, {
+          tenantId: membership.tenantId,
+          actorUserId: userId,
+          eventType: "auth.outbox_discarded"
+        });
+      }
+
+      const result = await leaveClinicSession(supabase, { discardPending });
+
+      if (result.status === "blocked") {
+        setProtectedCount(result.pendingCount);
+      } else {
+        setProtectedCount(null);
+      }
+    } catch {
+      setLeaveError("Could not finish locking this clinic.");
+    }
   };
 
   const stayOpen = (event: { preventDefault: () => void }) => {
     event.preventDefault();
   };
+
+  const currentProtectedCount = Math.max(protectedCount ?? 0, pendingCount);
 
   return (
     <>
@@ -286,13 +326,85 @@ const IdleLockGate = ({
       </AlertDialog>
       <AlertDialog open={phase === "lock"}>
         <AlertDialogContent onEscapeKeyDown={stayOpen}>
-          <AlertDialogTitle>Session locked</AlertDialogTitle>
+          <AlertDialogTitle>
+            {protectedCount === null
+              ? "Session locked"
+              : confirmDiscard
+                ? `Discard ${currentProtectedCount} pending ${currentProtectedCount === 1 ? "change" : "changes"}?`
+                : "Unsynced work is protected"}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            Sign in again to use the clinic.
+            {protectedCount === null
+              ? "Sign in again to use the clinic."
+              : confirmDiscard
+                ? "This permanently removes pending work from this device. It cannot be recovered unless you export it first."
+                : "Karon paused the lock before wiping this device. Reconnect and wait for sync, or stay signed in to keep working."}
           </AlertDialogDescription>
-          <AlertDialogAction asChild className="mt-6 w-full">
-            <a href="/login">Log in</a>
-          </AlertDialogAction>
+          {protectedCount !== null && currentProtectedCount > 0 ? (
+            <Alert
+              className="mt-4"
+              title="Export includes sensitive clinic data. Store the file securely."
+              variant="info"
+            />
+          ) : null}
+          {leaveError ? (
+            <Alert className="mt-4" title={leaveError} variant="danger" />
+          ) : null}
+          {protectedCount === null ? (
+            <AlertDialogAction asChild className="mt-6 w-full">
+              <a href="/login">Log in</a>
+            </AlertDialogAction>
+          ) : (
+            <div className="mt-6 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+              {currentProtectedCount > 0 ? (
+                <Button
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    void exportPendingClinicWork(membership.tenantId).catch(() => {
+                      setLeaveError("Could not export pending work.");
+                    });
+                  }}
+                  type="button"
+                  variant="outline"
+                >
+                  Export pending work
+                </Button>
+              ) : null}
+              <Button
+                className="w-full sm:w-auto"
+                onClick={() => void finishLock()}
+                type="button"
+              >
+                Check sync &amp; finish lock
+              </Button>
+              {sessionActive ? (
+                <Button
+                  className="w-full sm:w-auto"
+                  onClick={staySignedIn}
+                  type="button"
+                  variant="outline"
+                >
+                  Stay signed in
+                </Button>
+              ) : null}
+              {currentProtectedCount > 0 ? (
+                <Button
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    if (confirmDiscard) {
+                      void finishLock(true);
+                    } else {
+                      setConfirmDiscard(true);
+                    }
+                  }}
+                  type="button"
+                  variant="destructive"
+                >
+                  {confirmDiscard ? "Discard and lock" : "Discard pending work..."}
+                </Button>
+              ) : null}
+            </div>
+          )}
         </AlertDialogContent>
       </AlertDialog>
     </>

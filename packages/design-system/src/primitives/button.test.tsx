@@ -13,4 +13,16 @@ describe("Button", () => {
     expect(className).toContain("hover:bg-primary-hovered");
     expect(className).not.toContain("min-h-10");
   });
+
+  it("uses the destructive role for irreversible actions", () => {
+    render(
+      <Button type="button" variant="destructive">
+        Discard pending work
+      </Button>
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Discard pending work" }).className
+    ).toContain("bg-destructive");
+  });
 });

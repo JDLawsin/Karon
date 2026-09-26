@@ -233,14 +233,23 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
       const isCurrent = sessions.some(
         (session) => session.id === action.sessionId && session.isCurrent
       );
-      const revoked = await revokeSession(action.sessionId, !isCurrent);
 
-      if (revoked && isCurrent) {
-        await leaveClinicSession(createBrowserSupabase());
+      if (isCurrent) {
+        const result = await leaveClinicSession(createBrowserSupabase());
+
+        if (result.status === "blocked") {
+          showErrorToast(
+            "Unsynced clinic work is protected. Use Sign out to export or discard it."
+          );
+          return;
+        }
+
         router.push("/login");
         router.refresh();
+        return;
       }
 
+      await revokeSession(action.sessionId);
       return;
     }
 

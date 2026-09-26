@@ -7,17 +7,20 @@ class QuotePage {
     await this.page.goto(`/patients/${patientId}?visit=${visitId}`, {
       waitUntil: "domcontentloaded"
     });
-    await this.page.getByRole("heading", { name: "Quote", level: 2 }).waitFor();
+    await this.page
+      .getByRole("heading", { name: "Quote", exact: true, level: 2 })
+      .waitFor();
   }
 
   async addService(serviceName: string, inlinePrice?: string) {
-    await this.page.getByLabel("Service").selectOption({ label: serviceName });
+    const quote = this.page.getByRole("region", { name: "Quote", exact: true });
+    await quote.getByLabel("Service").selectOption({ label: serviceName });
 
     if (inlinePrice !== undefined) {
-      await this.page.getByLabel(new RegExp(`Price for ${serviceName}`)).fill(inlinePrice);
+      await quote.getByLabel(new RegExp(`Price for ${serviceName}`)).fill(inlinePrice);
     }
 
-    await this.page.getByRole("button", { name: "Add line" }).click();
+    await quote.getByRole("button", { name: "Add line" }).click();
   }
 }
 

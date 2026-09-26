@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import "fake-indexeddb/auto";
+import Dexie from "dexie";
+
+import { closeClinicDb, openClinicDb } from "@/lib/db/clinic-db";
 
 import {
   buildReminderText,
@@ -18,7 +22,12 @@ const PATIENT_ID = "20000000-0000-4000-8000-000000000002";
 const TENANT_ID = "30000000-0000-4000-8000-000000000003";
 const USER_ID = "40000000-0000-4000-8000-000000000004";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(async () => {
+  vi.unstubAllGlobals();
+  closeClinicDb();
+  await Dexie.delete(`karon-${TENANT_ID}`);
+  await Dexie.delete("karon-crypto");
+});
 
 const appointmentEvent = {
   id: "50000000-0000-4000-8000-000000000005",
@@ -141,12 +150,15 @@ describe("hasActiveVisitAt", () => {
 });
 
 describe("saveNextVisit", () => {
-  it("blocks the writer while the device is offline", async () => {
+  it("stores the next visit and an outbox row while offline", async () => {
     vi.stubGlobal("navigator", { onLine: false });
+    const db = await openClinicDb(TENANT_ID, new Uint8Array(32));
 
-    await expect(
-      saveNextVisit(null as never, null as never, nextVisitInput)
-    ).rejects.toThrow("internet connection");
+    const result = await saveNextVisit(db, null as never, nextVisitInput);
+
+    expect(result.status).toBe("saved");
+    expect(await db.outbox.count()).toBe(1);
+    expect(await db.events.count()).toBe(1);
   });
 
   it("treats a pending public booking as an occupied slot", async () => {
@@ -154,25 +166,24 @@ describe("saveNextVisit", () => {
     const supabase = onlineSupabase([
       { starts_at: appointmentEvent.payload.startsAt }
     ]);
-    const db = { events: { put: vi.fn() } };
+    const db = await openClinicDb(TENANT_ID, new Uint8Array(32));
 
     await expect(
-      saveNextVisit(db as never, supabase.client as never, nextVisitInput)
+      saveNextVisit(db, supabase.client as never, nextVisitInput)
     ).resolves.toEqual({ status: "conflict" });
     expect(supabase.insert).not.toHaveBeenCalled();
-    expect(db.events.put).not.toHaveBeenCalled();
+    expect(await db.outbox.count()).toBe(0);
   });
 
-  it("keeps cloud success when the local mirror fails", async () => {
+  it("queues after the online occupancy check instead of writing cloud-first", async () => {
     vi.stubGlobal("navigator", { onLine: true });
     const supabase = onlineSupabase();
-    const db = {
-      events: { put: vi.fn().mockRejectedValue(new Error("Dexie unavailable")) }
-    };
+    const db = await openClinicDb(TENANT_ID, new Uint8Array(32));
 
     await expect(
-      saveNextVisit(db as never, supabase.client as never, nextVisitInput)
+      saveNextVisit(db, supabase.client as never, nextVisitInput)
     ).resolves.toMatchObject({ status: "saved" });
-    expect(supabase.insert).toHaveBeenCalledOnce();
+    expect(supabase.insert).not.toHaveBeenCalled();
+    expect(await db.outbox.count()).toBe(1);
   });
 });

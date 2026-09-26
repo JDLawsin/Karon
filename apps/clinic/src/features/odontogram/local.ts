@@ -1,12 +1,11 @@
 import type { ClinicDb } from "@/lib/db/clinic-db";
-import { clientLog } from "@/lib/logger/client";
 import {
   chartAppendedPayloadSchema,
   clinicEventSchema,
   type AdultFdiToothCode,
-  type ChartFinding,
-  type ClinicEvent
+  type ChartFinding
 } from "@/lib/sync/event-schema";
+import { recordClinicEvent } from "@/lib/sync/sync-engine";
 
 type AppendChartEntryInput = {
   tenantId: string;
@@ -19,12 +18,9 @@ type AppendChartEntryInput = {
   now?: Date;
 };
 
-type WriteRemoteChartEvent = (event: ClinicEvent) => Promise<void>;
-
 const appendChartEntry = async (
   db: ClinicDb,
-  input: AppendChartEntryInput,
-  writeRemote: WriteRemoteChartEvent
+  input: AppendChartEntryInput
 ) => {
   const event = clinicEventSchema.parse({
     id: crypto.randomUUID(),
@@ -42,18 +38,10 @@ const appendChartEntry = async (
     })
   });
 
-  await writeRemote(event);
-
-  try {
-    await db.events.put(event);
-  } catch {
-    clientLog
-      .withMetadata({ eventId: event.id, type: event.type })
-      .error("chart.local_mirror_failed");
-  }
+  await recordClinicEvent(db, event);
 
   return event;
 };
 
 export { appendChartEntry };
-export type { AppendChartEntryInput, WriteRemoteChartEvent };
+export type { AppendChartEntryInput };

@@ -2,6 +2,11 @@
 
 import {
   Alert,
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+  Button,
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -27,7 +32,9 @@ import IdleLockGate from "@/features/auth/idle-lock-gate";
 import type { ClinicRole, Membership } from "@/features/auth/resolve-auth-destination";
 import { StaffAvatarPreferenceProvider } from "@/features/auth/staff-avatar-preference";
 import { ClinicSessionProvider } from "@/lib/auth/clinic-session";
+import { writeAuditEvent } from "@/lib/auth/audit";
 import { leaveClinicSession } from "@/lib/auth/leave-clinic-session";
+import { exportPendingClinicWork } from "@/lib/auth/pending-work-export";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import QueryProvider from "@/lib/query/query-provider";
 import { useClinicSync } from "@/lib/sync/use-clinic-sync";
@@ -49,6 +56,10 @@ const ClinicShell = ({
 }: Props) => {
   const router = useRouter();
   const [chromeActions, setChromeActions] = useState<HTMLElement | null>(null);
+  const [protectedCount, setProtectedCount] = useState<number | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
   const role: ClinicRole = membership.role;
   const { online, pendingCount } = useClinicSync(membership.tenantId);
   const syncBannerTitle = !online
@@ -58,17 +69,58 @@ const ClinicShell = ({
       : null;
 
   const signOut = async () => {
-    await leaveClinicSession(createBrowserSupabase());
-    router.push("/login");
-    router.refresh();
+    setLeaving(true);
+    setLeaveError(null);
+
+    try {
+      const result = await leaveClinicSession(createBrowserSupabase());
+
+      if (result.status === "blocked") {
+        setProtectedCount(result.pendingCount);
+        return;
+      }
+
+      router.push("/login");
+      router.refresh();
+    } finally {
+      setLeaving(false);
+    }
   };
 
+  const discardAndSignOut = async () => {
+    setLeaving(true);
+    setLeaveError(null);
+    const supabase = createBrowserSupabase();
+
+    try {
+      await writeAuditEvent(supabase, {
+        tenantId: membership.tenantId,
+        actorUserId: userId,
+        eventType: "auth.outbox_discarded"
+      });
+      await leaveClinicSession(supabase, { discardPending: true });
+      router.push("/login");
+      router.refresh();
+    } catch {
+      setLeaveError("Could not leave the clinic. Try again.");
+    } finally {
+      setLeaving(false);
+    }
+  };
+
+  const currentProtectedCount = protectedCount ?? 0;
+
   return (
-    <ClinicSessionProvider membership={membership} userId={userId}>
+    <ClinicSessionProvider
+      membership={membership}
+      syncStatus={{ online, pendingCount }}
+      userId={userId}
+    >
       <QueryProvider>
         <StaffAvatarPreferenceProvider userId={userId}>
           <IdleLockGate
             membership={membership}
+            pendingCount={pendingCount}
             sessionActive={sessionActive}
             userId={userId}
           >
@@ -150,6 +202,89 @@ const ClinicShell = ({
               </SidebarProvider>
             </ClinicChromeActionsContext.Provider>
           </IdleLockGate>
+          <AlertDialog open={protectedCount !== null}>
+            <AlertDialogContent
+              onEscapeKeyDown={(event) => event.preventDefault()}
+            >
+              <AlertDialogTitle>
+                {confirmDiscard
+                  ? `Discard ${currentProtectedCount} pending ${currentProtectedCount === 1 ? "change" : "changes"}?`
+                  : "Unsynced work is protected"}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {confirmDiscard
+                  ? "This permanently removes the pending work from this device. It cannot be recovered unless you export it first."
+                  : online
+                    ? "Wait for sync to finish, or stay signed in. Karon will not sign out and wipe this device while work is pending."
+                    : "Reconnect and wait for sync, or stay signed in. Karon will not wipe pending work while this device is offline."}
+              </AlertDialogDescription>
+              {currentProtectedCount > 0 ? (
+                <Alert
+                  className="mt-4"
+                  title="Export includes sensitive clinic data. Store the file securely."
+                  variant="info"
+                />
+              ) : null}
+              {leaveError ? (
+                <Alert className="mt-4" title={leaveError} variant="danger" />
+              ) : null}
+              <div className="mt-6 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+                {currentProtectedCount > 0 ? (
+                  <Button
+                    className="w-full sm:w-auto"
+                    disabled={leaving}
+                    onClick={() => {
+                      void exportPendingClinicWork(membership.tenantId).catch(() => {
+                        setLeaveError("Could not export pending work.");
+                      });
+                    }}
+                    type="button"
+                    variant="outline"
+                  >
+                    Export pending work
+                  </Button>
+                ) : null}
+                <Button
+                  className="w-full sm:w-auto"
+                  disabled={leaving}
+                  onClick={() => void signOut()}
+                  type="button"
+                >
+                  Check sync &amp; sign out
+                </Button>
+                <Button
+                  className="w-full sm:w-auto"
+                  disabled={leaving}
+                  onClick={() => {
+                    setProtectedCount(null);
+                    setConfirmDiscard(false);
+                    setLeaveError(null);
+                  }}
+                  type="button"
+                  variant="outline"
+                >
+                  Stay signed in
+                </Button>
+                {currentProtectedCount > 0 ? (
+                  <Button
+                    className="w-full sm:w-auto"
+                    disabled={leaving}
+                    onClick={() => {
+                      if (confirmDiscard) {
+                        void discardAndSignOut();
+                      } else {
+                        setConfirmDiscard(true);
+                      }
+                    }}
+                    type="button"
+                    variant="destructive"
+                  >
+                    {confirmDiscard ? "Discard and sign out" : "Discard pending work..."}
+                  </Button>
+                ) : null}
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
         </StaffAvatarPreferenceProvider>
       </QueryProvider>
     </ClinicSessionProvider>

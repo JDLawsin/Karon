@@ -1,11 +1,10 @@
 import type { ClinicDb } from "@/lib/db/clinic-db";
-import { clientLog } from "@/lib/logger/client";
 import {
   clinicEventSchema,
   quoteCreatedPayloadSchema,
-  type ClinicEvent,
   type QuoteLine
 } from "@/lib/sync/event-schema";
+import { recordClinicEvent } from "@/lib/sync/sync-engine";
 
 type CreateQuoteInput = {
   tenantId: string;
@@ -18,12 +17,9 @@ type CreateQuoteInput = {
   now?: Date;
 };
 
-type WriteRemoteQuoteEvent = (event: ClinicEvent) => Promise<void>;
-
 const createQuote = async (
   db: ClinicDb,
-  input: CreateQuoteInput,
-  writeRemote: WriteRemoteQuoteEvent
+  input: CreateQuoteInput
 ) => {
   const event = clinicEventSchema.parse({
     id: crypto.randomUUID(),
@@ -42,18 +38,10 @@ const createQuote = async (
     })
   });
 
-  await writeRemote(event);
-
-  try {
-    await db.events.put(event);
-  } catch {
-    clientLog
-      .withMetadata({ eventId: event.id, type: event.type })
-      .error("quote.local_mirror_failed");
-  }
+  await recordClinicEvent(db, event);
 
   return event;
 };
 
 export { createQuote };
-export type { CreateQuoteInput, WriteRemoteQuoteEvent };
+export type { CreateQuoteInput };

@@ -32,7 +32,8 @@ const files = [
   "packages/db/drizzle/0023_chart_events.sql",
   "packages/db/drizzle/0024_quote_events.sql",
   "packages/db/drizzle/0025_payment_events.sql",
-  "packages/db/drizzle/0026_owner_collections.sql"
+  "packages/db/drizzle/0026_owner_collections.sql",
+  "packages/db/drizzle/0027_outbox_discard_audit.sql"
 ];
 
 const splitSql = (contents: string) => {

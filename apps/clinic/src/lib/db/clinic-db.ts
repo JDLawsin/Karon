@@ -43,6 +43,10 @@ class ClinicDb extends Dexie {
         events: {
           type: cryptoOptions.ENCRYPT_LIST,
           fields: ["payload"]
+        },
+        meta: {
+          type: cryptoOptions.ENCRYPT_LIST,
+          fields: ["value"]
         }
       } as never,
       async () => {
@@ -115,6 +119,59 @@ const closeClinicDb = () => {
   current = null;
 };
 
+const countOutboxIn = async (name: string) => {
+  const db = new Dexie(name);
+
+  try {
+    await db.open();
+    return db.tables.some((table) => table.name === "outbox")
+      ? db.table("outbox").count()
+      : 0;
+  } finally {
+    db.close();
+  }
+};
+
+const pendingClinicOutboxCount = async () => {
+  const names = (await Dexie.getDatabaseNames()).filter((name) =>
+    CLINIC_NOTEBOOK_NAME.test(name)
+  );
+
+  return names.reduce(
+    async (total, name) =>
+      (await total) +
+      (current?.db.name === name && current.db.isOpen()
+        ? await current.db.outbox.count()
+        : await countOutboxIn(name)),
+    Promise.resolve(0)
+  );
+};
+
+const pendingClinicEvents = async (tenantId: string) => {
+  const read = async (db: ClinicDb) => {
+    const pending = await db.outbox.orderBy("createdAt").toArray();
+    const events = await db.events.bulkGet(pending.map(({ id }) => id));
+    return events.filter((event): event is ClinicEvent => Boolean(event));
+  };
+
+  if (current?.tenantId === tenantId && current.db.isOpen()) {
+    return read(current.db);
+  }
+
+  if (!(await Dexie.exists(clinicNotebookName(tenantId)))) {
+    return [];
+  }
+
+  const db = new ClinicDb(tenantId, await loadOrCreateDek(tenantId));
+
+  try {
+    await db.open();
+    return await read(db);
+  } finally {
+    db.close();
+  }
+};
+
 const dropOtherTenantStores = async (tenantId: string) => {
   const keep = clinicNotebookName(tenantId);
   const names = await Dexie.getDatabaseNames();
@@ -139,7 +196,6 @@ const dropOtherTenantStores = async (tenantId: string) => {
   }
 };
 
-// ponytail: wipe on leave (sign-out + idle lock). Unsynced outbox is lost if they lock offline; drain-on-write is the ceiling until we drain-then-wipe.
 const dropClinicStores = async () => {
   closeClinicDb();
   const names = await Dexie.getDatabaseNames();
@@ -182,5 +238,13 @@ const openClinicDb = async (tenantId: string, dek?: Uint8Array) => {
   return openClinicDb(tenantId, dek);
 };
 
-export { ClinicDb, closeClinicDb, dropClinicStores, loadOrCreateDek, openClinicDb };
+export {
+  ClinicDb,
+  closeClinicDb,
+  dropClinicStores,
+  loadOrCreateDek,
+  openClinicDb,
+  pendingClinicEvents,
+  pendingClinicOutboxCount
+};
 export type { ClinicEventRow, MetaRow, OutboxRow };

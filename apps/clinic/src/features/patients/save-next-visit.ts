@@ -6,12 +6,12 @@ import {
   nextVisitDraftSchema
 } from "@/features/patients/next-visit";
 import type { ClinicDb } from "@/lib/db/clinic-db";
-import { clientLog } from "@/lib/logger/client";
 import {
   clinicEventRowSchema,
   clinicEventSchema,
   toClinicEvent
 } from "@/lib/sync/event-schema";
+import { recordClinicEvent } from "@/lib/sync/sync-engine";
 
 type SaveNextVisitInput = {
   tenantId: string;
@@ -71,27 +71,24 @@ const saveNextVisit = async (
   supabase: SupabaseClient,
   input: SaveNextVisitInput & { startsAt: string }
 ) => {
-  if (typeof navigator !== "undefined" && !navigator.onLine) {
-    throw new Error(
-      "Next visits need an internet connection until offline scheduling ships."
-    );
-  }
-
   const draft = nextVisitDraftSchema.parse({
     date: input.date,
     time: input.time,
     serviceName: input.serviceName
   });
-  const occupancy = await readOccupancy(
-    supabase,
-    input.tenantId,
-    input.startsAt
-  );
+  const localEvents = await db.events.toArray();
+  const online = typeof navigator === "undefined" || navigator.onLine;
+  const occupancy = online
+    ? await readOccupancy(supabase, input.tenantId, input.startsAt)
+    : { events: [], bookingRequestOccupied: false };
 
   if (
     !input.allowOverbook &&
     (occupancy.bookingRequestOccupied ||
-      hasActiveVisitAt(occupancy.events, input.startsAt))
+      hasActiveVisitAt(
+        [...localEvents, ...occupancy.events],
+        input.startsAt
+      ))
   ) {
     return { status: "conflict" as const };
   }
@@ -110,29 +107,7 @@ const saveNextVisit = async (
       serviceName: draft.serviceName
     }
   });
-  const { error } = await supabase
-    .from("clinic_events")
-    .insert({
-      id: event.id,
-      tenant_id: event.tenantId,
-      actor_user_id: event.actorUserId,
-      event_type: event.type,
-      record_id: event.recordId,
-      payload: event.payload,
-      occurred_at: event.occurredAt
-    });
-
-  if (error) {
-    throw new Error("Could not save the next visit. Check the connection and try again.");
-  }
-
-  try {
-    await db.events.put(event);
-  } catch {
-    clientLog
-      .withMetadata({ eventId: event.id, type: event.type })
-      .error("next_visit.local_mirror_failed");
-  }
+  await recordClinicEvent(db, event);
 
   return { status: "saved" as const, event };
 };

@@ -7,6 +7,10 @@ import type { Membership } from "@/features/auth/resolve-auth-destination";
 type ClinicSession = {
   membership: Membership;
   userId: string;
+  syncStatus: {
+    online: boolean;
+    pendingCount: number;
+  };
 };
 
 const ClinicSessionContext = createContext<ClinicSession | null>(null);
@@ -14,15 +18,17 @@ const ClinicSessionContext = createContext<ClinicSession | null>(null);
 type ClinicSessionProviderProps = {
   membership: Membership;
   userId: string;
+  syncStatus?: ClinicSession["syncStatus"];
   children: ReactNode;
 };
 
 const ClinicSessionProvider = ({
   membership,
   userId,
+  syncStatus = { online: true, pendingCount: 0 },
   children
 }: ClinicSessionProviderProps) => (
-  <ClinicSessionContext.Provider value={{ membership, userId }}>
+  <ClinicSessionContext.Provider value={{ membership, syncStatus, userId }}>
     {children}
   </ClinicSessionContext.Provider>
 );

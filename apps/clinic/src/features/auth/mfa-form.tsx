@@ -168,7 +168,13 @@ const MfaForm = () => {
   });
 
   const signOut = async () => {
-    await leaveClinicSession(createBrowserSupabase());
+    const result = await leaveClinicSession(createBrowserSupabase());
+
+    if (result.status === "blocked") {
+      setError("Unsynced clinic work is protected on this device.");
+      return;
+    }
+
     router.push("/login");
     router.refresh();
   };

@@ -311,7 +311,7 @@ const QuoteBuilder = ({
             </p>
           ) : null}
           <p className="text-xs text-muted-foreground">
-            Quotes need a connection until protected offline sync ships.
+            Saves on this device first and syncs when a connection is available.
           </p>
         </form>
       ) : (

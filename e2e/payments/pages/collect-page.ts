@@ -7,7 +7,9 @@ export class CollectPage {
     await this.page.goto(`/patients/${patientId}?visit=${visitId}`, {
       waitUntil: "domcontentloaded"
     });
-    await this.page.getByRole("heading", { name: "Collect" }).waitFor();
+    await this.page
+      .getByRole("heading", { name: "Collect", exact: true })
+      .waitFor();
   }
 
   async record(method: string, amount: string) {
