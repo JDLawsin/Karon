@@ -31,6 +31,71 @@ test.describe("patient import owner flow", { tag: "@owner" }, () => {
     });
   }
 
+  test("persists a clinic migration checklist item after reload", async ({ page }) => {
+    const patientImport = new PatientImportPage(page);
+    await patientImport.goto({ mockChecklist: false });
+
+    const initialResponse = await page.request.get("/api/import-checklist");
+    expect(initialResponse.ok()).toBe(true);
+
+    const initialBody: unknown = await initialResponse.json();
+    if (
+      !initialBody ||
+      typeof initialBody !== "object" ||
+      !("completedItems" in initialBody) ||
+      !Array.isArray(initialBody.completedItems)
+    ) {
+      throw new Error("Expected the import checklist API to return completedItems");
+    }
+
+    const initialCompletedItems = initialBody.completedItems.filter(
+      (item): item is string => typeof item === "string"
+    );
+    if (initialCompletedItems.length !== initialBody.completedItems.length) {
+      throw new Error("Expected every completed checklist item to be a string");
+    }
+
+    const exportTask = page.getByRole("checkbox", { name: /Export the old system/ });
+    const wasInitiallyChecked = initialCompletedItems.includes("export_old_system");
+
+    try {
+      if (wasInitiallyChecked) {
+        await expect(exportTask).toBeChecked();
+      } else {
+        await expect(exportTask).not.toBeChecked();
+      }
+      await expect(exportTask).toBeEnabled();
+
+      const savedResponse = page.waitForResponse(
+        (response) =>
+          response.url().endsWith("/api/import-checklist") &&
+          response.request().method() === "PUT"
+      );
+      await exportTask.click();
+      expect((await savedResponse).ok()).toBe(true);
+
+      if (wasInitiallyChecked) {
+        await expect(exportTask).not.toBeChecked();
+      } else {
+        await expect(exportTask).toBeChecked();
+      }
+
+      await page.reload({ waitUntil: "domcontentloaded" });
+      const reloadedExportTask = page.getByRole("checkbox", { name: /Export the old system/ });
+
+      if (wasInitiallyChecked) {
+        await expect(reloadedExportTask).not.toBeChecked();
+      } else {
+        await expect(reloadedExportTask).toBeChecked();
+      }
+    } finally {
+      const restoreResponse = await page.request.put("/api/import-checklist", {
+        data: { completedItems: initialCompletedItems }
+      });
+      expect(restoreResponse.ok()).toBe(true);
+    }
+  });
+
   for (const width of [320, 768, 1280] as const) {
     test(`keeps the services choose and upload steps usable at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });

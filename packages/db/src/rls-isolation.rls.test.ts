@@ -1691,4 +1691,71 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     ]);
   }, 15_000);
 
+  it("persists migration checklists per clinic and audits only counts", async () => {
+    const ownerA = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(ownerA.client);
+    const ownerB = await createAuthedClient(users[2]!.email);
+    await verifyOwnerTotp(ownerB.client);
+    const assistant = await createAuthedClient(users[1]!.email);
+    const completedItems = ["export_old_system", "backup_created"];
+
+    const { error: saveError } = await ownerA.client
+      .from("migration_checklists")
+      .upsert({
+        tenant_id: clinicIds[0],
+        completed_items: completedItems,
+        updated_by: users[0]!.id
+      });
+    expect(saveError).toBeNull();
+
+    const { data: ownRows } = await ownerA.client
+      .from("migration_checklists")
+      .select("tenant_id, completed_items");
+    const { data: otherRows } = await ownerB.client
+      .from("migration_checklists")
+      .select("tenant_id");
+    const { data: assistantRows } = await assistant.client
+      .from("migration_checklists")
+      .select("tenant_id");
+    expect(ownRows).toEqual([
+      { tenant_id: clinicIds[0], completed_items: completedItems }
+    ]);
+    expect(otherRows).toEqual([]);
+    expect(assistantRows).toEqual([]);
+
+    const { error: assistantSaveError } = await assistant.client
+      .from("migration_checklists")
+      .upsert({
+        tenant_id: clinicIds[0],
+        completed_items: ["patients_imported"],
+        updated_by: users[1]!.id
+      });
+    expect(assistantSaveError).toBeTruthy();
+
+    const { error: invalidItemError } = await ownerA.client
+      .from("migration_checklists")
+      .update({ completed_items: ["raw_patient_name"] })
+      .eq("tenant_id", clinicIds[0]);
+    expect(invalidItemError).toBeTruthy();
+
+    const { error: duplicateItemError } = await ownerA.client
+      .from("migration_checklists")
+      .update({ completed_items: ["patients_imported", "patients_imported"] })
+      .eq("tenant_id", clinicIds[0]);
+    expect(duplicateItemError).toBeTruthy();
+
+    const { data: audits, error: auditError } = await admin
+      .from("audit_events")
+      .select("event_type, metadata")
+      .eq("record_id", clinicIds[0])
+      .eq("event_type", "import.checklist_updated");
+    expect(auditError).toBeNull();
+    expect(audits).toEqual([
+      {
+        event_type: "import.checklist_updated",
+        metadata: { completed_count: 2, total_count: 8 }
+      }
+    ]);
+  });
+
 });

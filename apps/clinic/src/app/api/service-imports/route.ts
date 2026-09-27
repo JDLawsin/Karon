@@ -7,7 +7,10 @@ import {
   extensionForContentType,
   normalizeContentType
 } from "@/features/patient-import/patient-import";
-import { requireOwnerImportAccess } from "@/features/patient-import/patient-import-server";
+import {
+  createSecureImportUploadToken,
+  requireOwnerImportAccess
+} from "@/features/patient-import/patient-import-server";
 import {
   SERVICE_IMPORT_BUCKET,
   publicServiceImportJob,
@@ -101,10 +104,12 @@ export const POST = async (request: Request) => {
     );
   }
 
-  const { data: signed, error: signedError } = await access.supabase.storage
-    .from(SERVICE_IMPORT_BUCKET)
-    .createSignedUploadUrl(storagePath, { upsert: false });
-  if (signedError || !signed?.token) {
+  const uploadToken = await createSecureImportUploadToken(
+    access.supabase,
+    SERVICE_IMPORT_BUCKET,
+    storagePath
+  );
+  if (!uploadToken) {
     await access.supabase
       .from("service_import_jobs")
       .update({ status: "failed", last_error: "Secure staging is unavailable." })
@@ -121,7 +126,7 @@ export const POST = async (request: Request) => {
       upload: {
         bucket: SERVICE_IMPORT_BUCKET,
         path: storagePath,
-        token: signed.token,
+        token: uploadToken,
         contentType
       }
     },

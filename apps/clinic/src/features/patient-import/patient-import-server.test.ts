@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 
-import { cleanupExpiredImports } from "./patient-import-server";
+import {
+  cleanupExpiredImports,
+  createSecureImportUploadToken
+} from "./patient-import-server";
 
 const expiredJob = {
   id: "10000000-0000-4000-8000-000000000001",
@@ -84,5 +87,21 @@ describe("expired patient import cleanup", () => {
         "Import data expired. Parsed rows were deleted; secure upload cleanup will retry."
     });
     expect(updates.at(-1)).not.toHaveProperty("object_deleted_at");
+  });
+});
+
+describe("secure import upload policy", () => {
+  it("fails closed when Storage refuses to create an upload token", async () => {
+    const createSignedUploadUrl = vi.fn().mockResolvedValue({
+      data: null,
+      error: new Error("row-level security policy missing")
+    });
+    const client = {
+      storage: { from: vi.fn(() => ({ createSignedUploadUrl })) }
+    } as unknown as SupabaseClient;
+
+    await expect(
+      createSecureImportUploadToken(client, "patient-import-staging", "tenant/job/source.csv")
+    ).resolves.toBeNull();
   });
 });

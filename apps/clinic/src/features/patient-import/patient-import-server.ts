@@ -147,6 +147,18 @@ const removeImportObject = async (
   return deletedAt;
 };
 
+const createSecureImportUploadToken = async (
+  supabase: SupabaseClient,
+  bucket: string,
+  storagePath: string
+) => {
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .createSignedUploadUrl(storagePath, { upsert: false });
+
+  return error || !data?.token ? null : data.token;
+};
+
 const loadExistingPatients = async (
   supabase: SupabaseClient,
   tenantId: string
@@ -471,6 +483,7 @@ export {
   IMPORT_JOB_COLUMNS,
   cleanupExpiredImports,
   commitImportJob,
+  createSecureImportUploadToken,
   loadImportJob,
   previewImportJob,
   publicImportJob,

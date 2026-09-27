@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { useState, type DragEvent } from "react";
 
+import MigrationChecklistCard from "@/features/patient-import/migration-checklist-card";
 import {
   MAX_IMPORT_FILE_BYTES,
   type ImportDecision,
@@ -167,9 +168,11 @@ const PatientImportWizard = () => {
 
       {step === 1 ? (
         <>
+          <MigrationChecklistCard />
+
           <Card>
             <CardHeader>
-              <CardTitle>Saturday migration checklist</CardTitle>
+              <CardTitle>Choose what to import</CardTitle>
               <CardDescription>
                 Start with patients. Other migration jobs remain separate so each can be checked.
               </CardDescription>

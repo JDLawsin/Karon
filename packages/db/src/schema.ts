@@ -295,7 +295,11 @@ export const auditEvents = pgTable(
         'chart.appended',
         'quote.created',
         'payment.recorded',
-        'collections.viewed'
+        'collections.viewed',
+        'import.started',
+        'import.completed',
+        'import.failed',
+        'import.checklist_updated'
       )`
     )
   ]
@@ -532,6 +536,53 @@ export const serviceImportJobs = pgTable(
   ]
 ).enableRLS();
 
+export const migrationChecklists = pgTable(
+  "migration_checklists",
+  {
+    tenantId: uuid("tenant_id")
+      .primaryKey()
+      .references(() => clinics.id, { onDelete: "cascade" }),
+    completedItems: text("completed_items")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    updatedBy: uuid("updated_by").notNull(),
+    updatedAt: timestamptz("updated_at").defaultNow().notNull()
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.updatedBy],
+      foreignColumns: [authUsers.id],
+      name: "migration_checklists_updated_by_fk"
+    }).onDelete("restrict"),
+    check(
+      "migration_checklists_completed_items_allowed",
+      sql`${table.completedItems} <@ array[
+        'export_old_system',
+        'backup_created',
+        'patients_imported',
+        'services_imported',
+        'balances_recorded',
+        'privacy_reviewed',
+        'records_spot_checked',
+        'booking_enabled'
+      ]::text[]`
+    ),
+    check(
+      "migration_checklists_completed_items_unique",
+      sql`array_position(${table.completedItems}, null) is null
+        and cardinality(array_positions(${table.completedItems}, 'export_old_system')) <= 1
+        and cardinality(array_positions(${table.completedItems}, 'backup_created')) <= 1
+        and cardinality(array_positions(${table.completedItems}, 'patients_imported')) <= 1
+        and cardinality(array_positions(${table.completedItems}, 'services_imported')) <= 1
+        and cardinality(array_positions(${table.completedItems}, 'balances_recorded')) <= 1
+        and cardinality(array_positions(${table.completedItems}, 'privacy_reviewed')) <= 1
+        and cardinality(array_positions(${table.completedItems}, 'records_spot_checked')) <= 1
+        and cardinality(array_positions(${table.completedItems}, 'booking_enabled')) <= 1`
+    )
+  ]
+).enableRLS();
+
 export const calendarImportStatusEnum = pgEnum("calendar_import_status", [
   "unmatched",
   "matched",
@@ -693,6 +744,7 @@ export type ClinicMember = typeof clinicMembers.$inferSelect;
 export type ClinicSession = typeof clinicSessions.$inferSelect;
 export type TrustedDevice = typeof trustedDevices.$inferSelect;
 export type AuditEvent = typeof auditEvents.$inferSelect;
+export type MigrationChecklist = typeof migrationChecklists.$inferSelect;
 export type ClinicEvent = typeof clinicEvents.$inferSelect;
 export type Patient = typeof patients.$inferSelect;
 export type PatientImportJob = typeof patientImportJobs.$inferSelect;

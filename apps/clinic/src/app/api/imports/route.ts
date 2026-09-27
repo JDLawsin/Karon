@@ -11,6 +11,7 @@ import {
 } from "@/features/patient-import/patient-import";
 import {
   IMPORT_JOB_COLUMNS,
+  createSecureImportUploadToken,
   requireOwnerImportAccess
 } from "@/features/patient-import/patient-import-server";
 
@@ -108,11 +109,13 @@ export const POST = async (request: Request) => {
     );
   }
 
-  const { data: signed, error: signedError } = await access.supabase.storage
-    .from(IMPORT_BUCKET)
-    .createSignedUploadUrl(storagePath, { upsert: false });
+  const uploadToken = await createSecureImportUploadToken(
+    access.supabase,
+    IMPORT_BUCKET,
+    storagePath
+  );
 
-  if (signedError || !signed?.token) {
+  if (!uploadToken) {
     await access.supabase
       .from("patient_import_jobs")
       .update({
@@ -133,7 +136,7 @@ export const POST = async (request: Request) => {
       upload: {
         bucket: IMPORT_BUCKET,
         path: storagePath,
-        token: signed.token,
+        token: uploadToken,
         contentType
       }
     },
