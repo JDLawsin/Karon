@@ -30,6 +30,15 @@ export const patientImportStatusEnum = pgEnum("patient_import_status", [
   "failed"
 ]);
 
+export const serviceImportStatusEnum = pgEnum("service_import_status", [
+  "awaiting_upload",
+  "uploaded",
+  "preview_ready",
+  "committing",
+  "completed",
+  "failed"
+]);
+
 export type ClinicAddress = {
   line1?: string;
   barangay?: string;
@@ -95,6 +104,7 @@ export const clinicServices = pgTable(
       .notNull()
       .references(() => clinics.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    serviceCode: text("service_code"),
     description: text("description"),
     icon: text("icon"),
     priceMinor: integer("price_minor"),
@@ -120,10 +130,17 @@ export const clinicServices = pgTable(
       table.tenantId,
       sql`lower(btrim(${table.name}))`
     ),
+    uniqueIndex("clinic_services_tenant_code_idx")
+      .on(table.tenantId, sql`lower(btrim(${table.serviceCode}))`)
+      .where(sql`${table.serviceCode} is not null`),
     index("clinic_services_tenant_name_sort_idx").on(table.tenantId, table.name),
     check(
       "clinic_services_name_length",
       sql`char_length(btrim(${table.name})) between 1 and 80`
+    ),
+    check(
+      "clinic_services_code_length",
+      sql`${table.serviceCode} is null or char_length(btrim(${table.serviceCode})) between 1 and 40`
     ),
     check(
       "clinic_services_description_length",
@@ -455,6 +472,66 @@ export const patientImportJobs = pgTable(
   ]
 ).enableRLS();
 
+export type ServiceImportMapping = {
+  name: string | null;
+  price: string | null;
+  duration: string | null;
+  code: string | null;
+  currency: string | null;
+};
+
+export type ServiceImportRow = {
+  rowNumber: number;
+  values: Record<string, string>;
+  serviceId: string;
+  existingServiceId?: string;
+  existingCode?: string;
+  name: string;
+  code?: string;
+  priceMinor?: number;
+  durationMinutes?: number;
+  currencyCode?: string;
+  action: "create" | "update";
+  error?: string;
+};
+
+export const serviceImportJobs = pgTable(
+  "service_import_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id").notNull().references(() => clinics.id, { onDelete: "cascade" }),
+    createdBy: uuid("created_by").notNull(),
+    status: serviceImportStatusEnum("status").notNull().default("awaiting_upload"),
+    fileName: text("file_name").notNull(),
+    storagePath: text("storage_path").notNull(),
+    contentType: text("content_type").notNull(),
+    fileSize: integer("file_size").notNull(),
+    columns: jsonb("columns").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    mapping: jsonb("mapping").$type<ServiceImportMapping>().notNull().default(sql`'{"name":null,"price":null,"duration":null,"code":null,"currency":null}'::jsonb`),
+    rows: jsonb("rows").$type<ServiceImportRow[]>().notNull().default(sql`'[]'::jsonb`),
+    existingServiceIds: jsonb("existing_service_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    totalRows: integer("total_rows").notNull().default(0),
+    importedRows: integer("imported_rows").notNull().default(0),
+    failedRows: integer("failed_rows").notNull().default(0),
+    removedRows: integer("removed_rows").notNull().default(0),
+    lastError: text("last_error"),
+    expiresAt: timestamptz("expires_at").notNull().default(sql`now() + interval '24 hours'`),
+    objectDeletedAt: timestamptz("object_deleted_at"),
+    dataPurgedAt: timestamptz("data_purged_at"),
+    completedAt: timestamptz("completed_at"),
+    createdAt: timestamptz("created_at").defaultNow().notNull(),
+    updatedAt: timestamptz("updated_at").defaultNow().notNull()
+  },
+  (table) => [
+    foreignKey({ columns: [table.createdBy], foreignColumns: [authUsers.id], name: "service_import_jobs_created_by_fk" }).onDelete("restrict"),
+    uniqueIndex("service_import_jobs_storage_path_idx").on(table.storagePath),
+    index("service_import_jobs_tenant_created_idx").on(table.tenantId, table.createdAt),
+    index("service_import_jobs_expiry_idx").on(table.expiresAt).where(sql`${table.objectDeletedAt} is null or ${table.dataPurgedAt} is null`),
+    check("service_import_jobs_file_size_bounds", sql`${table.fileSize} between 1 and 5000000`),
+    check("service_import_jobs_counts_non_negative", sql`${table.totalRows} >= 0 and ${table.importedRows} >= 0 and ${table.failedRows} >= 0 and ${table.removedRows} >= 0`)
+  ]
+).enableRLS();
+
 export const calendarImportStatusEnum = pgEnum("calendar_import_status", [
   "unmatched",
   "matched",
@@ -619,5 +696,6 @@ export type AuditEvent = typeof auditEvents.$inferSelect;
 export type ClinicEvent = typeof clinicEvents.$inferSelect;
 export type Patient = typeof patients.$inferSelect;
 export type PatientImportJob = typeof patientImportJobs.$inferSelect;
+export type ServiceImportJob = typeof serviceImportJobs.$inferSelect;
 export type BookingLink = typeof bookingLinks.$inferSelect;
 export type BookingRequest = typeof bookingRequests.$inferSelect;

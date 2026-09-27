@@ -44,6 +44,7 @@ const clinicServiceRowSchema = z.object({
   id: z.uuid(),
   tenant_id: z.uuid(),
   name: z.string(),
+  service_code: z.string().max(40).nullable(),
   description: z.string().nullable(),
   icon: z.string().nullable(),
   price_minor: z.int().min(0).nullable(),

@@ -87,12 +87,12 @@ const ClinicSettings = () => {
           <CardHeader>
             <CardTitle>Move clinic data</CardTitle>
             <CardDescription>
-              Preview and check duplicates before patients are created.
+              Preview patients or services before clinic data changes.
             </CardDescription>
           </CardHeader>
           <CardFooter>
             <Button asChild variant="outline">
-              <Link href="/settings/import">Import patients</Link>
+              <Link href="/settings/import">Import clinic data</Link>
             </Button>
           </CardFooter>
         </Card>

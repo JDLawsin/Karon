@@ -188,8 +188,11 @@ const PatientImportWizard = () => {
                 <li className="rounded-md border border-border p-4">
                   <p className="font-medium">Services and prices</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Catalog and durations are a separate import.
+                    Name, price, duration, and optional code.
                   </p>
+                  <Button asChild className="mt-3" variant="outline">
+                    <Link href="/settings/import/services">Choose Services</Link>
+                  </Button>
                 </li>
                 <li className="rounded-md border border-border p-4">
                   <p className="font-medium">Open balances</p>

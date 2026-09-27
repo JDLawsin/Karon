@@ -35,7 +35,8 @@ const files = [
   "packages/db/drizzle/0026_owner_collections.sql",
   "packages/db/drizzle/0027_outbox_discard_audit.sql",
   "packages/db/drizzle/0028_clinic_regional_settings.sql",
-  "packages/db/drizzle/0029_patient_imports.sql"
+  "packages/db/drizzle/0029_patient_imports.sql",
+  "packages/db/drizzle/0030_service_imports.sql"
 ];
 
 const splitSql = (contents: string) => {

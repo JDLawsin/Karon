@@ -17,7 +17,7 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 const clinicServicesKey = (tenantId: string) => ["clinic-services", tenantId] as const;
 const serviceColumns =
-  "id, tenant_id, name, description, icon, price_minor, currency_code, duration_minutes, created_at, updated_at, created_by, updated_by";
+  "id, tenant_id, name, service_code, description, icon, price_minor, currency_code, duration_minutes, created_at, updated_at, created_by, updated_by";
 
 const fetchClinicServices = async (tenantId: string) => {
   const supabase = createBrowserSupabase();

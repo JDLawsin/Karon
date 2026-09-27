@@ -260,11 +260,11 @@ const uniqueHeaders = (cells: string[]) => {
   });
 };
 
-const sourceFromMatrix = (matrix: string[][]): ImportSource => {
+const sourceFromMatrix = (matrix: string[][], itemLabel = "patient"): ImportSource => {
   const [header = [], ...data] = matrix;
 
   if (header.length === 0 || data.length === 0) {
-    throw new ImportFileError("The file needs a header row and at least one patient.");
+    throw new ImportFileError(`The file needs a header row and at least one ${itemLabel}.`);
   }
 
   if (header.length > MAX_IMPORT_COLUMNS) {
@@ -276,7 +276,7 @@ const sourceFromMatrix = (matrix: string[][]): ImportSource => {
   }
 
   if (data.length > MAX_IMPORT_ROWS) {
-    throw new ImportFileError(`Import ${MAX_IMPORT_ROWS} patients or fewer at a time.`);
+    throw new ImportFileError(`Import ${MAX_IMPORT_ROWS} ${itemLabel}s or fewer at a time.`);
   }
 
   const columns = uniqueHeaders(header);
@@ -290,7 +290,7 @@ const sourceFromMatrix = (matrix: string[][]): ImportSource => {
     .filter(({ values }) => Object.values(values).some(Boolean));
 
   if (rows.length === 0) {
-    throw new ImportFileError("The file does not contain any patient rows.");
+    throw new ImportFileError(`The file does not contain any ${itemLabel} rows.`);
   }
 
   return { columns, rows };

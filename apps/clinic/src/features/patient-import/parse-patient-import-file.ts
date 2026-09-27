@@ -28,7 +28,8 @@ const cellText = (cell: unknown) => {
 
 const parsePatientImportFile = async (
   bytes: ArrayBuffer,
-  contentType: string
+  contentType: string,
+  itemLabel = "patient"
 ): Promise<ImportSource> => {
   const buffer = Buffer.from(bytes);
 
@@ -38,10 +39,10 @@ const parsePatientImportFile = async (
     }
 
     const rows = await readSheet(buffer);
-    return sourceFromMatrix(rows.map((row) => row.map(cellText)));
+    return sourceFromMatrix(rows.map((row) => row.map(cellText)), itemLabel);
   }
 
-  return sourceFromMatrix(parseCsv(buffer.toString("utf8")));
+  return sourceFromMatrix(parseCsv(buffer.toString("utf8")), itemLabel);
 };
 
 export { XLSX_CONTENT_TYPE, parsePatientImportFile };

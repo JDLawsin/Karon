@@ -1578,4 +1578,117 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     ]);
   });
 
+  it("keeps service import jobs and staging objects owner-only and tenant-scoped", async () => {
+    const ownerA = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(ownerA.client);
+    const ownerB = await createAuthedClient(users[2]!.email);
+    await verifyOwnerTotp(ownerB.client);
+    const assistant = await createAuthedClient(users[1]!.email);
+    const jobId = randomUUID();
+    const path = `${clinicIds[0]}/${jobId}/source.csv`;
+    const { error: insertError } = await ownerA.client
+      .from("service_import_jobs")
+      .insert({
+        id: jobId,
+        tenant_id: clinicIds[0],
+        created_by: users[0]!.id,
+        file_name: "services.csv",
+        storage_path: path,
+        content_type: "text/csv",
+        file_size: 40
+      });
+    expect(insertError).toBeNull();
+
+    const { data: assistantRows } = await assistant.client
+      .from("service_import_jobs")
+      .select("id");
+    const { data: otherRows } = await ownerB.client
+      .from("service_import_jobs")
+      .select("id");
+    expect(assistantRows).toEqual([]);
+    expect(otherRows).toEqual([]);
+
+    const blockedId = randomUUID();
+    const { error: assistantInsertError } = await assistant.client
+      .from("service_import_jobs")
+      .insert({
+        id: blockedId,
+        tenant_id: clinicIds[0],
+        created_by: users[1]!.id,
+        file_name: "blocked.csv",
+        storage_path: `${clinicIds[0]}/${blockedId}/source.csv`,
+        content_type: "text/csv",
+        file_size: 10
+      });
+    expect(assistantInsertError).toBeTruthy();
+
+    const { data: signed, error: signedError } = await ownerA.client.storage
+      .from("service-import-staging")
+      .createSignedUploadUrl(path);
+    expect(signedError).toBeNull();
+    const { error: uploadError } = await ownerA.client.storage
+      .from("service-import-staging")
+      .uploadToSignedUrl(
+        path,
+        signed!.token,
+        new Blob(["Name,Price,Duration\nCleaning,1500,45"], { type: "text/csv" })
+      );
+    expect(uploadError).toBeNull();
+    expect(
+      (await assistant.client.storage.from("service-import-staging").download(path))
+        .error
+    ).toBeTruthy();
+    expect(
+      (await ownerB.client.storage.from("service-import-staging").download(path)).error
+    ).toBeTruthy();
+
+    expect(
+      (await ownerA.client.storage.from("service-import-staging").remove([path])).error
+    ).toBeNull();
+    const completedAt = new Date().toISOString();
+    expect(
+      (
+        await ownerA.client
+          .from("service_import_jobs")
+          .update({
+            status: "completed",
+            total_rows: 1,
+            imported_rows: 1,
+            object_deleted_at: completedAt,
+            completed_at: completedAt,
+            updated_at: completedAt
+          })
+          .eq("id", jobId)
+      ).error
+    ).toBeNull();
+
+    const { data: audits } = await admin
+      .from("audit_events")
+      .select("event_type, metadata")
+      .eq("record_id", jobId)
+      .order("created_at");
+    expect(audits).toEqual([
+      {
+        event_type: "import.started",
+        metadata: {
+          kind: "services",
+          format: "csv",
+          bytes: 40,
+          ttl_hours: 24
+        }
+      },
+      {
+        event_type: "import.completed",
+        metadata: {
+          kind: "services",
+          total: 1,
+          imported: 1,
+          failed: 0,
+          removed: 0,
+          raw_file_deleted: true
+        }
+      }
+    ]);
+  }, 15_000);
+
 });

@@ -95,6 +95,7 @@ describe("parseClinicServices", () => {
           id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
           tenant_id: "b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22",
           name: "Cleaning",
+          service_code: null,
           description: null,
           icon: null,
           price_minor: null,
