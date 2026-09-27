@@ -15,6 +15,11 @@ vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("@/lib/auth/clinic-session", () => ({
   useClinicSession: () => ({ userId: USER_ID })
 }));
+vi.mock("@/lib/clinic/use-clinic-regional-settings", () => ({
+  useClinicRegionalSettings: () => ({
+    settings: { currencyCode: "PHP", locale: "en-PH", timezone: "Asia/Manila" }
+  })
+}));
 vi.mock("@/features/auth/staff-avatar-preference", () => ({
   useStaffAvatarPreference: () => ({
     resolvedSeed: USER_ID,

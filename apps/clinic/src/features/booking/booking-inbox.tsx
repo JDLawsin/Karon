@@ -21,10 +21,18 @@ import type { ClinicEvent } from "@/lib/sync/event-schema";
 type Props = {
   autoConfirm: boolean;
   events: ClinicEvent[];
+  locale: string;
   onPendingCountChange?: (count: number) => void;
+  timezone: string;
 };
 
-const BookingInbox = ({ autoConfirm, events, onPendingCountChange }: Props) => {
+const BookingInbox = ({
+  autoConfirm,
+  events,
+  locale,
+  onPendingCountChange,
+  timezone
+}: Props) => {
   const { membership, userId } = useClinicSession();
   const {
     rows,
@@ -230,7 +238,7 @@ const BookingInbox = ({ autoConfirm, events, onPendingCountChange }: Props) => {
             >
               <p className="font-medium">{row.name}</p>
               <p className="text-sm text-muted-foreground">
-                {formatVisitTime(row.startsAt)}
+                {formatVisitTime(row.startsAt, timezone, locale)}
                 {` · ${row.mobile}`}
               </p>
               <p className="text-sm">{row.serviceName}</p>

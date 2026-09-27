@@ -23,6 +23,7 @@ import PatientForm from "@/features/patients/patient-form";
 import { searchPatients } from "@/features/patients/patient-search";
 import { usePatientDirectory } from "@/features/patients/use-patient-directory";
 import { foldVisits } from "@/features/today-board/project-today-board";
+import { useClinicRegionalSettings } from "@/lib/clinic/use-clinic-regional-settings";
 
 type Props = {
   selectedPatientId?: string;
@@ -31,6 +32,7 @@ type Props = {
 const PatientDirectory = ({ selectedPatientId }: Props) => {
   const router = useRouter();
   const isMobile = useIsMobile();
+  const { error: regionalError, settings } = useClinicRegionalSettings();
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
@@ -185,7 +187,7 @@ const PatientDirectory = ({ selectedPatientId }: Props) => {
             selectedPatientId ? "block" : "hidden md:block"
           }`}
         >
-          {workspace.patient && selectedPatientId ? (
+          {workspace.patient && selectedPatientId && settings ? (
             <div className="flex min-w-0 flex-col gap-4">
               <Button asChild className="w-fit md:hidden" variant="outline">
                 <Link href="/patients">
@@ -194,7 +196,9 @@ const PatientDirectory = ({ selectedPatientId }: Props) => {
                 </Link>
               </Button>
               <PatientDetail
+                locale={settings.locale}
                 patient={workspace.patient}
+                timezone={settings.timezone}
                 visit={workspace.visits.find((visit) =>
                   ["pending_review", "confirmed", "waiting", "in_chair"].includes(
                     visit.status
@@ -208,6 +212,10 @@ const PatientDirectory = ({ selectedPatientId }: Props) => {
                 </Link>
               </Button>
             </div>
+          ) : workspace.patient && selectedPatientId ? (
+            <p aria-live="polite" className="text-muted-foreground">
+              {regionalError ?? "Loading clinic settings..."}
+            </p>
           ) : selectedPatientId && searchingOnline ? (
             <p aria-live="polite" className="text-muted-foreground">
               Opening patient workspace...

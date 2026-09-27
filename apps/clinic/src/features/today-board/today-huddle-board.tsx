@@ -61,6 +61,7 @@ import { isReverseVisitStatus } from "@/features/today-board/visit-status";
 import type { VisitStatus } from "@/lib/sync/event-schema";
 
 type Props = {
+  locale: string;
   rows: TodayBoardRow[];
   leftoverByDate?: TodayHuddle["leftoverByDate"];
   now: Date;
@@ -69,13 +70,16 @@ type Props = {
   hours?: HuddleHours;
   onViewDay: (day: string) => void;
   onMark: (visitId: string, status: VisitStatus) => void;
+  timezone: string;
 };
 
 type DraggableVisitProps = {
+  locale: string;
   row: TodayBoardRow;
   disabled: boolean;
   showStatus: boolean;
   onMark: (visitId: string, status: VisitStatus) => void;
+  timezone: string;
 };
 
 type PendingReverse = {
@@ -85,11 +89,13 @@ type PendingReverse = {
 };
 
 type DropCellProps = {
+  locale: string;
   status: BoardStatus;
   slot: number;
   rows: TodayBoardRow[];
   dragDisabled: boolean;
   onMark: (visitId: string, status: VisitStatus) => void;
+  timezone: string;
 };
 
 const LEGEND_DOT: Record<
@@ -112,7 +118,9 @@ const COLUMN_HEADER: Record<BoardStatus, string> = {
 };
 
 const DraggableVisit = ({
+  locale,
   row,
+  timezone,
   disabled,
   showStatus,
   onMark
@@ -129,19 +137,23 @@ const DraggableVisit = ({
       dragRef={setNodeRef}
       draggable={!disabled}
       isDragging={isDragging}
+      locale={locale}
       onMark={onMark}
       row={row}
       showStatus={showStatus}
+      timezone={timezone}
     />
   );
 };
 
 const DropCell = ({
+  locale,
   status,
   slot,
   rows,
   dragDisabled,
-  onMark
+  onMark,
+  timezone
 }: DropCellProps) => {
   const { active } = useDndContext();
   const { setNodeRef, isOver } = useDroppable({
@@ -168,9 +180,11 @@ const DropCell = ({
             <DraggableVisit
               disabled={dragDisabled}
               key={row.visitId}
+              locale={locale}
               onMark={onMark}
               row={row}
               showStatus={false}
+              timezone={timezone}
             />
           ))}
         </ul>
@@ -180,6 +194,7 @@ const DropCell = ({
 };
 
 const TodayHuddleBoard = ({
+  locale,
   rows,
   leftoverByDate = {},
   now,
@@ -187,18 +202,19 @@ const TodayHuddleBoard = ({
   ready,
   hours = DEFAULT_HUDDLE_HOURS,
   onViewDay,
-  onMark
+  onMark,
+  timezone
 }: Props) => {
   const isMobile = useIsMobile();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [pendingReverse, setPendingReverse] = useState<PendingReverse | null>(
     null
   );
-  const realToday = calendarDateInClinic(now.toISOString());
+  const realToday = calendarDateInClinic(now.toISOString(), timezone);
   const viewingToday = viewDay === realToday;
   const weekDays = useMemo(
-    () => huddleWeekDays(viewDay, realToday),
-    [realToday, viewDay]
+    () => huddleWeekDays(viewDay, realToday, locale),
+    [locale, realToday, viewDay]
   );
   const leftoverByDay = useMemo(
     () =>
@@ -210,10 +226,10 @@ const TodayHuddleBoard = ({
     [leftoverByDate, realToday, weekDays]
   );
   const slots = useMemo(
-    () => huddleTimeSlots(rows, now, viewingToday, hours),
-    [hours, now, rows, viewingToday]
+    () => huddleTimeSlots(rows, now, viewingToday, hours, timezone),
+    [hours, now, rows, timezone, viewingToday]
   );
-  const bySlot = useMemo(() => groupRowsBySlot(rows), [rows]);
+  const bySlot = useMemo(() => groupRowsBySlot(rows, timezone), [rows, timezone]);
   const counts = useMemo(() => countByBoardStatus(rows), [rows]);
   const activeRow = rows.find((row) => row.visitId === activeId);
   const sensors = useSensors(
@@ -382,7 +398,8 @@ const TodayHuddleBoard = ({
           <div className="flex min-w-0 flex-col gap-4 md:hidden">
             {slots.map((slot) => {
               const slotRows = bySlot.get(slot) ?? [];
-              const isNow = viewingToday && slot === nowSlotStart(now);
+              const isNow =
+                viewingToday && slot === nowSlotStart(now, timezone);
 
               if (slotRows.length === 0) {
                 return (
@@ -393,7 +410,7 @@ const TodayHuddleBoard = ({
                     )}
                     key={slot}
                   >
-                    {formatSlotLabel(slot)}
+                    {formatSlotLabel(slot, timezone, locale)}
                     {isNow ? " · Now" : ""}
                   </p>
                 );
@@ -402,7 +419,9 @@ const TodayHuddleBoard = ({
               return (
                 <section className="flex min-w-0 flex-col gap-2" key={slot}>
                   <h2 className="flex items-baseline gap-2 text-sm font-medium">
-                    <span className="tabular-nums">{formatSlotLabel(slot)}</span>
+                    <span className="tabular-nums">
+                      {formatSlotLabel(slot, timezone, locale)}
+                    </span>
                     {isNow ? (
                       <span className="text-xs font-medium text-primary">Now</span>
                     ) : null}
@@ -412,9 +431,11 @@ const TodayHuddleBoard = ({
                       <DraggableVisit
                         disabled
                         key={row.visitId}
+                        locale={locale}
                         onMark={markOrConfirm}
                         row={row}
                         showStatus
+                        timezone={timezone}
                       />
                     ))}
                   </ul>
@@ -447,7 +468,8 @@ const TodayHuddleBoard = ({
                 </div>
               ))}
               {slots.map((slot) => {
-                const isNow = viewingToday && slot === nowSlotStart(now);
+                const isNow =
+                  viewingToday && slot === nowSlotStart(now, timezone);
 
                 return (
                   <div className="contents" key={slot}>
@@ -457,18 +479,20 @@ const TodayHuddleBoard = ({
                         isNow && "font-medium text-primary"
                       )}
                     >
-                      {formatSlotLabel(slot)}
+                      {formatSlotLabel(slot, timezone, locale)}
                     </p>
                     {BOARD_STATUSES.map((status) => (
                       <DropCell
                         dragDisabled={isMobile}
                         key={`${status}-${slot}`}
+                        locale={locale}
                         onMark={markOrConfirm}
                         rows={(bySlot.get(slot) ?? []).filter(
                           (row) => row.status === status
                         )}
                         slot={slot}
                         status={status}
+                        timezone={timezone}
                       />
                     ))}
                   </div>
@@ -480,10 +504,12 @@ const TodayHuddleBoard = ({
             {activeRow ? (
               <ul className="w-72">
                 <TodayHuddleCard
+                  locale={locale}
                   onMark={markOrConfirm}
                   overlay
                   row={activeRow}
                   showStatus
+                  timezone={timezone}
                 />
               </ul>
             ) : null}

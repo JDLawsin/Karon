@@ -22,6 +22,7 @@ type Props = {
   balance: CollectBalance | null;
   balanceError: string | null;
   balanceLoading: boolean;
+  locale: string;
   saving: boolean;
   onCollect: (input: CollectInput) => Promise<void>;
 };
@@ -39,6 +40,7 @@ const CollectPayment = ({
   balance,
   balanceError,
   balanceLoading,
+  locale,
   saving,
   onCollect
 }: Props) => {
@@ -116,7 +118,8 @@ const CollectPayment = ({
             Collect
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Quote total {formatServicePrice(balance.quoteTotalMinor, balance.currency)}
+            Quote total{" "}
+            {formatServicePrice(balance.quoteTotalMinor, balance.currency, locale)}
           </p>
         </div>
         <StatusBadge tone={balance.remainingMinor === 0 ? "success" : "neutral"}>
@@ -175,7 +178,7 @@ const CollectPayment = ({
             <div className="rounded-md bg-muted px-4 py-3 sm:text-right">
               <p className="text-sm text-muted-foreground">Remaining</p>
               <p className="text-xl font-semibold tabular-nums">
-                {formatServicePrice(previewRemaining, balance.currency)}
+                {formatServicePrice(previewRemaining, balance.currency, locale)}
               </p>
             </div>
           </div>
@@ -197,7 +200,8 @@ const CollectPayment = ({
         <div className="rounded-md bg-success-subtle px-4 py-4 text-success" role="status">
           <p className="font-semibold">Paid in full</p>
           <p className="mt-1 text-sm tabular-nums">
-            {formatServicePrice(balance.quoteTotalMinor, balance.currency)} collected
+            {formatServicePrice(balance.quoteTotalMinor, balance.currency, locale)}{" "}
+            collected
           </p>
         </div>
       )}

@@ -58,13 +58,12 @@ describe("instantFromClinicLocal", () => {
     );
   });
 
-  it("keeps an explicit offset guess on a DST spring-forward date", () => {
+  it("maps a valid DST spring-forward wall time exactly", () => {
     const instant = instantFromClinicLocal("2026-03-08", "03:30", "America/New_York");
     const parts = clinicLocalParts(instant, "America/New_York");
 
     expect(Number.isNaN(instant.getTime())).toBe(false);
-    // ponytail: offset-guess is not Temporal; this pins today's mapping so DST drift is visible
-    expect(`${parts.date} ${parts.time}`).toBe("2026-03-08 04:30");
+    expect(`${parts.date} ${parts.time}`).toBe("2026-03-08 03:30");
   });
 });
 

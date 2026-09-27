@@ -2,8 +2,13 @@ import { z } from "zod";
 
 import { clinicNameSchema, emailSchema } from "@/features/auth/auth-schemas";
 import { SUGGESTED_SERVICE_NAMES } from "@/features/services/service-catalog";
+import {
+  DEFAULT_CLINIC_REGIONAL_SETTINGS,
+  currencyCodeSchema,
+  localeSchema,
+  timeZoneSchema
+} from "@/lib/clinic/regional-settings";
 
-const DEFAULT_TIMEZONE = "Asia/Manila";
 const DEFAULT_OPEN = "09:00";
 const DEFAULT_CLOSE = "18:00";
 const DEFAULT_WORKING_DAYS = [1, 2, 3, 4, 5, 6];
@@ -40,7 +45,9 @@ const clinicOnboardingFields = z.object({
   city: optionalAddressLine,
   province: optionalAddressLine,
   postalCode: z.string().trim().max(10, "Use a shorter postal code."),
-  timezone: z.string().trim().min(1, "Choose a timezone.").max(64),
+  currencyCode: currencyCodeSchema,
+  locale: localeSchema,
+  timezone: timeZoneSchema,
   days: z
     .array(z.number().int().min(0).max(6))
     .min(1, "Pick at least one working day."),
@@ -97,6 +104,8 @@ const onboardingIdentitySchema = clinicOnboardingFields.pick({
 
 const onboardingHoursSchema = clinicOnboardingFields
   .pick({
+    currencyCode: true,
+    locale: true,
     timezone: true,
     days: true,
     open: true,
@@ -125,6 +134,8 @@ type ClinicOnboarding = z.infer<typeof clinicOnboardingSchema>;
 type ClinicDetails = z.infer<typeof clinicDetailsSchema>;
 
 type ClinicProfile = {
+  currencyCode: string;
+  locale: string;
   timezone: string;
   phone: string;
   email: string;
@@ -152,7 +163,7 @@ const defaultOnboardingValues = (): ClinicOnboarding => ({
   city: "",
   province: "",
   postalCode: "",
-  timezone: DEFAULT_TIMEZONE,
+  ...DEFAULT_CLINIC_REGIONAL_SETTINGS,
   days: [...DEFAULT_WORKING_DAYS],
   open: DEFAULT_OPEN,
   close: DEFAULT_CLOSE,
@@ -170,6 +181,8 @@ const defaultClinicDetailsValues = (): ClinicDetails => {
     city,
     province,
     postalCode,
+    currencyCode,
+    locale,
     timezone,
     days,
     open,
@@ -184,6 +197,8 @@ const defaultClinicDetailsValues = (): ClinicDetails => {
     city,
     province,
     postalCode,
+    currencyCode,
+    locale,
     timezone,
     days,
     open,
@@ -194,6 +209,8 @@ const defaultClinicDetailsValues = (): ClinicDetails => {
 const toClinicDetailsProfile = (
   values: ClinicDetails
 ): Omit<ClinicProfile, "services"> => ({
+  currencyCode: values.currencyCode,
+  locale: values.locale,
   timezone: values.timezone,
   phone: values.phone,
   email: values.email,
@@ -212,6 +229,8 @@ const toClinicDetailsProfile = (
 });
 
 const toClinicProfile = (values: ClinicOnboarding): ClinicProfile => ({
+  currencyCode: values.currencyCode,
+  locale: values.locale,
   timezone: values.timezone,
   phone: values.phone,
   email: values.email,
@@ -237,7 +256,9 @@ const staffInviteEmails = (values: ClinicOnboarding) =>
 
 const clinicRowSchema = z.object({
   name: z.string(),
-  timezone: z.string().nullable().optional(),
+  currency_code: currencyCodeSchema.nullable().optional(),
+  locale: localeSchema.nullable().optional(),
+  timezone: timeZoneSchema.nullable().optional(),
   phone: z.string().nullable().optional(),
   email: z.string().nullable().optional(),
   address: z
@@ -282,7 +303,10 @@ const fromClinicRow = (row: unknown): ClinicOnboarding => {
     city: data.address?.city ?? "",
     province: data.address?.province ?? "",
     postalCode: data.address?.postalCode ?? "",
-    timezone: data.timezone?.trim() || DEFAULT_TIMEZONE,
+    currencyCode:
+      data.currency_code ?? DEFAULT_CLINIC_REGIONAL_SETTINGS.currencyCode,
+    locale: data.locale ?? DEFAULT_CLINIC_REGIONAL_SETTINGS.locale,
+    timezone: data.timezone ?? DEFAULT_CLINIC_REGIONAL_SETTINGS.timezone,
     days: days.length > 0 ? days : [...DEFAULT_WORKING_DAYS],
     open: data.hours?.open?.slice(0, 5) || DEFAULT_OPEN,
     close: data.hours?.close?.slice(0, 5) || DEFAULT_CLOSE
@@ -344,7 +368,14 @@ const stepForOnboardingIssues = (issues: { path: PropertyKey[] }[]) => {
       return 0;
     }
 
-    if (root === "timezone" || root === "days" || root === "open" || root === "close") {
+    if (
+      root === "currencyCode" ||
+      root === "locale" ||
+      root === "timezone" ||
+      root === "days" ||
+      root === "open" ||
+      root === "close"
+    ) {
       return 1;
     }
 

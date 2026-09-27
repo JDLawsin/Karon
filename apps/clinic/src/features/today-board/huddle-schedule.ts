@@ -1,12 +1,12 @@
 import {
   CLINIC_TZ,
-  calendarDateInClinic,
   clinicLocalParts,
   formatVisitTime,
   startsAtFromClinicLocal,
   type BoardStatus
 } from "@/features/today-board/project-today-board";
 import { isReverseVisitStatus, transitionVisitStatus } from "@/features/today-board/visit-status";
+import { DEFAULT_CLINIC_REGIONAL_SETTINGS } from "@/lib/clinic/regional-settings";
 import type { VisitStatus } from "@/lib/sync/event-schema";
 
 const HUDDLE_SLOT_MINUTES = 30;
@@ -19,7 +19,7 @@ type HuddleHours = {
   close: string;
 };
 
-const clinicMinutes = (iso: string, timeZone = CLINIC_TZ) => {
+const clinicMinutes = (iso: string, timeZone: string = CLINIC_TZ) => {
   const { time } = clinicLocalParts(new Date(iso), timeZone);
   const [hours, minutes] = time.split(":").map(Number);
 
@@ -29,7 +29,7 @@ const clinicMinutes = (iso: string, timeZone = CLINIC_TZ) => {
 const slotStart = (minutes: number) =>
   Math.floor(minutes / HUDDLE_SLOT_MINUTES) * HUDDLE_SLOT_MINUTES;
 
-const nowSlotStart = (now: Date, timeZone = CLINIC_TZ) =>
+const nowSlotStart = (now: Date, timeZone: string = CLINIC_TZ) =>
   slotStart(clinicMinutes(now.toISOString(), timeZone));
 
 const minutesFromClock = (clock: string) => {
@@ -63,12 +63,20 @@ const huddleHoursOf = (value: unknown): HuddleHours | null => {
   return { open, close };
 };
 
-const formatSlotLabel = (minutes: number, timeZone = CLINIC_TZ) => {
+const formatSlotLabel = (
+  minutes: number,
+  timeZone: string = CLINIC_TZ,
+  locale: string = DEFAULT_CLINIC_REGIONAL_SETTINGS.locale
+) => {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
   const time = `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
 
-  return formatVisitTime(startsAtFromClinicLocal("2026-01-01", time), timeZone);
+  return formatVisitTime(
+    startsAtFromClinicLocal("2026-01-01", time, timeZone),
+    timeZone,
+    locale
+  );
 };
 
 const huddleTimeSlots = (
@@ -76,7 +84,7 @@ const huddleTimeSlots = (
   now: Date,
   viewingToday: boolean,
   hours: HuddleHours = DEFAULT_HUDDLE_HOURS,
-  timeZone = CLINIC_TZ
+  timeZone: string = CLINIC_TZ
 ) => {
   const open = minutesFromClock(hours.open) ?? 9 * 60;
   const close = minutesFromClock(hours.close) ?? 18 * 60;
@@ -109,7 +117,7 @@ const huddleTimeSlots = (
 
 const groupRowsBySlot = <T extends { startsAt: string }>(
   rows: readonly T[],
-  timeZone = CLINIC_TZ
+  timeZone: string = CLINIC_TZ
 ) => {
   const groups = new Map<number, T[]>();
 
@@ -145,25 +153,22 @@ const isReverseBoardDrop = (from: VisitStatus, to: BoardStatus) => {
 const huddleWeekDays = (
   centerDate: string,
   todayDate = centerDate,
-  timeZone = CLINIC_TZ
+  locale: string = DEFAULT_CLINIC_REGIONAL_SETTINGS.locale
 ) => {
-  const center = Date.parse(`${centerDate}T12:00:00+08:00`);
+  const center = Date.parse(`${centerDate}T12:00:00Z`);
 
   return [-3, -2, -1, 0, 1, 2, 3].map((offset) => {
-    const date = calendarDateInClinic(
-      new Date(center + offset * DAY_MS).toISOString(),
-      timeZone
-    );
-    const at = new Date(`${date}T12:00:00+08:00`);
+    const date = new Date(center + offset * DAY_MS).toISOString().slice(0, 10);
+    const at = new Date(`${date}T12:00:00Z`);
 
     return {
       date,
-      weekday: new Intl.DateTimeFormat("en-PH", {
-        timeZone,
+      weekday: new Intl.DateTimeFormat(locale, {
+        timeZone: "UTC",
         weekday: "short"
       }).format(at),
-      day: new Intl.DateTimeFormat("en-PH", {
-        timeZone,
+      day: new Intl.DateTimeFormat(locale, {
+        timeZone: "UTC",
         day: "numeric"
       }).format(at),
       isToday: date === todayDate
@@ -171,11 +176,10 @@ const huddleWeekDays = (
   });
 };
 
-const shiftClinicDate = (date: string, days: number, timeZone = CLINIC_TZ) =>
-  calendarDateInClinic(
-    new Date(Date.parse(`${date}T12:00:00+08:00`) + days * DAY_MS).toISOString(),
-    timeZone
-  );
+const shiftClinicDate = (date: string, days: number) =>
+  new Date(Date.parse(`${date}T12:00:00Z`) + days * DAY_MS)
+    .toISOString()
+    .slice(0, 10);
 
 const LEGEND_STATUSES = [
   "pending_review",

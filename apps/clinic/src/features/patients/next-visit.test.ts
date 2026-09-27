@@ -106,6 +106,7 @@ describe("buildReminderText", () => {
     const reminder = buildReminderText({
       clinicName: "Cebu Demo Clinic",
       startsAt: appointmentEvent.payload.startsAt,
+      locale: "en-PH",
       timeZone: "Asia/Manila"
     });
 

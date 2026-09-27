@@ -1,4 +1,3 @@
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -35,21 +34,33 @@ const clinicPhoneOf = (value: unknown): string | null => {
   return trimmed.length > 0 ? trimmed : null;
 };
 
-const formatHourClock = (clock: string) => {
+const formatHourClock = (
+  clock: string,
+  locale: string = DEFAULT_CLINIC_REGIONAL_SETTINGS.locale
+) => {
   if (!CLOCK.test(clock)) {
     return clock;
   }
 
-  const [hours, minutes] = clock.split(":").map(Number);
-  const suffix = hours >= 12 ? "pm" : "am";
-  const hour12 = hours % 12 === 0 ? 12 : hours % 12;
-
-  return `${hour12}:${String(minutes).padStart(2, "0")} ${suffix}`;
+  return new Intl.DateTimeFormat(locale, {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "UTC"
+  }).format(new Date(`2026-01-01T${clock}:00Z`));
 };
 
-const formatDayRange = (days: number[]) => {
+const formatDayRange = (
+  days: number[],
+  locale: string = DEFAULT_CLINIC_REGIONAL_SETTINGS.locale
+) => {
   const labels = days.flatMap((day) => {
-    const label = WEEKDAYS[day];
+    const label =
+      day >= 0 && day <= 6
+        ? new Intl.DateTimeFormat(locale, {
+            weekday: "short",
+            timeZone: "UTC"
+          }).format(new Date(Date.UTC(2026, 8, 6 + day)))
+        : undefined;
 
     return label ? [label] : [];
   });
@@ -69,19 +80,25 @@ const formatDayRange = (days: number[]) => {
   return labels.join(", ");
 };
 
-const formatClinicHours = (hours: ClinicHoursLabel) => {
-  const days = formatDayRange(hours.days);
-  const window = `${formatHourClock(hours.open)} – ${formatHourClock(hours.close)}`;
+const formatClinicHours = (
+  hours: ClinicHoursLabel,
+  locale: string = DEFAULT_CLINIC_REGIONAL_SETTINGS.locale
+) => {
+  const days = formatDayRange(hours.days, locale);
+  const window = `${formatHourClock(hours.open, locale)} – ${formatHourClock(hours.close, locale)}`;
 
   return days ? `${days}, ${window}` : window;
 };
 
-const formatBookingDateChip = (date: string) => {
+const formatBookingDateChip = (
+  date: string,
+  locale: string = DEFAULT_CLINIC_REGIONAL_SETTINGS.locale
+) => {
   if (!DATE.test(date)) {
     return date;
   }
 
-  return new Intl.DateTimeFormat("en-PH", {
+  return new Intl.DateTimeFormat(locale, {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -116,3 +133,4 @@ export {
   formatClinicTimezone
 };
 export type { ClinicHoursLabel };
+import { DEFAULT_CLINIC_REGIONAL_SETTINGS } from "@/lib/clinic/regional-settings";

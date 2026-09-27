@@ -43,6 +43,7 @@ export const clinics = pgTable(
     region: text("region").notNull().default("ph"),
     timezone: text("timezone").notNull().default("Asia/Manila"),
     currencyCode: text("currency_code").notNull().default("PHP"),
+    locale: text("locale").notNull().default("en-PH"),
     phone: text("phone"),
     email: text("email"),
     address: jsonb("address")
@@ -68,6 +69,11 @@ export const clinics = pgTable(
     check(
       "clinics_currency_code_format",
       sql`${table.currencyCode} ~ '^[A-Z]{3}$'`
+    ),
+    check(
+      "clinics_locale_format",
+      sql`char_length(${table.locale}) between 2 and 35
+        and ${table.locale} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`
     )
   ]
 ).enableRLS();
@@ -244,6 +250,7 @@ export const auditEvents = pgTable(
       "audit_events_type_check",
       sql`${table.eventType} in (
         'clinic.created',
+        'clinic.profile_updated',
         'auth.signup',
         'auth.login',
         'auth.mfa_enrolled',

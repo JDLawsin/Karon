@@ -56,12 +56,12 @@ describe("service money", () => {
     expect(priceMajorToMinor(1500.5, "PHP")).toBe(150_050);
     expect(priceMajorToMinor(10.01, "PHP")).toBe(1001);
     expect(priceMinorToMajor(150_050, "PHP")).toBe(1500.5);
-    expect(formatServicePrice(150_050, "PHP")).toContain("1,500.50");
+    expect(formatServicePrice(150_050, "PHP", "en-PH")).toContain("1,500.50");
   });
 
   it("rejects unsupported precision and malformed currency codes", () => {
     expect(() => priceMajorToMinor(10.001, "PHP")).toThrow(/decimal places/);
-    expect(() => priceMajorToMinor(10, "php")).toThrow();
+    expect(() => priceMajorToMinor(10, "ABC")).toThrow();
   });
 });
 

@@ -29,6 +29,8 @@ const PatientWorkspace = ({ patientId, visitId }: Props) => {
   const {
     services,
     currencyCode,
+    locale,
+    timezone,
     loading: loadingServices,
     error: serviceError
   } = useClinicServices();
@@ -43,11 +45,11 @@ const PatientWorkspace = ({ patientId, visitId }: Props) => {
   const visitLabels = Object.fromEntries(
     visits.map((item) => [
       item.id,
-      `Visit · ${new Intl.DateTimeFormat("en-PH", {
+      `Visit · ${new Intl.DateTimeFormat(locale, {
         month: "short",
         day: "numeric",
         year: "numeric",
-        timeZone: "Asia/Manila"
+        timeZone: timezone
       }).format(new Date(item.startsAt))}`
     ])
   );
@@ -85,7 +87,13 @@ const PatientWorkspace = ({ patientId, visitId }: Props) => {
           <Link href="/today">Back to Today</Link>
         </Button>
       </PageHeader>
-      <PatientDetail patient={patient} visit={visit} visits={visits} />
+      <PatientDetail
+        locale={locale}
+        patient={patient}
+        timezone={timezone}
+        visit={visit}
+        visits={visits}
+      />
       <Odontogram
         canChart={visit?.status === "in_chair"}
         entries={entries}
@@ -96,17 +104,20 @@ const PatientWorkspace = ({ patientId, visitId }: Props) => {
       <QuoteBuilder
         canQuote={visit?.status === "in_chair"}
         currencyCode={currencyCode}
+        locale={locale}
         loadingServices={loadingServices}
         onAccept={accept}
         quotes={quotes}
         saving={savingQuote}
         serviceError={serviceError}
         services={services}
+        timezone={timezone}
       />
       <CollectPayment
         balance={balance}
         balanceError={balanceError}
         balanceLoading={balanceLoading}
+        locale={locale}
         onCollect={collect}
         saving={savingPayment}
       />

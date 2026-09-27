@@ -27,9 +27,11 @@ type ImportRow = {
 type Props = {
   autoConfirm: boolean;
   events: ClinicEvent[];
+  locale: string;
+  timezone: string;
 };
 
-const CalendarMatchList = ({ autoConfirm, events }: Props) => {
+const CalendarMatchList = ({ autoConfirm, events, locale, timezone }: Props) => {
   const { membership, userId } = useClinicSession();
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [mobileById, setMobileById] = useState<Record<string, string>>({});
@@ -97,7 +99,7 @@ const CalendarMatchList = ({ autoConfirm, events }: Props) => {
           >
             <p className="font-medium">{row.attendee_name}</p>
             <p className="text-sm text-muted-foreground">
-              {formatVisitTime(row.starts_at)}
+              {formatVisitTime(row.starts_at, timezone, locale)}
               {row.attendee_email ? ` · ${row.attendee_email}` : ""}
             </p>
             <div className="flex min-w-0 flex-col gap-2">

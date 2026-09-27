@@ -25,8 +25,8 @@ const METHOD_LABELS = {
   unpaid: "Unpaid"
 } as const;
 
-const formatClinicDay = (day: string) =>
-  new Intl.DateTimeFormat("en-PH", {
+const formatClinicDay = (day: string, locale: string) =>
+  new Intl.DateTimeFormat(locale, {
     dateStyle: "long",
     timeZone: "UTC"
   }).format(new Date(`${day}T00:00:00Z`));
@@ -44,7 +44,7 @@ const OwnerCollectionsScreen = ({ report }: Props) => {
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
-        description={`Paid and outstanding payment records for ${formatClinicDay(report.day)} in ${report.timezone}.`}
+        description={`Paid and outstanding payment records for ${formatClinicDay(report.day, report.locale)} in ${report.timezone}.`}
         title="Daily collections"
       >
         <form className="flex min-w-0 flex-wrap items-end gap-2" method="get">
@@ -79,13 +79,21 @@ const OwnerCollectionsScreen = ({ report }: Props) => {
               <Card>
                 <dt className="text-sm text-muted-foreground">Paid</dt>
                 <dd className="wrap-anywhere text-2xl font-semibold tabular-nums">
-                  {formatServicePrice(report.paidMinor, report.currency)}
+                  {formatServicePrice(
+                    report.paidMinor,
+                    report.currency,
+                    report.locale
+                  )}
                 </dd>
               </Card>
               <Card>
                 <dt className="text-sm text-muted-foreground">Outstanding</dt>
                 <dd className="wrap-anywhere text-2xl font-semibold tabular-nums">
-                  {formatServicePrice(report.outstandingMinor, report.currency)}
+                  {formatServicePrice(
+                    report.outstandingMinor,
+                    report.currency,
+                    report.locale
+                  )}
                 </dd>
               </Card>
             </dl>
@@ -107,7 +115,7 @@ const OwnerCollectionsScreen = ({ report }: Props) => {
                   >
                     <dt className="text-sm text-muted-foreground">{label}</dt>
                     <dd className="wrap-anywhere text-right font-semibold tabular-nums">
-                      {formatServicePrice(amount, report.currency)}
+                      {formatServicePrice(amount, report.currency, report.locale)}
                     </dd>
                   </div>
                 ))}

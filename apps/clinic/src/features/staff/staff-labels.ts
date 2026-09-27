@@ -1,4 +1,5 @@
 import { emailSchema } from "@/features/auth/auth-schemas";
+import { DEFAULT_CLINIC_REGIONAL_SETTINGS } from "@/lib/clinic/regional-settings";
 
 const emailByUserId = (
   users: ReadonlyArray<{ id: string; email?: string | null }>
@@ -19,16 +20,21 @@ const emailByUserId = (
 const staffMemberLabel = (role: "owner" | "assistant", email: string | null) =>
   email ? `${role} · ${email}` : role;
 
-const formatDeviceTime = (iso: string) => {
+const formatDeviceTime = (
+  iso: string,
+  locale: string = DEFAULT_CLINIC_REGIONAL_SETTINGS.locale,
+  timezone: string = DEFAULT_CLINIC_REGIONAL_SETTINGS.timezone
+) => {
   const date = new Date(iso);
 
   if (Number.isNaN(date.getTime())) {
     return null;
   }
 
-  return new Intl.DateTimeFormat("en-PH", {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
-    timeStyle: "short"
+    timeStyle: "short",
+    timeZone: timezone
   }).format(date);
 };
 
@@ -38,10 +44,12 @@ const deviceLabel = (
   revokedAt: string | null,
   email: string | null,
   lastActiveAt: string,
-  isCurrent = false
+  isCurrent = false,
+  locale: string = DEFAULT_CLINIC_REGIONAL_SETTINGS.locale,
+  timezone: string = DEFAULT_CLINIC_REGIONAL_SETTINGS.timezone
 ) => {
   const status = revokedAt ? "Revoked" : isCurrent ? "This device" : "Active";
-  const used = formatDeviceTime(lastActiveAt);
+  const used = formatDeviceTime(lastActiveAt, locale, timezone);
   const parts = [status];
 
   if (email) {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { isServiceIconKey } from "@/features/services/service-icons";
+import { currencyCodeSchema } from "@/lib/clinic/regional-settings";
 
 const serviceDescriptionSchema = z
   .string()
@@ -32,10 +33,6 @@ const serviceFormSchema = z.object({
     .min(1, "Duration must be at least 1 minute.")
     .max(1440, "Duration cannot exceed 24 hours.")
 });
-
-const currencyCodeSchema = z
-  .string()
-  .regex(/^[A-Z]{3}$/, "Currency must be a three-letter ISO code.");
 
 const servicePricingSchema = z.object({
   priceMinor: z.int().min(0).max(2_147_483_647),

@@ -37,6 +37,7 @@ import {
   type StaffSession
 } from "@/features/staff/staff-schemas";
 import { useClinicSession } from "@/lib/auth/clinic-session";
+import { useClinicRegionalSettings } from "@/lib/clinic/use-clinic-regional-settings";
 import { leaveClinicSession } from "@/lib/auth/leave-clinic-session";
 import FieldError from "@/lib/forms/field-error";
 import { parseJson } from "@/lib/forms/parse-json";
@@ -91,6 +92,7 @@ const pendingCopy = (pending: PendingAction, sessions: StaffSession[]) => {
 
 const ClinicStaff = ({ section }: ClinicStaffProps) => {
   const { userId } = useClinicSession();
+  const { settings } = useClinicRegionalSettings();
   const { resolvedSeed, resolvedStyle, ready } = useStaffAvatarPreference();
   const router = useRouter();
   const [members, setMembers] = useState<StaffMember[]>([]);
@@ -361,12 +363,16 @@ const ClinicStaff = ({ section }: ClinicStaffProps) => {
                 key={session.id}
               >
                 <p className="min-w-0 break-all text-sm">
-                  {deviceLabel(
-                    session.revokedAt,
-                    session.email,
-                    session.lastActiveAt,
-                    session.isCurrent
-                  )}
+                  {settings
+                    ? deviceLabel(
+                        session.revokedAt,
+                        session.email,
+                        session.lastActiveAt,
+                        session.isCurrent,
+                        settings.locale,
+                        settings.timezone
+                      )
+                    : "Clinic regional settings unavailable"}
                 </p>
                 <Button
                   onClick={() => setPending({ kind: "revoke", sessionId: session.id })}

@@ -45,7 +45,7 @@ describe("formatClinicHours", () => {
         open: "09:00",
         close: "18:00"
       })
-    ).toBe("Mon–Sat, 9:00 am – 6:00 pm");
+    ).toBe("Mon–Sat, 9:00 AM – 6:00 PM");
   });
 
   it("lists non-consecutive days", () => {
@@ -55,7 +55,7 @@ describe("formatClinicHours", () => {
         open: "08:30",
         close: "12:00"
       })
-    ).toBe("Mon, Wed, Fri, 8:30 am – 12:00 pm");
+    ).toBe("Mon, Wed, Fri, 8:30 AM – 12:00 PM");
   });
 });
 

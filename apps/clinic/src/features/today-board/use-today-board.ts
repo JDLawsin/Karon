@@ -22,6 +22,7 @@ import {
   projectFoldedBoard
 } from "@/features/today-board/project-today-board";
 import { useClinicSession } from "@/lib/auth/clinic-session";
+import { useClinicRegionalSettings } from "@/lib/clinic/use-clinic-regional-settings";
 import { openClinicDb } from "@/lib/db/clinic-db";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { ClinicEvent, VisitStatus } from "@/lib/sync/event-schema";
@@ -30,6 +31,7 @@ const LATE_TICK_MS = 60_000;
 
 const useTodayBoard = (viewDay?: string) => {
   const { membership, userId } = useClinicSession();
+  const regional = useClinicRegionalSettings();
   const [now, setNow] = useState(() => new Date());
   const [events, setEvents] = useState<ClinicEvent[]>([]);
   const [outboxIds, setOutboxIds] = useState<Set<string>>(new Set());
@@ -141,8 +143,15 @@ const useTodayBoard = (viewDay?: string) => {
     [folded]
   );
   const huddle = useMemo(
-    () => projectFoldedBoard(folded, now, undefined, outboxIds, viewDay),
-    [folded, now, outboxIds, viewDay]
+    () =>
+      projectFoldedBoard(
+        folded,
+        now,
+        regional.settings?.timezone,
+        outboxIds,
+        viewDay
+      ),
+    [folded, now, outboxIds, regional.settings?.timezone, viewDay]
   );
 
   const isDuplicateMobile = useCallback(
@@ -156,6 +165,10 @@ const useTodayBoard = (viewDay?: string) => {
     startsAt: string;
     patientId?: string;
   }) => {
+    if (!regional.settings) {
+      throw new Error("Clinic regional settings are unavailable.");
+    }
+
     const db = await openClinicDb(membership.tenantId);
 
     await addBooking(db, {
@@ -195,10 +208,12 @@ const useTodayBoard = (viewDay?: string) => {
     huddle,
     events,
     patients,
-    ready,
+    ready: ready && regional.ready,
     now,
     autoConfirm,
     hours,
+    regionalSettings: regional.settings,
+    regionalError: regional.error,
     isDuplicateMobile,
     addWalkInPatient,
     markVisit

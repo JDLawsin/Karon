@@ -6,11 +6,14 @@ import {
 } from "@/features/today-board/huddle-schedule";
 import {
   calendarDateInClinic,
-  clinicLocalParts,
   foldVisits,
   formatVisitTime
 } from "@/features/today-board/project-today-board";
 import type { ClinicEvent } from "@/lib/sync/event-schema";
+import {
+  DEFAULT_CLINIC_REGIONAL_SETTINGS,
+  clinicDateTimeToUtc
+} from "@/lib/clinic/regional-settings";
 
 const BOOKING_HORIZON_DAYS = 14;
 const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -72,15 +75,8 @@ const clinicHoursOf = (value: unknown): BookableHours | null => {
   return { days, open: window.open, close: window.close };
 };
 
-// ponytail: offset-guess is enough for PH (no DST); use Temporal.ZonedDateTime if we book across DST zones
 const instantFromClinicLocal = (date: string, time: string, timeZone: string) => {
-  const clock = time.slice(0, 5);
-  const guess = new Date(`${date}T${clock}:00Z`);
-  const parts = clinicLocalParts(guess, timeZone);
-  const delta =
-    Date.parse(`${parts.date}T${parts.time}:00Z`) - Date.parse(`${date}T${clock}:00Z`);
-
-  return new Date(guess.getTime() - delta);
+  return new Date(clinicDateTimeToUtc(date, time.slice(0, 5), timeZone));
 };
 
 const weekdaySun0 = (date: string, timeZone: string) => {
@@ -156,6 +152,7 @@ const bookingSlotsForDate = (input: {
   date: string;
   hours: BookableHours;
   timeZone: string;
+  locale?: string;
   occupied: readonly string[];
   now: Date;
 }): BookingSlot[] => {
@@ -201,7 +198,11 @@ const bookingSlotsForDate = (input: {
     slots.push({
       clock,
       startsAt: starts.toISOString(),
-      label: formatVisitTime(starts.toISOString(), input.timeZone)
+      label: formatVisitTime(
+        starts.toISOString(),
+        input.timeZone,
+        input.locale ?? DEFAULT_CLINIC_REGIONAL_SETTINGS.locale
+      )
     });
   }
 
@@ -212,6 +213,7 @@ const offeredBookingSlot = (input: {
   startsAt: Date;
   hours: BookableHours;
   timeZone: string;
+  locale?: string;
   occupied: readonly string[];
   now: Date;
 }) => {
@@ -230,6 +232,7 @@ const offeredBookingSlot = (input: {
       date,
       hours: input.hours,
       timeZone: input.timeZone,
+      locale: input.locale,
       occupied: input.occupied,
       now: input.now
     }).find((row) => new Date(row.startsAt).getTime() === input.startsAt.getTime()) ?? null

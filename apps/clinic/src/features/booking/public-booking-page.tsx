@@ -255,6 +255,12 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
   }, [initialPage, load]);
 
   useEffect(() => {
+    if (page?.locale) {
+      document.documentElement.lang = page.locale;
+    }
+  }, [page?.locale]);
+
+  useEffect(() => {
     if (!TURNSTILE_SITE_KEY || !confirmOpen || done || missing) {
       return;
     }
@@ -364,7 +370,7 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
   const selectedSlot = page?.slots.find((slot) => slot.startsAt === startsAt);
   const whenLabel =
     date && selectedSlot
-      ? `${formatBookingDateChip(date)} · ${selectedSlot.label}`
+      ? `${formatBookingDateChip(date, page?.locale)} · ${selectedSlot.label}`
       : "";
   const canReview =
     Boolean(startsAt && serviceId && name.trim() && mobile.trim()) && !pending;
@@ -584,7 +590,7 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
                             }}
                             type="button"
                           >
-                            {formatBookingDateChip(value)}
+                            {formatBookingDateChip(value, page.locale)}
                           </button>
                         ))}
                       </div>

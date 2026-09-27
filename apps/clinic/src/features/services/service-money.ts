@@ -1,13 +1,8 @@
+import { servicePricingSchema } from "@/features/services/service-schemas";
 import {
-  currencyCodeSchema,
-  servicePricingSchema
-} from "@/features/services/service-schemas";
-
-const currencyFractionDigits = (currencyCode: string) =>
-  new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: currencyCodeSchema.parse(currencyCode)
-  }).resolvedOptions().maximumFractionDigits ?? 2;
+  currencyFractionDigits,
+  formatClinicMoney
+} from "@/lib/clinic/regional-settings";
 
 const priceMajorToMinor = (priceMajor: number, currencyCode: string) => {
   const fractionDigits = currencyFractionDigits(currencyCode);
@@ -30,11 +25,11 @@ const priceMinorToMajor = (priceMinor: number, currencyCode: string) =>
 const currencyInputStep = (currencyCode: string) =>
   1 / 10 ** currencyFractionDigits(currencyCode);
 
-const formatServicePrice = (priceMinor: number, currencyCode: string) =>
-  new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: currencyCodeSchema.parse(currencyCode)
-  }).format(priceMinorToMajor(priceMinor, currencyCode));
+const formatServicePrice = (
+  priceMinor: number,
+  currencyCode: string,
+  locale: string
+) => formatClinicMoney(priceMinor, currencyCode, locale);
 
 export {
   currencyInputStep,

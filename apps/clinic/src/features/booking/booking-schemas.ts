@@ -41,6 +41,7 @@ const bookingLinkRowSchema = z.object({
 
 const clinicBookingRowSchema = z.object({
   name: z.string().min(1),
+  locale: z.string().min(1).max(35),
   timezone: z.string().nullable(),
   hours: z.unknown(),
   phone: z.string().nullable().optional(),
@@ -67,6 +68,7 @@ const bookableServicesOf = (value: unknown) => {
 
 const publicBookingPageSchema = z.object({
   clinicName: z.string(),
+  locale: z.string(),
   timezone: z.string(),
   hoursLabel: z.string(),
   phone: z.string().nullable(),

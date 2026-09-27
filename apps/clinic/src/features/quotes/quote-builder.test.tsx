@@ -39,11 +39,13 @@ const renderBuilder = (onAccept = vi.fn().mockResolvedValue(undefined)) => {
     <QuoteBuilder
       canQuote
       currencyCode="PHP"
+      locale="en-PH"
       loadingServices={false}
       onAccept={onAccept}
       quotes={[]}
       saving={false}
       services={services}
+      timezone="Asia/Manila"
     />
   );
 

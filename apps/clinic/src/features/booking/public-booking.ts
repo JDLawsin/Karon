@@ -4,6 +4,7 @@ import { cache } from "react";
 
 import { clinicLogoPreviewUrl } from "@/features/auth/clinic-logo";
 import { log } from "@/lib/logger/server";
+import { DEFAULT_CLINIC_REGIONAL_SETTINGS } from "@/lib/clinic/regional-settings";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import {
   clinicEventRowSchema,
@@ -45,6 +46,7 @@ const LOGO_SIGNED_SECONDS = 60 * 60 * 24;
 
 type PublicBookingPage = {
   clinicName: string;
+  locale: string;
   timezone: string;
   hours: { days: number[]; open: string; close: string };
   hoursLabel: string;
@@ -65,6 +67,7 @@ type SubmitPublicBookingOptions = {
 
 const toPublicBookingPayload = (page: PublicBookingPage) => ({
   clinicName: page.clinicName,
+  locale: page.locale,
   timezone: page.timezone,
   hoursLabel: page.hoursLabel,
   phone: page.phone,
@@ -149,7 +152,7 @@ const loadPublicBookingPage = async (
   const [{ data: clinicRow }, { data: serviceRows }] = await Promise.all([
     admin
       .from("clinics")
-      .select("name, timezone, hours, phone, address, logo_path")
+      .select("name, locale, timezone, hours, phone, address, logo_path")
       .eq("id", link.data.tenant_id)
       .maybeSingle(),
     admin
@@ -161,8 +164,11 @@ const loadPublicBookingPage = async (
   const clinic = clinicBookingRowSchema.safeParse(clinicRow);
   const hours = clinic.success ? clinicHoursOf(clinic.data.hours) : null;
   const timezone = clinic.success
-    ? clinic.data.timezone?.trim() || "Asia/Manila"
-    : "Asia/Manila";
+    ? clinic.data.timezone?.trim() || DEFAULT_CLINIC_REGIONAL_SETTINGS.timezone
+    : DEFAULT_CLINIC_REGIONAL_SETTINGS.timezone;
+  const locale = clinic.success
+    ? clinic.data.locale
+    : DEFAULT_CLINIC_REGIONAL_SETTINGS.locale;
 
   if (!clinic.success || !hours) {
     return { ok: false, status: 404 };
@@ -181,6 +187,7 @@ const loadPublicBookingPage = async (
         date,
         hours,
         timeZone: timezone,
+        locale,
         occupied,
         now
       })
@@ -190,9 +197,10 @@ const loadPublicBookingPage = async (
     ok: true,
     page: {
       clinicName: clinic.data.name.trim(),
+      locale,
       timezone,
       hours,
-      hoursLabel: formatClinicHours(hours),
+      hoursLabel: formatClinicHours(hours, locale),
       phone: clinicPhoneOf(clinic.data.phone),
       address,
       logoUrl,
@@ -264,6 +272,7 @@ const submitPublicBooking = async (
     startsAt,
     hours: loaded.page.hours,
     timeZone: loaded.page.timezone,
+    locale: loaded.page.locale,
     occupied,
     now
   });

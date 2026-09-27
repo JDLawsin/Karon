@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Alert,
   Button,
   Drawer,
   DrawerContent,
@@ -73,6 +74,8 @@ const TodayBoard = () => {
     now,
     autoConfirm,
     hours,
+    regionalSettings,
+    regionalError,
     isDuplicateMobile,
     addWalkInPatient,
     markVisit
@@ -81,11 +84,26 @@ const TodayBoard = () => {
   const chromeSlot = useClinicChromeActions();
   const [open, setOpen] = useState(false);
   const [pendingBookingCount, setPendingBookingCount] = useState(0);
-  const selectedDay = viewDay ?? calendarDateInClinic(now.toISOString());
-  const selectedAt = new Date(`${selectedDay}T12:00:00+08:00`);
-  const viewingToday = selectedDay === calendarDateInClinic(now.toISOString());
-  const dateLabel = formatClinicDate(selectedAt);
-  const title = viewingToday ? "Today" : formatClinicWeekday(selectedAt);
+
+  if (!regionalSettings) {
+    return regionalError ? (
+      <Alert title={regionalError} variant="danger" />
+    ) : (
+      <p aria-live="polite" className="text-muted-foreground">
+        Loading clinic settings...
+      </p>
+    );
+  }
+
+  const { locale, timezone } = regionalSettings;
+  const selectedDay =
+    viewDay ?? calendarDateInClinic(now.toISOString(), timezone);
+  const selectedAt = new Date(`${selectedDay}T12:00:00Z`);
+  const viewingToday =
+    selectedDay === calendarDateInClinic(now.toISOString(), timezone);
+  const dateLabel = formatClinicDate(selectedAt, "UTC", locale);
+  const title =
+    viewingToday ? "Today" : formatClinicWeekday(selectedAt, "UTC", locale);
 
   const openDrawer = () => setOpen(true);
 
@@ -147,6 +165,7 @@ const TodayBoard = () => {
               setOpen(false);
             }}
             patients={patients}
+            timezone={timezone}
           />
         </DrawerContent>
       </Drawer>
@@ -191,13 +210,17 @@ const TodayBoard = () => {
             ready={ready}
             rows={huddle.rows}
             viewDay={selectedDay}
+            locale={locale}
+            timezone={timezone}
           />
         </div>
         {ready ? (
           <BookingInbox
             autoConfirm={autoConfirm}
             events={events}
+            locale={locale}
             onPendingCountChange={setPendingBookingCount}
+            timezone={timezone}
           />
         ) : null}
       </div>

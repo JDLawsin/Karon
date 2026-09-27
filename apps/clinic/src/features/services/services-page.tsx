@@ -48,6 +48,7 @@ import { useClinicServices } from "@/features/services/use-clinic-services";
 
 type ServiceListItemProps = {
   canEdit: boolean;
+  locale: string;
   service: ClinicServiceRow;
   onEdit: (service: ClinicServiceRow) => void;
   onDelete: (service: ClinicServiceRow) => void;
@@ -55,6 +56,7 @@ type ServiceListItemProps = {
 
 const ServiceListItem = ({
   canEdit,
+  locale,
   service,
   onEdit,
   onDelete
@@ -65,7 +67,7 @@ const ServiceListItem = ({
   const formattedPrice =
     service.price_minor === null || service.currency_code === null
       ? null
-      : formatServicePrice(service.price_minor, service.currency_code);
+      : formatServicePrice(service.price_minor, service.currency_code, locale);
 
   return (
     <li className="min-w-0">
@@ -187,6 +189,8 @@ const ServicesPage = () => {
   const {
     services,
     currencyCode,
+    locale,
+    timezone,
     canEdit,
     loading,
     error,
@@ -299,6 +303,7 @@ const ServicesPage = () => {
                 <ServiceListItem
                   canEdit={canEdit}
                   key={service.id}
+                  locale={locale}
                   onDelete={setDeleting}
                   onEdit={openEdit}
                   service={service}
@@ -337,6 +342,7 @@ const ServicesPage = () => {
           {currencyCode ? (
             <ServiceForm
               currencyCode={currencyCode}
+              locale={locale}
               onSave={async (values) => {
                 if (editing) {
                   await updateService.mutateAsync({ service: editing, values });
@@ -349,6 +355,7 @@ const ServicesPage = () => {
               }}
               readOnly={!canEdit}
               service={editing}
+              timezone={timezone}
             />
           ) : (
             <div className="px-6 pb-6">

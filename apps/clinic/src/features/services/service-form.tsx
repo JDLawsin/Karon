@@ -26,24 +26,28 @@ import { isServiceIconKey } from "@/features/services/service-icons";
 import { ServicePreviewCard } from "@/features/services/service-visual";
 import FieldError from "@/lib/forms/field-error";
 import { markHydrated, useClinicForm } from "@/lib/forms/use-clinic-form";
+import { formatClinicDateTime } from "@/lib/clinic/regional-settings";
 
 type Props = {
   currencyCode: string;
+  locale: string;
+  timezone: string;
   readOnly?: boolean;
   service?: ClinicServiceRow | null;
   onSave: (values: ServiceFormValues) => Promise<void>;
 };
 
-const formatTimestamp = (iso: string) =>
-  new Intl.DateTimeFormat("en-PH", {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(new Date(iso));
-
 const fieldClassName =
   "min-h-(--control-min-height) w-full min-w-0 rounded-md border-(length:var(--input-border-width)) border-input bg-(--input-fill) px-3 py-2 text-base text-foreground shadow-none outline-none transition-[color,background-color,border-color] duration-(--motion-duration) focus-visible:border-2 focus-visible:border-primary focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-2 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive";
 
-const ServiceForm = ({ currencyCode, readOnly = false, service, onSave }: Props) => {
+const ServiceForm = ({
+  currencyCode,
+  locale,
+  timezone,
+  readOnly = false,
+  service,
+  onSave
+}: Props) => {
   const {
     register,
     handleSubmit,
@@ -64,11 +68,13 @@ const ServiceForm = ({ currencyCode, readOnly = false, service, onSave }: Props)
   const description = watch("description");
   const icon = watch("icon");
   const iconKey = icon && isServiceIconKey(icon) ? icon : null;
-  const priceCurrencyCode = service?.currency_code ?? currencyCode;
   const historicalCurrency =
     service?.currency_code !== null &&
     service?.currency_code !== undefined &&
     service.currency_code !== currencyCode;
+  const priceCurrencyCode = historicalCurrency
+    ? currencyCode
+    : (service?.currency_code ?? currencyCode);
 
   useEffect(() => {
     reset({
@@ -76,12 +82,14 @@ const ServiceForm = ({ currencyCode, readOnly = false, service, onSave }: Props)
       description: service?.description ?? "",
       icon: service?.icon && isServiceIconKey(service.icon) ? service.icon : undefined,
       priceMajor:
-        service?.price_minor === null || service?.price_minor === undefined
+        historicalCurrency ||
+        service?.price_minor === null ||
+        service?.price_minor === undefined
           ? undefined
           : priceMinorToMajor(service.price_minor, priceCurrencyCode),
       durationMinutes: service?.duration_minutes ?? undefined
     });
-  }, [priceCurrencyCode, reset, service]);
+  }, [historicalCurrency, priceCurrencyCode, reset, service]);
 
   const applySuggestion = (suggestion: DentalServiceSuggestion) => {
     setValue("name", suggestion.name, { shouldDirty: true, shouldValidate: true });
@@ -107,11 +115,15 @@ const ServiceForm = ({ currencyCode, readOnly = false, service, onSave }: Props)
               <dl className="grid min-w-0 grid-cols-1 gap-3 text-sm sm:grid-cols-2">
                 <div>
                   <dt className="text-muted-foreground">Created</dt>
-                  <dd className="tabular-nums">{formatTimestamp(service.created_at)}</dd>
+                  <dd className="tabular-nums">
+                    {formatClinicDateTime(service.created_at, { locale, timezone })}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Updated</dt>
-                  <dd className="tabular-nums">{formatTimestamp(service.updated_at)}</dd>
+                  <dd className="tabular-nums">
+                    {formatClinicDateTime(service.updated_at, { locale, timezone })}
+                  </dd>
                 </div>
               </dl>
             ) : null
@@ -171,7 +183,6 @@ const ServiceForm = ({ currencyCode, readOnly = false, service, onSave }: Props)
                 id="service-price"
                 inputMode="decimal"
                 min={0}
-                readOnly={historicalCurrency}
                 step={currencyInputStep(priceCurrencyCode)}
                 type="number"
                 {...register("priceMajor", { valueAsNumber: true })}
@@ -179,8 +190,8 @@ const ServiceForm = ({ currencyCode, readOnly = false, service, onSave }: Props)
               <FieldError id="service-price-error" message={errors.priceMajor?.message} />
               {historicalCurrency ? (
                 <p className="text-sm text-muted-foreground">
-                  This service is priced in {priceCurrencyCode}. Change the clinic
-                  currency back to {priceCurrencyCode} before editing its price.
+                  This service was priced in {service?.currency_code}. Enter a new
+                  price in {currencyCode}; Karon does not perform FX conversion.
                 </p>
               ) : null}
             </div>

@@ -19,6 +19,7 @@ describe("CollectPayment", () => {
         balance={balance}
         balanceError={null}
         balanceLoading={false}
+        locale="en-PH"
         onCollect={onCollect}
         saving={false}
       />
@@ -49,6 +50,7 @@ describe("CollectPayment", () => {
         balance={balance}
         balanceError={null}
         balanceLoading={false}
+        locale="en-PH"
         onCollect={vi.fn()}
         saving={false}
       />
@@ -65,6 +67,7 @@ describe("CollectPayment", () => {
         balance={null}
         balanceError={null}
         balanceLoading
+        locale="en-PH"
         onCollect={vi.fn()}
         saving={false}
       />

@@ -43,6 +43,8 @@ describe("clinicOnboardingSchema", () => {
   it("requires at least one working day and close after open", () => {
     expect(
       onboardingHoursSchema.safeParse({
+        currencyCode: "PHP",
+        locale: "en-PH",
         timezone: "Asia/Manila",
         days: [],
         open: "09:00",
@@ -51,6 +53,8 @@ describe("clinicOnboardingSchema", () => {
     ).toBe(false);
     expect(
       onboardingHoursSchema.safeParse({
+        currencyCode: "PHP",
+        locale: "en-PH",
         timezone: "Asia/Manila",
         days: [1],
         open: "18:00",
@@ -59,12 +63,39 @@ describe("clinicOnboardingSchema", () => {
     ).toBe(false);
     expect(
       onboardingHoursSchema.safeParse({
+        currencyCode: "PHP",
+        locale: "en-PH",
         timezone: "Asia/Manila",
         days: [1, 2],
         open: "09:00",
         close: "18:00"
       }).success
     ).toBe(true);
+  });
+
+  it("requires supported currency, locale, and IANA timezone values", () => {
+    const values = {
+      currencyCode: "PHP",
+      locale: "en-PH",
+      timezone: "Asia/Manila",
+      days: [1],
+      open: "09:00",
+      close: "18:00"
+    };
+
+    expect(onboardingHoursSchema.safeParse(values).success).toBe(true);
+    expect(
+      onboardingHoursSchema.safeParse({ ...values, currencyCode: "ABC" }).success
+    ).toBe(false);
+    expect(
+      onboardingHoursSchema.safeParse({ ...values, locale: "not_a_locale" }).success
+    ).toBe(false);
+    expect(
+      onboardingHoursSchema.safeParse({
+        ...values,
+        timezone: "Mars/Olympus_Mons"
+      }).success
+    ).toBe(false);
   });
 
   it("allows empty staff rows and rejects invalid leftover emails", () => {
@@ -111,6 +142,8 @@ describe("clinicOnboardingSchema", () => {
   it("loads a clinic row with defaults for missing hours", () => {
     const values = fromClinicRow({
       name: "Saved Clinic",
+      currency_code: "SGD",
+      locale: "en-SG",
       timezone: "Asia/Manila",
       phone: "09171234567",
       email: "clinic@example.com",
@@ -121,6 +154,8 @@ describe("clinicOnboardingSchema", () => {
     });
     expect(values.name).toBe("Saved Clinic");
     expect(values.city).toBe("Cebu");
+    expect(values.currencyCode).toBe("SGD");
+    expect(values.locale).toBe("en-SG");
     expect(values.days.length).toBeGreaterThan(0);
   });
 });

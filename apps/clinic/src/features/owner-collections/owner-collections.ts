@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import { localeSchema } from "@/lib/clinic/regional-settings";
+
 const collectionsDaySchema = z.iso.date().refine(
   (day) => day >= "2000-01-01",
   "Choose a date on or after 2000-01-01."
@@ -34,6 +36,7 @@ type CollectionsReport = {
   clinicToday: string;
   timezone: string;
   currency: string;
+  locale: string;
   paymentCount: number;
   paidMinor: number;
   outstandingMinor: number;
@@ -47,6 +50,8 @@ type CollectionsReport = {
   };
 };
 
+type CollectionsReportCore = Omit<CollectionsReport, "locale">;
+
 class CollectionsDayOutOfRangeError extends Error {}
 
 const parseCollectionsDay = (value: unknown) => {
@@ -54,7 +59,7 @@ const parseCollectionsDay = (value: unknown) => {
   return parsed.success ? parsed.data : null;
 };
 
-const parseCollectionsReport = (value: unknown): CollectionsReport => {
+const parseCollectionsReport = (value: unknown): CollectionsReportCore => {
   const row = collectionsReportRowSchema.parse(value);
 
   return {
@@ -82,22 +87,28 @@ const getOwnerCollections = async (
   day?: string | null
 ) => {
   const parsedDay = day ? collectionsDaySchema.parse(day) : null;
-  const { data, error } = await supabase
-    .rpc("get_owner_daily_collections", {
-      p_tenant_id: tenantId,
-      p_day: parsedDay
-    })
-    .single();
+  const [{ data, error }, { data: clinic, error: clinicError }] =
+    await Promise.all([
+      supabase
+        .rpc("get_owner_daily_collections", {
+          p_tenant_id: tenantId,
+          p_day: parsedDay
+        })
+        .single(),
+      supabase.from("clinics").select("locale").eq("id", tenantId).single()
+    ]);
 
   if (error?.code === "22023") {
     throw new CollectionsDayOutOfRangeError("Collections day is out of range.");
   }
 
-  if (error || !data) {
+  const locale = localeSchema.safeParse(clinic?.locale);
+
+  if (error || !data || clinicError || !locale.success) {
     throw new Error("Could not load collections.");
   }
 
-  return parseCollectionsReport(data);
+  return { ...parseCollectionsReport(data), locale: locale.data };
 };
 
 export {

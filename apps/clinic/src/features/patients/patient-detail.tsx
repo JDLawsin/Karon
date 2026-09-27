@@ -20,7 +20,9 @@ type PatientVisit = {
 };
 
 type Props = {
+  locale: string;
   patient: Patient;
+  timezone: string;
   visit?: PatientVisit | null;
   visits: PatientVisit[];
 };
@@ -38,15 +40,15 @@ const STATUS_TONE: Record<
   no_show: "warning"
 };
 
-const formatVisitDate = (iso: string) =>
-  new Intl.DateTimeFormat("en-PH", {
+const formatVisitDate = (iso: string, locale: string, timezone: string) =>
+  new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
-    timeZone: "Asia/Manila"
+    timeZone: timezone
   }).format(new Date(iso));
 
-const PatientDetail = ({ patient, visit, visits }: Props) => (
+const PatientDetail = ({ locale, patient, timezone, visit, visits }: Props) => (
   <div className="flex min-w-0 flex-col gap-5">
     <header className="min-w-0">
       <h2 className="wrap-anywhere text-xl font-semibold">{patient.name}</h2>
@@ -73,7 +75,7 @@ const PatientDetail = ({ patient, visit, visits }: Props) => (
             {VISIT_STATUS_LABEL[visit.status]}
           </StatusBadge>
           <span className="text-sm tabular-nums text-muted-foreground">
-            {formatVisitTime(visit.startsAt)}
+            {formatVisitTime(visit.startsAt, timezone, locale)}
           </span>
           {visit.serviceName ? (
             <span className="min-w-0 text-sm">{visit.serviceName}</span>
@@ -104,7 +106,8 @@ const PatientDetail = ({ patient, visit, visits }: Props) => (
                   </StatusBadge>
                 </div>
                 <span className="text-sm tabular-nums text-muted-foreground">
-                  {formatVisitDate(item.startsAt)} · {formatVisitTime(item.startsAt)}
+                  {formatVisitDate(item.startsAt, locale, timezone)} ·{" "}
+                  {formatVisitTime(item.startsAt, timezone, locale)}
                 </span>
               </li>
             ))}

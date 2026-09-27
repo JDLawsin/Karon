@@ -1154,12 +1154,16 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(deleteError?.code).toBe("42501");
   });
 
-  it("lets the owner update auto-confirm and hides it from writes by assistants", async () => {
+  it("lets the owner update clinic settings and rejects assistants", async () => {
     const owner = await createAuthedClient(users[0]!.email);
     await verifyOwnerTotp(owner.client);
     const { error: ownerError } = await owner.client
       .from("clinics")
-      .update({ auto_confirm_bookings: false })
+      .update({
+        auto_confirm_bookings: false,
+        locale: "en-SG",
+        timezone: "Asia/Singapore"
+      })
       .eq("id", clinicIds[0]);
 
     expect(ownerError).toBeNull();
@@ -1167,26 +1171,76 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     const assistant = await createAuthedClient(users[1]!.email);
     const { data } = await assistant.client
       .from("clinics")
-      .select("auto_confirm_bookings")
+      .select("auto_confirm_bookings, currency_code, locale, timezone")
       .eq("id", clinicIds[0])
       .maybeSingle();
 
     expect(data?.auto_confirm_bookings).toBe(false);
+    expect(data).toMatchObject({
+      currency_code: "PHP",
+      locale: "en-SG",
+      timezone: "Asia/Singapore"
+    });
+
+    const { error: historicalCurrencyError } = await owner.client
+      .from("clinics")
+      .update({ currency_code: "SGD" })
+      .eq("id", clinicIds[0]);
+
+    expect(historicalCurrencyError?.code).toBe("22023");
 
     const { error: assistantError } = await assistant.client
       .from("clinics")
-      .update({ auto_confirm_bookings: true })
+      .update({ locale: "en-US" })
       .eq("id", clinicIds[0]);
 
-    expect(assistantError).toBeNull();
+    expect(assistantError?.code).toBe("42501");
+
+    const { error: invalidTimezoneError } = await owner.client
+      .from("clinics")
+      .update({ timezone: "Mars/Olympus_Mons" })
+      .eq("id", clinicIds[0]);
+
+    expect(invalidTimezoneError?.code).toBe("22023");
 
     const { data: after } = await owner.client
       .from("clinics")
-      .select("auto_confirm_bookings")
+      .select("auto_confirm_bookings, locale, timezone")
       .eq("id", clinicIds[0])
       .maybeSingle();
 
     expect(after?.auto_confirm_bookings).toBe(false);
+    expect(after).toMatchObject({ locale: "en-SG", timezone: "Asia/Singapore" });
+
+    const { data: audit } = await admin
+      .from("audit_events")
+      .select("actor_user_id, event_type, metadata")
+      .eq("tenant_id", clinicIds[0]!)
+      .eq("event_type", "clinic.profile_updated")
+      .single();
+
+    expect(audit).toMatchObject({
+      actor_user_id: users[0]!.id,
+      event_type: "clinic.profile_updated",
+      metadata: {
+        currency_from: "PHP",
+        currency_to: "PHP",
+        locale_from: "en-PH",
+        locale_to: "en-SG",
+        timezone_from: "Asia/Manila",
+        timezone_to: "Asia/Singapore"
+      }
+    });
+
+    const { error: restoreError } = await owner.client
+      .from("clinics")
+      .update({
+        locale: "en-PH",
+        timezone: "Asia/Manila"
+      })
+      .eq("id", clinicIds[0]);
+
+    expect(restoreError).toBeNull();
   });
 
   it("hides google calendar tokens from assistants and other clinics", async () => {
@@ -1351,14 +1405,14 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
       .update({ currency_code: "php" })
       .eq("id", clinicIds[0]);
 
-    expect(malformedClinicCurrencyError?.code).toBe("23514");
+    expect(malformedClinicCurrencyError?.code).toBe("22023");
 
     const { error: clinicCurrencyUpdateError } = await owner.client
       .from("clinics")
       .update({ currency_code: "USD" })
       .eq("id", clinicIds[0]);
 
-    expect(clinicCurrencyUpdateError).toBeNull();
+    expect(clinicCurrencyUpdateError?.code).toBe("22023");
 
     const { data: historical, error: durationUpdateError } = await owner.client
       .from("clinic_services")
@@ -1369,20 +1423,6 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
 
     expect(durationUpdateError).toBeNull();
     expect(historical).toEqual({ currency_code: "PHP", duration_minutes: 60 });
-
-    const { data: repriced, error: repriceError } = await owner.client
-      .from("clinic_services")
-      .update({
-        price_minor: 160_000,
-        currency_code: "USD",
-        updated_by: users[0]!.id
-      })
-      .eq("id", ownId)
-      .select("price_minor, currency_code")
-      .single();
-
-    expect(repriceError).toBeNull();
-    expect(repriced).toEqual({ price_minor: 160_000, currency_code: "USD" });
 
     const { error: ownerDeleteError } = await owner.client
       .from("clinic_services")

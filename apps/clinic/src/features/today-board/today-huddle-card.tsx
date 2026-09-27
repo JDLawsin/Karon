@@ -27,7 +27,9 @@ import {
 import type { VisitStatus } from "@/lib/sync/event-schema";
 
 type Props = {
+  locale: string;
   row: TodayBoardRow;
+  timezone: string;
   onMark: (visitId: string, status: VisitStatus) => void;
   showStatus?: boolean;
   isDragging?: boolean;
@@ -63,7 +65,9 @@ const REVERSE_TARGETS = [
 ] as const satisfies readonly VisitStatus[];
 
 const TodayHuddleCard = ({
+  locale,
   row,
+  timezone,
   onMark,
   showStatus = false,
   isDragging = false,
@@ -100,7 +104,7 @@ const TodayHuddleCard = ({
       <div className="flex min-w-0 items-start gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs tabular-nums text-muted-foreground">
-            {formatVisitTime(row.startsAt)}
+            {formatVisitTime(row.startsAt, timezone, locale)}
           </p>
           <p className="truncate font-medium leading-5">{row.name}</p>
           {row.serviceName || row.note ? (

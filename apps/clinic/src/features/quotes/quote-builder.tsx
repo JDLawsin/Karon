@@ -22,6 +22,8 @@ type AcceptQuoteInput = {
 type Props = {
   services: ClinicServiceRow[];
   currencyCode: string | null;
+  locale: string;
+  timezone: string;
   quotes: QuoteHistoryEntry[];
   canQuote: boolean;
   loadingServices: boolean;
@@ -33,6 +35,8 @@ type Props = {
 const QuoteBuilder = ({
   services,
   currencyCode,
+  locale,
+  timezone,
   quotes,
   canQuote,
   loadingServices,
@@ -192,7 +196,11 @@ const QuoteBuilder = ({
               ) : (
                 <p className="min-h-(--control-min-height) content-center text-sm text-muted-foreground">
                   {selectedService && currencyCode && selectedService.price_minor !== null
-                    ? formatServicePrice(selectedService.price_minor, currencyCode)
+                    ? formatServicePrice(
+                        selectedService.price_minor,
+                        currencyCode,
+                        locale
+                      )
                     : "Choose a service to see its price."}
                 </p>
               )}
@@ -297,7 +305,9 @@ const QuoteBuilder = ({
             <div>
               <p className="text-sm text-muted-foreground">Total · {currencyCode ?? "—"}</p>
               <p className="text-2xl font-semibold tabular-nums">
-                {currencyCode ? formatServicePrice(totalMinor, currencyCode) : "—"}
+                {currencyCode
+                  ? formatServicePrice(totalMinor, currencyCode, locale)
+                  : "—"}
               </p>
             </div>
             <Button disabled={saving} type="submit">
@@ -333,11 +343,11 @@ const QuoteBuilder = ({
                 <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                   <StatusBadge tone="success">Accepted</StatusBadge>
                   <span className="text-sm tabular-nums text-muted-foreground">
-                    {new Intl.DateTimeFormat("en-PH", {
+                    {new Intl.DateTimeFormat(locale, {
                       month: "short",
                       day: "numeric",
                       year: "numeric",
-                      timeZone: "Asia/Manila"
+                      timeZone: timezone
                     }).format(new Date(quote.occurredAt))}
                   </span>
                 </div>
@@ -348,13 +358,17 @@ const QuoteBuilder = ({
                         {line.serviceName} × <span className="tabular-nums">{line.qty}</span>
                       </span>
                       <span className="tabular-nums">
-                        {formatServicePrice(line.qty * line.amountMinor, line.currency)}
+                        {formatServicePrice(
+                          line.qty * line.amountMinor,
+                          line.currency,
+                          locale
+                        )}
                       </span>
                     </li>
                   ))}
                 </ul>
                 <p className="border-t border-border pt-2 text-right font-semibold tabular-nums">
-                  Total {formatServicePrice(quote.totalMinor, quote.currency)}
+                  Total {formatServicePrice(quote.totalMinor, quote.currency, locale)}
                 </p>
               </li>
             ))}

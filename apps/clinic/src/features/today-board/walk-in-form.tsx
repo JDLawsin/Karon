@@ -38,13 +38,14 @@ type Props = {
   isDuplicateMobile: (mobile: string) => boolean;
   onSave: (draft: WalkInDraft) => Promise<void>;
   patients: PatientSearchRow[];
+  timezone: string;
 };
 
-const WalkInForm = ({ isDuplicateMobile, onSave, patients }: Props) => {
+const WalkInForm = ({ isDuplicateMobile, onSave, patients, timezone }: Props) => {
   const [error, setError] = useState<string | null>(null);
   const [existingQuery, setExistingQuery] = useState("");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-  const defaults = clinicLocalParts(new Date());
+  const defaults = clinicLocalParts(new Date(), timezone);
   const {
     register,
     handleSubmit,
@@ -80,7 +81,7 @@ const WalkInForm = ({ isDuplicateMobile, onSave, patients }: Props) => {
           await onSave({
             name: selectedPatient?.name ?? draft.name,
             mobile: selectedPatient?.mobile ?? draft.mobile,
-            startsAt: startsAtFromClinicLocal(draft.date, draft.time),
+            startsAt: startsAtFromClinicLocal(draft.date, draft.time, timezone),
             ...(selectedPatient ? { patientId: selectedPatient.id } : {})
           });
         } catch {

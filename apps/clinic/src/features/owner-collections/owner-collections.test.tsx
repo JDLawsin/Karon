@@ -13,6 +13,7 @@ const report: CollectionsReport = {
   clinicToday: "2026-09-21",
   timezone: "Asia/Manila",
   currency: "PHP",
+  locale: "en-PH",
   paymentCount: 3,
   paidMinor: 150_000,
   outstandingMinor: 50_000,
@@ -28,6 +29,9 @@ const report: CollectionsReport = {
 
 describe("owner collections", () => {
   it("parses the projector row without trusting RPC values", () => {
+    const { locale: _locale, ...expected } = report;
+    expect(_locale).toBe("en-PH");
+
     expect(
       parseCollectionsReport({
         day: "2026-09-21",
@@ -43,7 +47,7 @@ describe("owner collections", () => {
         card_minor: 0,
         other_minor: 0
       })
-    ).toEqual(report);
+    ).toEqual(expected);
     expect(parseCollectionsDay("2026-02-29")).toBeNull();
     expect(parseCollectionsDay(["2026-09-20", "2026-09-21"])).toBeNull();
   });

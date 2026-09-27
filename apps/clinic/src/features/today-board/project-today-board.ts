@@ -5,11 +5,15 @@ import {
   type ClinicEvent,
   type VisitStatus
 } from "@/lib/sync/event-schema";
+import {
+  DEFAULT_CLINIC_REGIONAL_SETTINGS,
+  clinicDateTimeToUtc
+} from "@/lib/clinic/regional-settings";
 
 import { transitionVisitStatus } from "./visit-status";
 
-// ponytail: clinic TZ from clinic.region when membership carries it
-const CLINIC_TZ = "Asia/Manila";
+const CLINIC_TZ = DEFAULT_CLINIC_REGIONAL_SETTINGS.timezone;
+const CLINIC_LOCALE = DEFAULT_CLINIC_REGIONAL_SETTINGS.locale;
 
 const BOARD_STATUSES = [
   "pending_review",
@@ -67,7 +71,7 @@ const VISIT_STATUS_LABEL: Record<VisitStatus, string> = {
   no_show: "No-show"
 };
 
-const calendarDateInClinic = (iso: string, timeZone = CLINIC_TZ) =>
+const calendarDateInClinic = (iso: string, timeZone: string = CLINIC_TZ) =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
@@ -75,28 +79,40 @@ const calendarDateInClinic = (iso: string, timeZone = CLINIC_TZ) =>
     day: "2-digit"
   }).format(new Date(iso));
 
-const formatVisitTime = (iso: string, timeZone = CLINIC_TZ) =>
-  new Intl.DateTimeFormat("en-PH", {
+const formatVisitTime = (
+  iso: string,
+  timeZone: string,
+  locale: string
+) =>
+  new Intl.DateTimeFormat(locale, {
     timeZone,
     hour: "numeric",
     minute: "2-digit"
   }).format(new Date(iso));
 
-const formatClinicDate = (now: Date, timeZone = CLINIC_TZ) =>
-  new Intl.DateTimeFormat("en-PH", {
+const formatClinicDate = (
+  now: Date,
+  timeZone: string = CLINIC_TZ,
+  locale: string = CLINIC_LOCALE
+) =>
+  new Intl.DateTimeFormat(locale, {
     timeZone,
     weekday: "short",
     month: "short",
     day: "numeric"
   }).format(now);
 
-const formatClinicWeekday = (now: Date, timeZone = CLINIC_TZ) =>
-  new Intl.DateTimeFormat("en-PH", {
+const formatClinicWeekday = (
+  now: Date,
+  timeZone: string = CLINIC_TZ,
+  locale: string = CLINIC_LOCALE
+) =>
+  new Intl.DateTimeFormat(locale, {
     timeZone,
     weekday: "long"
   }).format(now);
 
-const clinicLocalParts = (now: Date, timeZone = CLINIC_TZ) => {
+const clinicLocalParts = (now: Date, timeZone: string = CLINIC_TZ) => {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone,
     year: "numeric",
@@ -115,9 +131,11 @@ const clinicLocalParts = (now: Date, timeZone = CLINIC_TZ) => {
   };
 };
 
-// ponytail: Manila is UTC+8 with no DST; use clinics.timezone offset when membership carries it
-const startsAtFromClinicLocal = (date: string, time: string) =>
-  `${date}T${time.length === 5 ? `${time}:00` : time}+08:00`;
+const startsAtFromClinicLocal = (
+  date: string,
+  time: string,
+  timeZone: string = CLINIC_TZ
+) => clinicDateTimeToUtc(date, time.slice(0, 5), timeZone);
 
 const countByBoardStatus = (rows: TodayBoardRow[]) => {
   const counts = {
@@ -327,7 +345,7 @@ const sortRows = (rows: TodayBoardRow[]) =>
 const projectFoldedBoard = (
   folded: FoldedClinic,
   now: Date,
-  timeZone = CLINIC_TZ,
+  timeZone: string = CLINIC_TZ,
   outboxIds: ReadonlySet<string> = new Set(),
   viewDay?: string
 ): TodayHuddle => {
@@ -403,7 +421,7 @@ const projectFoldedBoard = (
 const projectTodayBoard = (
   events: ClinicEvent[],
   now: Date,
-  timeZone = CLINIC_TZ,
+  timeZone: string = CLINIC_TZ,
   outboxIds: ReadonlySet<string> = new Set(),
   viewDay?: string
 ): TodayHuddle =>

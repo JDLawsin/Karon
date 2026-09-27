@@ -13,6 +13,7 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 const clinicProfileSchema = z.object({
   name: z.string().trim().min(2).max(80),
+  locale: z.string().trim().min(1).max(35),
   timezone: z
     .string()
     .trim()
@@ -44,7 +45,7 @@ const useNextVisit = (patientId: string) => {
       const supabase = createBrowserSupabase();
       const { data, error } = await supabase
         .from("clinics")
-        .select("name, timezone")
+        .select("name, locale, timezone")
         .eq("id", membership.tenantId)
         .single();
 

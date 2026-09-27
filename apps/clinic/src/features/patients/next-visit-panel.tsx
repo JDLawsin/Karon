@@ -61,6 +61,7 @@ const NextVisitPanel = ({ patientId }: Props) => {
       setReminder(
         buildReminderText({
           clinicName: clinic.name,
+          locale: clinic.locale,
           startsAt: result.startsAt,
           timeZone: clinic.timezone
         })

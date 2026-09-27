@@ -4,7 +4,6 @@ import { showErrorToast, showSuccessToast } from "@karon/design-system";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
-  currencyCodeSchema,
   parseClinicServices,
   servicePricingSchema,
   type ClinicServiceRow,
@@ -13,6 +12,7 @@ import {
 import { priceMajorToMinor } from "@/features/services/service-money";
 import { useClinicSession } from "@/lib/auth/clinic-session";
 import { writeAuditEvent } from "@/lib/auth/audit";
+import { useClinicRegionalSettings } from "@/lib/clinic/use-clinic-regional-settings";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 const clinicServicesKey = (tenantId: string) => ["clinic-services", tenantId] as const;
@@ -21,27 +21,22 @@ const serviceColumns =
 
 const fetchClinicServices = async (tenantId: string) => {
   const supabase = createBrowserSupabase();
-  const [{ data, error }, { data: clinic, error: clinicError }] = await Promise.all([
-    supabase
-      .from("clinic_services")
-      .select(serviceColumns)
-      .eq("tenant_id", tenantId)
-      .order("name"),
-    supabase.from("clinics").select("currency_code").eq("id", tenantId).single()
-  ]);
+  const { data, error } = await supabase
+    .from("clinic_services")
+    .select(serviceColumns)
+    .eq("tenant_id", tenantId)
+    .order("name");
 
-  if (error || clinicError) {
+  if (error) {
     throw new Error("Could not load services.");
   }
 
-  return {
-    services: parseClinicServices(data),
-    currencyCode: currencyCodeSchema.parse(clinic?.currency_code)
-  };
+  return parseClinicServices(data);
 };
 
 const useClinicServices = () => {
   const { membership, userId } = useClinicSession();
+  const regional = useClinicRegionalSettings();
   const canEdit = membership.role === "owner";
   const queryClient = useQueryClient();
   const queryKey = clinicServicesKey(membership.tenantId);
@@ -61,11 +56,18 @@ const useClinicServices = () => {
         throw new Error("Only the clinic owner can change services.");
       }
 
+      if (!regional.settings) {
+        throw new Error("Clinic regional settings are unavailable.");
+      }
+
       const supabase = createBrowserSupabase();
       const now = new Date().toISOString();
       const pricing = servicePricingSchema.parse({
-        priceMinor: priceMajorToMinor(values.priceMajor, query.data?.currencyCode ?? ""),
-        currencyCode: query.data?.currencyCode,
+        priceMinor: priceMajorToMinor(
+          values.priceMajor,
+          regional.settings.currencyCode
+        ),
+        currencyCode: regional.settings.currencyCode,
         durationMinutes: values.durationMinutes
       });
       const { data, error } = await supabase
@@ -130,9 +132,12 @@ const useClinicServices = () => {
         throw new Error("Only the clinic owner can change services.");
       }
 
+      if (!regional.settings) {
+        throw new Error("Clinic regional settings are unavailable.");
+      }
+
       const supabase = createBrowserSupabase();
-      const pricingCurrencyCode =
-        service.currency_code ?? query.data?.currencyCode ?? "";
+      const pricingCurrencyCode = regional.settings.currencyCode;
       const priceMinor = priceMajorToMinor(
         values.priceMajor,
         pricingCurrencyCode
@@ -225,11 +230,14 @@ const useClinicServices = () => {
   });
 
   return {
-    services: query.data?.services ?? [],
-    currencyCode: query.data?.currencyCode ?? null,
+    services: query.data ?? [],
+    currencyCode: regional.settings?.currencyCode ?? null,
+    locale: regional.settings?.locale ?? "en",
+    timezone: regional.settings?.timezone ?? "UTC",
     canEdit,
-    loading: query.isLoading,
-    error: query.error instanceof Error ? query.error.message : null,
+    loading: query.isLoading || regional.loading,
+    error:
+      query.error instanceof Error ? query.error.message : regional.error,
     refetch: query.refetch,
     createService,
     updateService,

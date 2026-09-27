@@ -20,25 +20,27 @@ const historicalService = {
 };
 
 describe("ServiceForm", () => {
-  it("does not relabel or reprice a historical service currency", () => {
+  it("requires an explicit price when moving a service to the clinic currency", () => {
     render(
       <Drawer open>
         <DrawerContent>
           <DrawerTitle>Service details</DrawerTitle>
           <ServiceForm
             currencyCode="USD"
+            locale="en-PH"
             onSave={vi.fn(async () => {})}
             service={historicalService}
+            timezone="Asia/Manila"
           />
         </DrawerContent>
       </Drawer>
     );
 
-    expect(screen.getByLabelText("Price (PHP)")).toHaveAttribute("readonly");
-    expect(screen.getByLabelText("Price (PHP)")).toBeEnabled();
+    expect(screen.getByLabelText("Price (USD)")).toHaveValue(null);
+    expect(screen.getByLabelText("Price (USD)")).toBeEnabled();
     expect(
       screen.getByText(
-        "This service is priced in PHP. Change the clinic currency back to PHP before editing its price."
+        "This service was priced in PHP. Enter a new price in USD; Karon does not perform FX conversion."
       )
     ).toBeVisible();
     expect(screen.getByLabelText("Default duration (minutes)")).toBeEnabled();

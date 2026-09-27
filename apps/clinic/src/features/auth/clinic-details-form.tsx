@@ -2,13 +2,14 @@
 
 import { Alert, Card, cn, showErrorToast, showSuccessToast, Skeleton } from "@karon/design-system";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { FieldPath } from "react-hook-form";
 import type { z } from "zod";
 
 import ClinicHoursFields from "@/features/auth/clinic-hours-fields";
 import ClinicIdentityFields from "@/features/auth/clinic-identity-fields";
 import ClinicLogoField from "@/features/auth/clinic-logo-field";
-import ClinicTimezoneField from "@/features/auth/clinic-timezone-field";
+import ClinicRegionalFields from "@/features/auth/clinic-regional-fields";
 import {
   clinicLogoPreviewUrl,
   removeClinicLogo,
@@ -22,6 +23,11 @@ import {
   type ClinicDetails
 } from "@/features/auth/onboarding-schemas";
 import { useClinicSession } from "@/lib/auth/clinic-session";
+import {
+  clinicRegionalSettingsKey,
+  writeCachedClinicRegionalSettings
+} from "@/lib/clinic/use-clinic-regional-settings";
+import { openClinicDb } from "@/lib/db/clinic-db";
 import { markHydrated, useClinicForm } from "@/lib/forms/use-clinic-form";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
@@ -38,6 +44,7 @@ type Props = {
 
 const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
   const { membership } = useClinicSession();
+  const queryClient = useQueryClient();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -70,7 +77,9 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
           const supabase = createBrowserSupabase();
           const { data, error } = await supabase
             .from("clinics")
-            .select("name, timezone, phone, email, address, hours, logo_path")
+            .select(
+              "name, currency_code, locale, timezone, phone, email, address, hours, logo_path"
+            )
             .eq("id", membership.tenantId)
             .maybeSingle();
 
@@ -116,10 +125,12 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
     const profile = toClinicDetailsProfile(parsed.data);
 
     try {
-      const { error } = await supabase
+      const { data: updatedClinic, error } = await supabase
         .from("clinics")
         .update({
           name: parsed.data.name,
+          currency_code: profile.currencyCode,
+          locale: profile.locale,
           timezone: profile.timezone,
           phone: profile.phone,
           email: profile.email,
@@ -127,11 +138,30 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
           hours: profile.hours,
           updated_at: new Date().toISOString()
         })
-        .eq("id", membership.tenantId);
+        .eq("id", membership.tenantId)
+        .select("id")
+        .single();
 
-      if (error) {
+      if (error || !updatedClinic) {
         showErrorToast("Could not save clinic details.");
         return;
+      }
+
+      const regionalSettings = {
+        currencyCode: profile.currencyCode,
+        locale: profile.locale,
+        timezone: profile.timezone
+      };
+      queryClient.setQueryData(
+        clinicRegionalSettingsKey(membership.tenantId),
+        regionalSettings
+      );
+
+      try {
+        const db = await openClinicDb(membership.tenantId);
+        await writeCachedClinicRegionalSettings(db, regionalSettings);
+      } catch {
+        // The server save succeeded; the next online load can refresh the local cache.
       }
 
       let logoFailed = false;
@@ -219,10 +249,9 @@ const ClinicDetailsForm = ({ onSaveStateChange }: Props) => {
             register={register}
           />
         </SettingsCard>
-        <SettingsCard className="min-w-0" title="Timezone">
-          <ClinicTimezoneField
+        <SettingsCard className="min-w-0" title="Regional settings">
+          <ClinicRegionalFields
             errors={errors}
-            hideLabel
             idPrefix="clinic"
             register={register}
           />

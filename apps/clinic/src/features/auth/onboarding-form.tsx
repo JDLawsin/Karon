@@ -17,7 +17,7 @@ import { tenantIdSchema } from "@/features/auth/auth-schemas";
 import ClinicHoursFields from "@/features/auth/clinic-hours-fields";
 import ClinicIdentityFields from "@/features/auth/clinic-identity-fields";
 import ClinicLogoField from "@/features/auth/clinic-logo-field";
-import ClinicTimezoneField from "@/features/auth/clinic-timezone-field";
+import ClinicRegionalFields from "@/features/auth/clinic-regional-fields";
 import { uploadClinicLogo } from "@/features/auth/clinic-logo";
 import ClinicServicesFields from "@/features/auth/clinic-services-fields";
 import { completeSignIn } from "@/features/auth/complete-sign-in";
@@ -312,7 +312,7 @@ const OnboardingForm = () => {
 
       {step === 1 ? (
         <div className="flex flex-col gap-4">
-          <ClinicTimezoneField
+          <ClinicRegionalFields
             errors={profileFields.errors}
             idPrefix="onboarding"
             register={profileFields.register}
@@ -407,10 +407,17 @@ const OnboardingForm = () => {
             <dd>{logoFile ? logoFile.name : "Not added"}</dd>
           </div>
           <div>
+            <dt className="text-muted-foreground">Regional settings</dt>
+            <dd>
+              {values.currencyCode} · {values.locale} ·{" "}
+              {values.timezone.replaceAll("_", " ")}
+            </dd>
+          </div>
+          <div>
             <dt className="text-muted-foreground">Hours</dt>
             <dd>
               {formatDays(values.days)} · {values.open.slice(0, 5)}–
-              {values.close.slice(0, 5)} ({values.timezone.replaceAll("_", " ")})
+              {values.close.slice(0, 5)}
             </dd>
           </div>
           <div>

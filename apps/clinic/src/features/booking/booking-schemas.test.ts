@@ -85,6 +85,7 @@ describe("publicBookingPageSchema", () => {
   it("accepts clinic card fields", () => {
     const parsed = publicBookingPageSchema.safeParse({
       clinicName: "Happy Teeth",
+      locale: "en-PH",
       timezone: "Asia/Manila",
       hoursLabel: "Mon–Sat, 9:00 am – 6:00 pm",
       phone: "09171234567",
@@ -108,6 +109,7 @@ describe("publicBookingPageSchema", () => {
   it("allows a clinic with no address", () => {
     const parsed = publicBookingPageSchema.safeParse({
       clinicName: "Happy Teeth",
+      locale: "en-PH",
       timezone: "Asia/Manila",
       hoursLabel: "Mon–Fri, 9:00 am – 5:00 pm",
       phone: null,
