@@ -15,25 +15,29 @@ type AuditEventType =
   | "service.created"
   | "service.updated"
   | "service.deleted"
-  | "collections.viewed";
+  | "collections.viewed"
+  | "import.started"
+  | "import.completed"
+  | "import.failed";
 
 type AuditWrite = {
   tenantId: string;
   actorUserId: string;
   eventType: AuditEventType;
   recordId?: string | null;
+  metadata?: Record<string, string | number | boolean | null>;
 };
 
 const writeAuditEvent = async (
   supabase: SupabaseClient,
-  { tenantId, actorUserId, eventType, recordId }: AuditWrite
+  { tenantId, actorUserId, eventType, recordId, metadata = {} }: AuditWrite
 ) =>
   supabase.from("audit_events").insert({
     tenant_id: tenantId,
     actor_user_id: actorUserId,
     event_type: eventType,
     record_id: recordId ?? null,
-    metadata: {}
+    metadata
   });
 
 export { writeAuditEvent };

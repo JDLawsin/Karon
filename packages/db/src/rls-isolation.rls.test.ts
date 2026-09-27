@@ -191,12 +191,12 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
   });
 
   afterAll(async () => {
-    await Promise.all(
-      users.map((user) => admin.auth.admin.deleteUser(user.id))
-    );
     if (clinicIds.length > 0) {
       await admin.from("clinics").delete().in("id", clinicIds);
     }
+    await Promise.all(
+      users.map((user) => admin.auth.admin.deleteUser(user.id))
+    );
   });
 
   it("rejects anonymous and cross-clinic clinic reads", async () => {
@@ -1462,4 +1462,120 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(error).toBeNull();
     expect(data?.map((row) => row.id)).toEqual([ownId]);
   });
+
+  it("keeps patient import jobs and staging objects owner-only and tenant-scoped", async () => {
+    const ownerA = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(ownerA.client);
+    const ownerB = await createAuthedClient(users[2]!.email);
+    await verifyOwnerTotp(ownerB.client);
+    const assistant = await createAuthedClient(users[1]!.email);
+    const jobId = randomUUID();
+    const path = `${clinicIds[0]}/${jobId}/source.csv`;
+    const { error: insertError } = await ownerA.client
+      .from("patient_import_jobs")
+      .insert({
+        id: jobId,
+        tenant_id: clinicIds[0],
+        created_by: users[0]!.id,
+        file_name: "patients.csv",
+        storage_path: path,
+        content_type: "text/csv",
+        file_size: 24
+      });
+
+    expect(insertError).toBeNull();
+
+    const { data: assistantRows, error: assistantReadError } = await assistant.client
+      .from("patient_import_jobs")
+      .select("id");
+    const { data: otherRows, error: otherReadError } = await ownerB.client
+      .from("patient_import_jobs")
+      .select("id");
+
+    expect(assistantReadError).toBeNull();
+    expect(assistantRows).toEqual([]);
+    expect(otherReadError).toBeNull();
+    expect(otherRows).toEqual([]);
+
+    const blockedJobId = randomUUID();
+    const { error: assistantInsertError } = await assistant.client
+      .from("patient_import_jobs")
+      .insert({
+        id: blockedJobId,
+        tenant_id: clinicIds[0],
+        created_by: users[1]!.id,
+        file_name: "blocked.csv",
+        storage_path: `${clinicIds[0]}/${blockedJobId}/source.csv`,
+        content_type: "text/csv",
+        file_size: 10
+      });
+    expect(assistantInsertError).toBeTruthy();
+
+    const { data: signed, error: signedError } = await ownerA.client.storage
+      .from("patient-import-staging")
+      .createSignedUploadUrl(path);
+    expect(signedError).toBeNull();
+    expect(signed?.token).toBeTruthy();
+
+    const { error: uploadError } = await ownerA.client.storage
+      .from("patient-import-staging")
+      .uploadToSignedUrl(
+        path,
+        signed!.token,
+        new Blob(["Name,Mobile\nMae,09171234567"], { type: "text/csv" })
+      );
+    expect(uploadError).toBeNull();
+
+    const { error: assistantDownloadError } = await assistant.client.storage
+      .from("patient-import-staging")
+      .download(path);
+    const { error: otherDownloadError } = await ownerB.client.storage
+      .from("patient-import-staging")
+      .download(path);
+    expect(assistantDownloadError).toBeTruthy();
+    expect(otherDownloadError).toBeTruthy();
+
+    const { error: removeError } = await ownerA.client.storage
+      .from("patient-import-staging")
+      .remove([path]);
+    expect(removeError).toBeNull();
+
+    const completedAt = new Date().toISOString();
+    const { error: completeError } = await ownerA.client
+      .from("patient_import_jobs")
+      .update({
+        status: "completed",
+        total_rows: 1,
+        imported_rows: 1,
+        object_deleted_at: completedAt,
+        completed_at: completedAt,
+        updated_at: completedAt
+      })
+      .eq("id", jobId);
+    expect(completeError).toBeNull();
+
+    const { data: audits, error: auditError } = await admin
+      .from("audit_events")
+      .select("event_type, metadata")
+      .eq("record_id", jobId)
+      .order("created_at");
+    expect(auditError).toBeNull();
+    expect(audits).toEqual([
+      {
+        event_type: "import.started",
+        metadata: { format: "csv", bytes: 24, ttl_hours: 24 }
+      },
+      {
+        event_type: "import.completed",
+        metadata: {
+          total: 1,
+          imported: 1,
+          failed: 0,
+          skipped: 0,
+          raw_file_deleted: true
+        }
+      }
+    ]);
+  });
+
 });

@@ -21,6 +21,15 @@ const timestamptz = (name: string) =>
 
 export const clinicRoleEnum = pgEnum("clinic_role", ["owner", "assistant"]);
 
+export const patientImportStatusEnum = pgEnum("patient_import_status", [
+  "awaiting_upload",
+  "uploaded",
+  "preview_ready",
+  "committing",
+  "completed",
+  "failed"
+]);
+
 export type ClinicAddress = {
   line1?: string;
   barangay?: string;
@@ -355,6 +364,97 @@ export const patients = pgTable(
   ]
 ).enableRLS();
 
+export type PatientImportMapping = {
+  name: string | null;
+  mobile: string | null;
+  email: string | null;
+};
+
+export type PatientImportDecision = "skip" | "merge" | "create";
+
+export type PatientImportRow = {
+  rowNumber: number;
+  values: Record<string, string>;
+  name: string;
+  mobile: string;
+  email?: string;
+  mobileDigits: string;
+  patientId: string;
+  eventId: string;
+  duplicatePatientId?: string;
+  duplicateName?: string;
+  duplicateEmail?: string;
+  decision: PatientImportDecision;
+  error?: string;
+};
+
+export const patientImportJobs = pgTable(
+  "patient_import_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => clinics.id, { onDelete: "cascade" }),
+    createdBy: uuid("created_by").notNull(),
+    status: patientImportStatusEnum("status")
+      .notNull()
+      .default("awaiting_upload"),
+    fileName: text("file_name").notNull(),
+    storagePath: text("storage_path").notNull(),
+    contentType: text("content_type").notNull(),
+    fileSize: integer("file_size").notNull(),
+    columns: jsonb("columns").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    mapping: jsonb("mapping")
+      .$type<PatientImportMapping>()
+      .notNull()
+      .default(sql`'{"name":null,"mobile":null,"email":null}'::jsonb`),
+    rows: jsonb("rows")
+      .$type<PatientImportRow[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    totalRows: integer("total_rows").notNull().default(0),
+    importedRows: integer("imported_rows").notNull().default(0),
+    failedRows: integer("failed_rows").notNull().default(0),
+    skippedRows: integer("skipped_rows").notNull().default(0),
+    lastError: text("last_error"),
+    expiresAt: timestamptz("expires_at")
+      .notNull()
+      .default(sql`now() + interval '24 hours'`),
+    objectDeletedAt: timestamptz("object_deleted_at"),
+    dataPurgedAt: timestamptz("data_purged_at"),
+    completedAt: timestamptz("completed_at"),
+    createdAt: timestamptz("created_at").defaultNow().notNull(),
+    updatedAt: timestamptz("updated_at").defaultNow().notNull()
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [authUsers.id],
+      name: "patient_import_jobs_created_by_fk"
+    }).onDelete("restrict"),
+    uniqueIndex("patient_import_jobs_storage_path_idx").on(table.storagePath),
+    index("patient_import_jobs_tenant_created_idx").on(
+      table.tenantId,
+      table.createdAt
+    ),
+    index("patient_import_jobs_expiry_idx")
+      .on(table.expiresAt)
+      .where(sql`${table.objectDeletedAt} is null or ${table.dataPurgedAt} is null`),
+    check(
+      "patient_import_jobs_file_size_bounds",
+      sql`${table.fileSize} between 1 and 5000000`
+    ),
+    check(
+      "patient_import_jobs_counts_non_negative",
+      sql`${table.totalRows} >= 0 and ${table.importedRows} >= 0 and ${table.failedRows} >= 0 and ${table.skippedRows} >= 0`
+    ),
+    check(
+      "patient_import_jobs_error_length",
+      sql`${table.lastError} is null or char_length(${table.lastError}) <= 280`
+    )
+  ]
+).enableRLS();
+
 export const calendarImportStatusEnum = pgEnum("calendar_import_status", [
   "unmatched",
   "matched",
@@ -518,5 +618,6 @@ export type TrustedDevice = typeof trustedDevices.$inferSelect;
 export type AuditEvent = typeof auditEvents.$inferSelect;
 export type ClinicEvent = typeof clinicEvents.$inferSelect;
 export type Patient = typeof patients.$inferSelect;
+export type PatientImportJob = typeof patientImportJobs.$inferSelect;
 export type BookingLink = typeof bookingLinks.$inferSelect;
 export type BookingRequest = typeof bookingRequests.$inferSelect;

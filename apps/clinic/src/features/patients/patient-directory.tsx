@@ -115,7 +115,7 @@ const PatientDirectory = ({ selectedPatientId }: Props) => {
             </p>
           ) : patients.length === 0 ? (
             <EmptyState title="No patients yet">
-              Add the first walk-in now. Clinic import will appear here when Import ships.
+              Add the first walk-in now, or ask the owner to import a patient file in Settings.
             </EmptyState>
           ) : results.rows.length === 0 ? (
             <EmptyState title="No matching patients">

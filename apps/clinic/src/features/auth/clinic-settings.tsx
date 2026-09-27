@@ -3,6 +3,10 @@
 import {
   Button,
   Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
   Drawer,
   DrawerContent,
   DrawerDescription,
@@ -17,6 +21,7 @@ import {
 } from "@karon/design-system";
 import { Building2, LoaderCircle, Plug, User, Users } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 
 import ClinicDetailsForm, {
@@ -77,6 +82,21 @@ const ClinicSettings = () => {
       </Card>
       <IdleLockSettings />
       <SyncOfflineSettings />
+      {isOwner ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Move clinic data</CardTitle>
+            <CardDescription>
+              Preview and check duplicates before patients are created.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button asChild variant="outline">
+              <Link href="/settings/import">Import patients</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      ) : null}
     </div>
   );
 

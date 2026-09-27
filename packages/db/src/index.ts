@@ -18,6 +18,8 @@ export {
   clinicSessions,
   clinics,
   googleCalendarConnections,
+  patientImportJobs,
+  patientImportStatusEnum,
   reminderSends,
   trustedDevices
 } from "./schema";
@@ -32,5 +34,9 @@ export type {
   ClinicMember,
   ClinicServiceRow,
   ClinicSession,
+  PatientImportDecision,
+  PatientImportJob,
+  PatientImportMapping,
+  PatientImportRow,
   TrustedDevice
 } from "./schema";
