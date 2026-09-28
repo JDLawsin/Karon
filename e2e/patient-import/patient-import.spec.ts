@@ -14,6 +14,13 @@ test.describe("patient import owner flow", { tag: "@owner" }, () => {
         page.getByRole("heading", { name: "Import patients", level: 1 })
       ).toBeVisible();
       await expect(page.getByText("Saturday migration checklist")).toBeVisible();
+      const openingBalances = page.getByRole("checkbox", {
+        name: /Opening balance notes/
+      });
+      await expect(openingBalances).not.toBeChecked();
+      await openingBalances.check();
+      await expect(page.getByText("Thin notes only — not full AR aging")).toBeVisible();
+      await openingBalances.uncheck();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth > document.documentElement.clientWidth
@@ -169,7 +176,7 @@ test.describe("patient import assistant access", { tag: "@assistant" }, () => {
       page.getByRole("heading", { name: "Owner access required", level: 1 })
     ).toBeVisible();
     await expect(
-      page.getByText("You do not have permission to import patients.")
+      page.getByText("You do not have permission to import clinic data.")
     ).toBeVisible();
   });
 

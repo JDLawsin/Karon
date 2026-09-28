@@ -25,6 +25,7 @@ import Link from "next/link";
 import { useState, type DragEvent } from "react";
 
 import MigrationChecklistCard from "@/features/patient-import/migration-checklist-card";
+import { priceMinorToMajor } from "@/features/services/service-money";
 import {
   MAX_IMPORT_FILE_BYTES,
   type ImportDecision,
@@ -36,7 +37,13 @@ import { usePatientImport } from "@/features/patient-import/use-patient-import";
 
 type Step = 1 | 2 | 3 | 4;
 
-const emptyMapping: ImportMapping = { name: null, mobile: null, email: null };
+const emptyMapping: ImportMapping = {
+  name: null,
+  mobile: null,
+  email: null,
+  openingBalanceAmount: null,
+  openingBalanceNote: null
+};
 const selectClassName =
   "min-h-(--control-min-height) w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50";
 
@@ -62,6 +69,7 @@ const statusFor = (status: PublicPatientImportJob["status"]) => {
 const PatientImportWizard = () => {
   const [step, setStep] = useState<Step>(1);
   const [file, setFile] = useState<File | null>(null);
+  const [includeOpeningBalances, setIncludeOpeningBalances] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [mapping, setMapping] = useState<ImportMapping>(emptyMapping);
   const [decisions, setDecisions] = useState<Record<number, ImportDecision["decision"]>>(
@@ -82,7 +90,7 @@ const PatientImportWizard = () => {
       return;
     }
 
-    const next = await create.mutateAsync(file);
+    const next = await create.mutateAsync({ file, includeOpeningBalances });
     setSelectedJobId(next.id);
     setMapping(next.mapping);
     setDecisions(decisionsFor(next.rows));
@@ -114,6 +122,7 @@ const PatientImportWizard = () => {
   };
 
   const resume = (recent: PublicPatientImportJob) => {
+    setIncludeOpeningBalances(recent.includesOpeningBalances);
     setSelectedJobId(recent.id);
     setMapping(recent.mapping);
     setDecisions(decisionsFor(recent.rows));
@@ -127,18 +136,47 @@ const PatientImportWizard = () => {
     );
   };
 
+  const startAnotherImport = () => {
+    setSelectedJobId(null);
+    setFile(null);
+    setIncludeOpeningBalances(false);
+    setMapping(emptyMapping);
+    setDecisions({});
+    setMappingDirty(false);
+    create.reset();
+    setStep(1);
+  };
+
   const onDrop = (event: DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
     chooseFile(event.dataTransfer.files[0] ?? null);
   };
 
   const stepLabel = `Step ${step} of 4`;
+  const balanceMode = activeJob?.includesOpeningBalances ?? includeOpeningBalances;
+  const requiredMappingComplete = balanceMode
+    ? Boolean(mapping.mobile && mapping.openingBalanceAmount && mapping.openingBalanceNote)
+    : Boolean(mapping.name && mapping.mobile);
+  const mappingFields: { field: keyof ImportMapping; label: string; optional?: boolean }[] =
+    balanceMode
+      ? [
+          { field: "mobile", label: "Mobile" },
+          { field: "openingBalanceAmount", label: "Opening balance" },
+          { field: "openingBalanceNote", label: "Note" }
+        ]
+      : [
+          { field: "name", label: "Name" },
+          { field: "mobile", label: "Mobile" },
+          { field: "email", label: "Email", optional: true }
+        ];
 
   return (
     <section className="mx-auto flex w-full max-w-5xl min-w-0 flex-col gap-5">
       <PageHeader
-        description="Move patient names and mobile numbers into Karon with a review before anything is created."
-        title="Import patients"
+        description={balanceMode
+          ? "Attach thin starting notes to existing patients by mobile, with a review before anything is recorded."
+          : "Move patient names and mobile numbers into Karon with a review before anything is created."}
+        title={balanceMode ? "Import opening balances" : "Import patients"}
       >
         <Button asChild variant="outline">
           <Link href="/settings">
@@ -174,14 +212,14 @@ const PatientImportWizard = () => {
             <CardHeader>
               <CardTitle>Choose what to import</CardTitle>
               <CardDescription>
-                Start with patients. Other migration jobs remain separate so each can be checked.
+                Patient import is the default. Opening balances are a separate, optional file matched to existing patients.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <li className="rounded-md border border-primary bg-accent p-4">
+                <li className={`rounded-md border p-4 ${balanceMode ? "border-border" : "border-primary bg-accent"}`}>
                   <div className="flex items-center gap-2 font-medium">
-                    <Check aria-hidden className="size-5 text-primary" />
+                    {!balanceMode ? <Check aria-hidden className="size-5 text-primary" /> : null}
                     Patients
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -197,13 +235,30 @@ const PatientImportWizard = () => {
                     <Link href="/settings/import/services">Choose Services</Link>
                   </Button>
                 </li>
-                <li className="rounded-md border border-border p-4">
-                  <p className="font-medium">Open balances</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Optional starting notes, not full ageing.
-                  </p>
+                <li className={`rounded-md border p-4 ${balanceMode ? "border-warning bg-warning-subtle" : "border-border"}`}>
+                  <label className="flex min-h-11 cursor-pointer items-start gap-3" htmlFor="import-opening-balances">
+                    <input
+                      checked={includeOpeningBalances}
+                      className="mt-1 size-5 accent-primary"
+                      id="import-opening-balances"
+                      onChange={(event) => setIncludeOpeningBalances(event.target.checked)}
+                      type="checkbox"
+                    />
+                    <span>
+                      <span className="block font-medium">Opening balance notes</span>
+                      <span className="mt-1 block text-sm text-muted-foreground">
+                        Match an amount and note to an existing patient by mobile.
+                      </span>
+                    </span>
+                  </label>
                 </li>
               </ul>
+              {balanceMode ? (
+                <Alert title="Thin notes only — not full AR aging" variant="info">
+                  This import records a starting amount and note. It does not create payment history,
+                  reconcile Collect, or attach an unknown mobile to a patient.
+                </Alert>
+              ) : null}
               <Alert title="Online owner task" variant="info">
                 Keep this page open during the import. Patient search remains available to the clinic.
               </Alert>
@@ -258,7 +313,7 @@ const PatientImportWizard = () => {
           <CardHeader>
             <CardTitle>Upload CSV or Excel</CardTitle>
             <CardDescription>
-              First row: column names. Up to 2,000 patients and {MAX_IMPORT_FILE_BYTES / 1_000_000} MB.
+              First row: column names. Up to 2,000 {balanceMode ? "balance notes" : "patients"} and {MAX_IMPORT_FILE_BYTES / 1_000_000} MB.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -307,17 +362,19 @@ const PatientImportWizard = () => {
       {step === 3 && activeJob ? (
         <Card>
           <CardHeader>
-            <CardTitle>Preview, map, and check duplicates</CardTitle>
+            <CardTitle>{balanceMode ? "Preview and match opening balances" : "Preview, map, and check duplicates"}</CardTitle>
             <CardDescription>
-              Match the required fields, then choose what to do with each duplicate mobile.
+              {balanceMode
+                ? "Every valid row must match exactly one existing patient by mobile."
+                : "Match the required fields, then choose what to do with each duplicate mobile."}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              {(["name", "mobile", "email"] as const).map((field) => (
+              {mappingFields.map(({ field, label, optional }) => (
                 <div className="flex flex-col gap-2" key={field}>
                   <Label htmlFor={`import-map-${field}`}>
-                    {field === "email" ? "Email (optional)" : `${field[0]?.toUpperCase()}${field.slice(1)}`}
+                    {label}{optional ? " (optional)" : ""}
                   </Label>
                   <select
                     className={selectClassName}
@@ -331,7 +388,7 @@ const PatientImportWizard = () => {
                     }}
                     value={mapping[field] ?? ""}
                   >
-                    <option value="">{field === "email" ? "Not imported" : "Choose column"}</option>
+                    <option value="">{optional ? "Not imported" : "Choose column"}</option>
                     {activeJob.columns.map((column) => (
                       <option key={column} value={column}>
                         {column}
@@ -344,14 +401,15 @@ const PatientImportWizard = () => {
 
             <div className="overflow-x-auto rounded-md border border-border">
               <table className="w-full min-w-160 border-collapse text-left text-sm">
-                <caption className="sr-only">First 50 patient import rows</caption>
+                <caption className="sr-only">First 50 {balanceMode ? "opening balance" : "patient"} import rows</caption>
                 <thead className="bg-muted text-muted-foreground">
                   <tr>
                     <th className="px-3 py-3 font-medium" scope="col">Row</th>
                     <th className="px-3 py-3 font-medium" scope="col">Name</th>
                     <th className="px-3 py-3 font-medium" scope="col">Mobile</th>
+                    {balanceMode ? <th className="px-3 py-3 font-medium" scope="col">Amount</th> : null}
                     <th className="px-3 py-3 font-medium" scope="col">Result</th>
-                    <th className="px-3 py-3 font-medium" scope="col">Decision</th>
+                    {!balanceMode ? <th className="px-3 py-3 font-medium" scope="col">Decision</th> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -360,6 +418,16 @@ const PatientImportWizard = () => {
                       <td className="px-3 py-3 tabular-nums">{row.rowNumber}</td>
                       <td className="max-w-48 px-3 py-3 wrap-anywhere">{row.name || "—"}</td>
                       <td className="px-3 py-3 tabular-nums">{row.mobile || "—"}</td>
+                      {balanceMode ? (
+                        <td className="px-3 py-3 tabular-nums">
+                          {row.openingBalanceAmountMinor === undefined || !row.openingBalanceCurrency
+                            ? "—"
+                            : `${row.openingBalanceCurrency} ${priceMinorToMajor(
+                                row.openingBalanceAmountMinor,
+                                row.openingBalanceCurrency
+                              )}`}
+                        </td>
+                      ) : null}
                       <td className="max-w-64 px-3 py-3 wrap-anywhere">
                         {row.error ? (
                           <span className="text-destructive">{row.error}</span>
@@ -369,7 +437,7 @@ const PatientImportWizard = () => {
                           <span className="text-success">Ready</span>
                         )}
                       </td>
-                      <td className="px-3 py-2">
+                      {!balanceMode ? <td className="px-3 py-2">
                         {row.error ? (
                           <StatusBadge tone="danger">Skip · error</StatusBadge>
                         ) : row.duplicatePatientId ? (
@@ -391,7 +459,7 @@ const PatientImportWizard = () => {
                         ) : (
                           <StatusBadge tone="success">Create</StatusBadge>
                         )}
-                      </td>
+                      </td> : null}
                     </tr>
                   ))}
                 </tbody>
@@ -403,7 +471,9 @@ const PatientImportWizard = () => {
               </p>
             ) : null}
             <p className="text-sm text-muted-foreground">
-              Default for duplicate mobiles is Skip. Your choices are saved when you confirm.
+              {balanceMode
+                ? "Unknown or repeated mobiles are error rows and are never attached automatically."
+                : "Default for duplicate mobiles is Skip. Your choices are saved when you confirm."}
             </p>
           </CardContent>
           <CardFooter className="flex-col-reverse sm:flex-row">
@@ -414,7 +484,7 @@ const PatientImportWizard = () => {
               <Button
                 aria-busy={map.isPending}
                 className="w-full sm:w-auto"
-                disabled={!mapping.name || !mapping.mobile || map.isPending}
+                disabled={!requiredMappingComplete || map.isPending}
                 onClick={() => void applyMapping()}
                 type="button"
               >
@@ -424,7 +494,7 @@ const PatientImportWizard = () => {
             ) : (
               <Button
                 className="w-full sm:w-auto"
-                disabled={!mapping.name || !mapping.mobile}
+                disabled={!requiredMappingComplete}
                 onClick={() => setStep(4)}
                 type="button"
               >
@@ -439,7 +509,11 @@ const PatientImportWizard = () => {
         <Card>
           <CardHeader>
             <CardTitle>
-              {activeJob.status === "completed" ? "Import complete" : "Confirm patient import"}
+              {activeJob.status === "completed"
+                ? "Import complete"
+                : balanceMode
+                  ? "Confirm opening balance notes"
+                  : "Confirm patient import"}
             </CardTitle>
             <CardDescription>
               Job {activeJob.id.slice(0, 8)} · {activeJob.fileName}
@@ -461,7 +535,7 @@ const PatientImportWizard = () => {
             </div>
 
             {activeJob.status === "committing" || commit.isPending ? (
-              <Alert title={`Importing patients… ${activeJob.importedRows} / ${activeJob.totalRows}`} variant="info">
+              <Alert title={`Importing ${balanceMode ? "opening balance notes" : "patients"}… ${activeJob.importedRows} / ${activeJob.totalRows}`} variant="info">
                 Keep this page open. If the connection drops, the recorded job can resume safely.
               </Alert>
             ) : null}
@@ -478,8 +552,8 @@ const PatientImportWizard = () => {
               </Alert>
             ) : (
               <Alert title="No silent partial import" variant="info">
-                Valid rows commit as idempotent patient events. Invalid rows stay out and appear in
-                the downloadable errors CSV.
+                Valid rows commit as idempotent {balanceMode ? "opening balance note" : "patient"} events.
+                Invalid rows stay out and appear in the downloadable errors CSV.
               </Alert>
             )}
 
@@ -515,7 +589,7 @@ const PatientImportWizard = () => {
                 <Button asChild className="w-full sm:w-auto">
                   <Link href="/patients">Finish · Go to Patients</Link>
                 </Button>
-                <Button className="w-full sm:w-auto" onClick={() => setStep(1)} type="button" variant="outline">
+                <Button className="w-full sm:w-auto" onClick={startAnotherImport} type="button" variant="outline">
                   Import another file
                 </Button>
               </>

@@ -71,7 +71,11 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     return { client, session: data.session };
   };
 
-  let ownerTotpSecret: string | null = null;
+  const ownerTotpSecrets = new Map<string, string>();
+  const ownerAal2Sessions = new Map<
+    string,
+    { access_token: string; refresh_token: string }
+  >();
 
   const verifyOwnerTotp = async (client: SupabaseClient) => {
     const { data: factors, error: listError } = await client.auth.mfa.listFactors();
@@ -84,7 +88,25 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
       (factor) => factor.status === "verified"
     );
     let factorId = verified?.id;
-    let secret = ownerTotpSecret;
+    const cachedSession = factorId ? ownerAal2Sessions.get(factorId) : undefined;
+
+    if (cachedSession) {
+      const { error: sessionError } = await client.auth.setSession(cachedSession);
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      const { error: registerError } = await client.rpc("register_my_session");
+
+      if (registerError) {
+        throw registerError;
+      }
+
+      return;
+    }
+
+    let secret = factorId ? ownerTotpSecrets.get(factorId) : undefined;
 
     if (!factorId || !secret) {
       const { data: enrolled, error: enrollError } = await client.auth.mfa.enroll({
@@ -98,7 +120,7 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
 
       factorId = enrolled.id;
       secret = enrolled.totp.secret;
-      ownerTotpSecret = secret;
+      ownerTotpSecrets.set(factorId, secret);
     }
 
     const totp = new OTPAuth.TOTP({
@@ -114,15 +136,17 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
       throw challengeError ?? new Error("Could not challenge TOTP");
     }
 
-    const { error: verifyError } = await client.auth.mfa.verify({
+    const { data: verifiedSession, error: verifyError } = await client.auth.mfa.verify({
       factorId,
       challengeId: challenge.id,
       code: totp.generate()
     });
 
-    if (verifyError) {
-      throw verifyError;
+    if (verifyError || !verifiedSession) {
+      throw verifyError ?? new Error("TOTP verification returned no tokens");
     }
+
+    ownerAal2Sessions.set(factorId, verifiedSession);
 
     const { error: registerError } = await client.rpc("register_my_session");
 
@@ -1576,6 +1600,69 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
         }
       }
     ]);
+  });
+
+  it("allows only an owner to attach an audited opening balance note", async () => {
+    const owner = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(owner.client);
+    const assistant = await createAuthedClient(users[1]!.email);
+    const patientId = randomUUID();
+    const patientEventId = randomUUID();
+    const { error: patientError } = await owner.client.from("clinic_events").insert({
+      id: patientEventId,
+      tenant_id: clinicIds[0],
+      actor_user_id: users[0]!.id,
+      event_type: "patient.created",
+      record_id: patientId,
+      payload: { name: "Opening Balance Test", mobile: "09170000015" },
+      occurred_at: new Date().toISOString()
+    });
+    expect(patientError).toBeNull();
+
+    const assistantEventId = randomUUID();
+    const { error: assistantError } = await assistant.client.from("clinic_events").insert({
+      id: assistantEventId,
+      tenant_id: clinicIds[0],
+      actor_user_id: users[1]!.id,
+      event_type: "opening_balance.noted",
+      record_id: patientId,
+      payload: {
+        patientId,
+        amountMinor: 80_000,
+        currency: "PHP",
+        note: "Should be denied"
+      },
+      occurred_at: new Date().toISOString()
+    });
+    expect(assistantError?.code).toBe("42501");
+
+    const openingBalanceEventId = randomUUID();
+    const { error: ownerError } = await owner.client.from("clinic_events").insert({
+      id: openingBalanceEventId,
+      tenant_id: clinicIds[0],
+      actor_user_id: users[0]!.id,
+      event_type: "opening_balance.noted",
+      record_id: patientId,
+      payload: {
+        patientId,
+        amountMinor: 80_000,
+        currency: "PHP",
+        note: "Starting amount from old system"
+      },
+      occurred_at: new Date().toISOString()
+    });
+    expect(ownerError).toBeNull();
+
+    const { data: audits, error: auditError } = await admin
+      .from("audit_events")
+      .select("event_type, metadata")
+      .eq("record_id", patientId)
+      .eq("event_type", "opening_balance.noted");
+    expect(auditError).toBeNull();
+    expect(audits).toEqual([{
+      event_type: "opening_balance.noted",
+      metadata: { patient_id: patientId, currency: "PHP" }
+    }]);
   });
 
   it("keeps service import jobs and staging objects owner-only and tenant-scoped", async () => {

@@ -10,6 +10,7 @@ import Link from "next/link";
 import Odontogram from "@/features/odontogram/odontogram";
 import { useOdontogram } from "@/features/odontogram/use-odontogram";
 import CollectPayment from "@/features/payments/collect-payment";
+import OpeningBalanceSummary from "@/features/payments/opening-balance-summary";
 import { useCollect } from "@/features/payments/use-collect";
 import PatientDetail from "@/features/patients/patient-detail";
 import NextVisitPanel from "@/features/patients/next-visit-panel";
@@ -94,6 +95,7 @@ const PatientWorkspace = ({ patientId, visitId }: Props) => {
         visit={visit}
         visits={visits}
       />
+      <OpeningBalanceSummary events={events} locale={locale} patientId={patientId} />
       <Odontogram
         canChart={visit?.status === "in_chair"}
         entries={entries}

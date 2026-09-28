@@ -6,6 +6,7 @@ const CLINIC_EVENT_TYPES = [
   "chart.appended",
   "quote.created",
   "payment.recorded",
+  "opening_balance.noted",
   "appointment.set",
   "visit.status_changed",
   "reminder.queued"
@@ -145,6 +146,15 @@ const paymentRecordedPayloadSchema = z
   })
   .strict();
 
+const openingBalanceNotedPayloadSchema = z
+  .object({
+    patientId: z.uuid(),
+    amountMinor: moneyMinorSchema.min(1),
+    currency: quoteCurrencySchema,
+    note: z.string().trim().min(1).max(500)
+  })
+  .strict();
+
 const visitStatusSchema = z
   .enum([...VISIT_STATUSES, "booked"])
   .transform((status) => (status === "booked" ? "confirmed" : status));
@@ -255,6 +265,16 @@ const clinicEventSchema = z
       return;
     }
 
+    if (value.type === "opening_balance.noted") {
+      const parsed = openingBalanceNotedPayloadSchema.safeParse(value.payload);
+
+      if (!parsed.success || value.recordId !== parsed.data.patientId) {
+        payloadIssue(ctx, "Invalid opening balance payload");
+      }
+
+      return;
+    }
+
     if (value.type === "reminder.queued") {
       const parsed = reminderQueuedPayloadSchema.safeParse(value.payload);
 
@@ -285,6 +305,7 @@ type QuoteLine = z.infer<typeof quoteLineSchema>;
 type QuoteCreatedPayload = z.infer<typeof quoteCreatedPayloadSchema>;
 type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 type PaymentRecordedPayload = z.infer<typeof paymentRecordedPayloadSchema>;
+type OpeningBalanceNotedPayload = z.infer<typeof openingBalanceNotedPayloadSchema>;
 
 const toClinicEvent = (row: z.infer<typeof clinicEventRowSchema>): ClinicEvent => ({
   id: row.id,
@@ -309,6 +330,7 @@ export {
   chartFindingSchema,
   clinicEventRowSchema,
   clinicEventSchema,
+  openingBalanceNotedPayloadSchema,
   patientPayloadSchema,
   paymentRecordedPayloadSchema,
   quoteCreatedPayloadSchema,
@@ -328,5 +350,6 @@ export type {
   QuoteLine,
   PaymentMethod,
   PaymentRecordedPayload,
+  OpeningBalanceNotedPayload,
   VisitStatus
 };

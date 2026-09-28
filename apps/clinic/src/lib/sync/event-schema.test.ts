@@ -3,9 +3,32 @@ import { describe, expect, it } from "vitest";
 import {
   chartAppendedPayloadSchema,
   clinicEventSchema,
+  openingBalanceNotedPayloadSchema,
   paymentRecordedPayloadSchema,
   quoteCreatedPayloadSchema
 } from "./event-schema";
+
+describe("opening_balance.noted payload", () => {
+  const payload = {
+    patientId: "11111111-1111-4111-8111-111111111111",
+    amountMinor: 120_050,
+    currency: "PHP",
+    note: "Balance carried from the old ledger"
+  } as const;
+
+  it("accepts a strict thin-note payload", () => {
+    expect(openingBalanceNotedPayloadSchema.parse(payload)).toEqual(payload);
+  });
+
+  it.each([
+    [{ ...payload, amountMinor: 0 }, "zero amount"],
+    [{ ...payload, currency: "php" }, "invalid currency"],
+    [{ ...payload, note: "" }, "empty note"],
+    [{ ...payload, extra: true }, "unknown key"]
+  ])("rejects %s (%s)", (value) => {
+    expect(openingBalanceNotedPayloadSchema.safeParse(value).success).toBe(false);
+  });
+});
 
 const VALID_PAYLOAD = {
   patientId: "11111111-1111-4111-8111-111111111111",

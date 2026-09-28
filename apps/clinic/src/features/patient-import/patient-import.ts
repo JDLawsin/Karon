@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { mobileDigits } from "@/features/patients/patient-search";
+import { priceMajorToMinor } from "@/features/services/service-money";
 
 const IMPORT_BUCKET = "patient-import-staging";
 const IMPORT_TTL_HOURS = 24;
@@ -22,7 +23,9 @@ const importMappingSchema = z
   .object({
     name: z.string().min(1).max(80).nullable(),
     mobile: z.string().min(1).max(80).nullable(),
-    email: z.string().min(1).max(80).nullable()
+    email: z.string().min(1).max(80).nullable(),
+    openingBalanceAmount: z.string().min(1).max(80).nullable().default(null),
+    openingBalanceNote: z.string().min(1).max(80).nullable().default(null)
   })
   .strict();
 
@@ -37,7 +40,8 @@ const createImportSchema = z
   .object({
     fileName: z.string().trim().min(1).max(255),
     fileSize: z.int().min(1).max(MAX_IMPORT_FILE_BYTES),
-    contentType: z.string().trim().max(120)
+    contentType: z.string().trim().max(120),
+    includeOpeningBalances: z.boolean().default(false)
   })
   .strict();
 
@@ -68,6 +72,9 @@ const patientImportRowSchema = z
     duplicateName: z.string().optional(),
     duplicateEmail: z.string().email().max(254).optional(),
     decision: z.enum(IMPORT_DECISIONS),
+    openingBalanceAmountMinor: z.int().min(1).max(2_147_483_647).optional(),
+    openingBalanceCurrency: z.string().regex(/^[A-Z]{3}$/).optional(),
+    openingBalanceNote: z.string().trim().min(1).max(500).optional(),
     error: z.string().optional()
   })
   .strict();
@@ -82,6 +89,7 @@ const patientImportJobSchema = z
     storage_path: z.string(),
     content_type: z.string(),
     file_size: z.number().int(),
+    include_opening_balances: z.boolean().default(false),
     columns: z.array(z.string()),
     mapping: importMappingSchema,
     rows: z.array(patientImportRowSchema),
@@ -111,6 +119,7 @@ const publicPatientImportJobSchema = z
     importedRows: z.number().int(),
     failedRows: z.number().int(),
     skippedRows: z.number().int(),
+    includesOpeningBalances: z.boolean(),
     lastError: z.string().nullable(),
     expiresAt: z.string(),
     objectDeletedAt: z.string().nullable(),
@@ -159,6 +168,15 @@ type ExistingPatient = {
   name: string;
   mobile: string;
   email?: string | null;
+};
+type ImportedClinicEvent = {
+  id: string;
+  tenant_id: string;
+  actor_user_id: string;
+  event_type: "patient.created" | "patient.updated" | "opening_balance.noted";
+  record_id: string;
+  payload: Record<string, unknown>;
+  occurred_at: string;
 };
 
 class ImportFileError extends Error {}
@@ -309,8 +327,103 @@ const suggestMapping = (columns: string[]): ImportMapping => ({
     "contact",
     "contact number"
   ]),
-  email: findColumn(columns, ["email", "email address"])
+  email: findColumn(columns, ["email", "email address"]),
+  openingBalanceAmount: null,
+  openingBalanceNote: null
 });
+
+const suggestOpeningBalanceMapping = (columns: string[]): ImportMapping => ({
+  name: null,
+  mobile: findColumn(columns, [
+    "mobile",
+    "mobile number",
+    "phone",
+    "phone number",
+    "contact",
+    "contact number"
+  ]),
+  email: null,
+  openingBalanceAmount: findColumn(columns, [
+    "opening balance",
+    "open balance",
+    "balance",
+    "amount"
+  ]),
+  openingBalanceNote: findColumn(columns, ["note", "notes", "balance note"])
+});
+
+const buildOpeningBalanceImportRows = (
+  source: ImportSource,
+  mapping: ImportMapping,
+  existingPatients: ExistingPatient[],
+  currencyCode: string
+): PatientImportRow[] => {
+  const existingByMobile = Map.groupBy(existingPatients, (patient) =>
+    mobileDigits(patient.mobile)
+  );
+  const seenMobiles = new Set<string>();
+
+  return source.rows.map(({ rowNumber, values }) => {
+    const mobile = mapping.mobile ? values[mapping.mobile]?.trim() ?? "" : "";
+    const amount = mapping.openingBalanceAmount
+      ? values[mapping.openingBalanceAmount]?.trim() ?? ""
+      : "";
+    const note = mapping.openingBalanceNote
+      ? values[mapping.openingBalanceNote]?.trim() ?? ""
+      : "";
+    const digits = mobileDigits(mobile);
+    const matches = existingByMobile.get(digits) ?? [];
+    const existing = matches.length === 1 ? matches[0] : undefined;
+    let amountMinor: number | undefined;
+    let error: string | undefined;
+
+    if (!mapping.mobile || !mapping.openingBalanceAmount || !mapping.openingBalanceNote) {
+      error = "Map the mobile, opening balance, and note columns.";
+    } else if (mobile.length < 7 || mobile.length > 20 || digits.length < 7 || digits.length > 15) {
+      error = "Mobile must contain 7 to 15 digits.";
+    } else if (!/^\d+(?:\.\d+)?$/.test(amount)) {
+      error = "Opening balance must be a plain positive amount.";
+    } else if (!note || note.length > 500) {
+      error = "Opening balance note must be between 1 and 500 characters.";
+    } else if (matches.length === 0) {
+      error = "No patient matches this mobile number.";
+    } else if (matches.length > 1) {
+      error = "More than one patient matches this mobile number.";
+    } else if (seenMobiles.has(digits)) {
+      error = "This mobile number appears more than once in the file.";
+    } else {
+      try {
+        amountMinor = priceMajorToMinor(Number(amount), currencyCode);
+
+        if (amountMinor <= 0) {
+          error = "Opening balance must be greater than zero.";
+        }
+      } catch (caught) {
+        error = caught instanceof Error ? caught.message : "Opening balance is invalid.";
+      }
+    }
+
+    seenMobiles.add(digits);
+
+    return {
+      rowNumber,
+      values,
+      name: existing?.name ?? "",
+      mobile,
+      mobileDigits: digits,
+      patientId: existing?.id ?? crypto.randomUUID(),
+      eventId: crypto.randomUUID(),
+      ...(existing
+        ? { duplicatePatientId: existing.id, duplicateName: existing.name }
+        : {}),
+      decision: error ? "skip" : "merge",
+      ...(amountMinor === undefined ? {} : { openingBalanceAmountMinor: amountMinor }),
+      openingBalanceCurrency: currencyCode,
+      ...(note ? { openingBalanceNote: note } : {}),
+      ...(error ? { error } : {})
+    };
+  });
+};
 
 const buildPatientImportRows = (
   source: ImportSource,
@@ -403,10 +516,35 @@ const importEvents = (
   job: PatientImportJob,
   rows: PatientImportRow[],
   occurredAt = new Date().toISOString()
-) =>
-  rows.flatMap((row, index) => {
+): ImportedClinicEvent[] =>
+  rows.flatMap<ImportedClinicEvent>((row, index) => {
     if (row.error || row.decision === "skip") {
       return [];
+    }
+
+    if (job.include_opening_balances) {
+      if (
+        row.openingBalanceAmountMinor === undefined ||
+        !row.openingBalanceCurrency ||
+        !row.openingBalanceNote
+      ) {
+        return [];
+      }
+
+      return [{
+        id: row.eventId,
+        tenant_id: job.tenant_id,
+        actor_user_id: job.created_by,
+        event_type: "opening_balance.noted" as const,
+        record_id: row.patientId,
+        payload: {
+          patientId: row.patientId,
+          amountMinor: row.openingBalanceAmountMinor,
+          currency: row.openingBalanceCurrency,
+          note: row.openingBalanceNote
+        },
+        occurred_at: new Date(Date.parse(occurredAt) + index).toISOString()
+      }];
     }
 
     const merging = row.decision === "merge";
@@ -457,6 +595,7 @@ const publicImportJob = (job: PatientImportJob) => ({
   importedRows: job.imported_rows,
   failedRows: job.failed_rows,
   skippedRows: job.skipped_rows,
+  includesOpeningBalances: job.include_opening_balances,
   lastError: job.last_error,
   expiresAt: job.expires_at,
   objectDeletedAt: job.object_deleted_at,
@@ -474,6 +613,7 @@ export {
   MAX_IMPORT_ROWS,
   ImportFileError,
   applyImportDecisions,
+  buildOpeningBalanceImportRows,
   buildPatientImportRows,
   createImportSchema,
   errorRowsCsv,
@@ -489,6 +629,7 @@ export {
   publicPatientImportJobSchema,
   publicImportJob,
   sourceFromMatrix,
+  suggestOpeningBalanceMapping,
   suggestMapping,
   createImportResponseSchema
 };

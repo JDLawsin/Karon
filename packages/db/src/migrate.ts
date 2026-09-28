@@ -38,7 +38,8 @@ const files = [
   "packages/db/drizzle/0029_patient_imports.sql",
   "packages/db/drizzle/0030_service_imports.sql",
   "packages/db/drizzle/0031_migration_checklist_spi.sql",
-  "packages/db/drizzle/0032_migration_checklist_unique_items.sql"
+  "packages/db/drizzle/0032_migration_checklist_unique_items.sql",
+  "packages/db/drizzle/0033_opening_balance_notes.sql"
 ];
 
 const splitSql = (contents: string) => {

@@ -8,11 +8,13 @@ import {
   IMPORT_BUCKET,
   ImportFileError,
   applyImportDecisions,
+  buildOpeningBalanceImportRows,
   buildPatientImportRows,
   importEvents,
   patientImportJobSchema,
   publicImportJob,
   suggestMapping,
+  suggestOpeningBalanceMapping,
   type ImportDecision,
   type ImportMapping,
   type PatientImportJob
@@ -30,6 +32,7 @@ const IMPORT_JOB_COLUMNS = [
   "storage_path",
   "content_type",
   "file_size",
+  "include_opening_balances",
   "columns",
   "mapping",
   "rows",
@@ -185,6 +188,41 @@ const loadExistingPatients = async (
   }
 };
 
+const loadClinicCurrency = async (supabase: SupabaseClient, tenantId: string) => {
+  const { data, error } = await supabase
+    .from("clinics")
+    .select("currency_code")
+    .eq("id", tenantId)
+    .single();
+
+  if (error || !data?.currency_code) {
+    throw new Error("Set the clinic currency before importing opening balances.");
+  }
+
+  return data.currency_code;
+};
+
+const buildRows = async (
+  supabase: SupabaseClient,
+  job: PatientImportJob,
+  source: { columns: string[]; rows: { rowNumber: number; values: Record<string, string> }[] },
+  mapping: ImportMapping
+) => {
+  const existingPatients = await loadExistingPatients(supabase, job.tenant_id);
+
+  if (!job.include_opening_balances) {
+    return buildPatientImportRows(source, mapping, existingPatients);
+  }
+
+  const currencyCode = await loadClinicCurrency(supabase, job.tenant_id);
+  return buildOpeningBalanceImportRows(
+    source,
+    mapping,
+    existingPatients,
+    currencyCode
+  );
+};
+
 const updatePreview = async (
   supabase: SupabaseClient,
   job: PatientImportJob,
@@ -194,12 +232,11 @@ const updatePreview = async (
     throw new ImportFileError("This import preview can no longer be changed.");
   }
 
-  const existingPatients = await loadExistingPatients(supabase, job.tenant_id);
   const source = {
     columns: job.columns,
     rows: job.rows.map(({ rowNumber, values }) => ({ rowNumber, values }))
   };
-  const rows = buildPatientImportRows(source, mapping, existingPatients);
+  const rows = await buildRows(supabase, job, source, mapping);
   const failedRows = rows.filter((row) => row.error).length;
   const now = new Date().toISOString();
   const { data, error } = await supabase
@@ -254,9 +291,10 @@ const previewImportJob = async (
     }
 
     const source = await parsePatientImportFile(await file.arrayBuffer(), job.content_type);
-    const mapping = suggestMapping(source.columns);
-    const existingPatients = await loadExistingPatients(supabase, job.tenant_id);
-    const rows = buildPatientImportRows(source, mapping, existingPatients);
+    const mapping = job.include_opening_balances
+      ? suggestOpeningBalanceMapping(source.columns)
+      : suggestMapping(source.columns);
+    const rows = await buildRows(supabase, job, source, mapping);
     const failedRows = rows.filter((row) => row.error).length;
     const parsedAt = new Date().toISOString();
     const { data, error } = await supabase

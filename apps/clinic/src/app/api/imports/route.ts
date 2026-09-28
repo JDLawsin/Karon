@@ -97,7 +97,8 @@ export const POST = async (request: Request) => {
       file_name: parsed.data.fileName,
       storage_path: storagePath,
       content_type: contentType,
-      file_size: parsed.data.fileSize
+      file_size: parsed.data.fileSize,
+      include_opening_balances: parsed.data.includeOpeningBalances
     })
     .select(IMPORT_JOB_COLUMNS)
     .single();

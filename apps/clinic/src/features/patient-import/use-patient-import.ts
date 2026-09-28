@@ -48,14 +48,21 @@ const loadImportJob = async (jobId: string) => {
   return importJobResponseSchema.parse(await response.json()).job;
 };
 
-const createAndPreviewImport = async (file: File) => {
+const createAndPreviewImport = async ({
+  file,
+  includeOpeningBalances
+}: {
+  file: File;
+  includeOpeningBalances: boolean;
+}) => {
   const response = await fetch("/api/imports", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       fileName: file.name,
       fileSize: file.size,
-      contentType: file.type
+      contentType: file.type,
+      includeOpeningBalances
     })
   });
 

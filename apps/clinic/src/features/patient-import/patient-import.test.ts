@@ -3,17 +3,22 @@ import { describe, expect, it } from "vitest";
 import {
   ImportFileError,
   applyImportDecisions,
+  buildOpeningBalanceImportRows,
   buildPatientImportRows,
   errorRowsCsv,
   importEvents,
   parseCsv,
   patientImportJobSchema,
   sourceFromMatrix,
+  suggestOpeningBalanceMapping,
   suggestMapping,
   type PatientImportJob
 } from "./patient-import";
 
-const job = (rows: PatientImportJob["rows"]): PatientImportJob =>
+const job = (
+  rows: PatientImportJob["rows"],
+  includeOpeningBalances = false
+): PatientImportJob =>
   patientImportJobSchema.parse({
     id: "10000000-0000-4000-8000-000000000001",
     tenant_id: "10000000-0000-4000-8000-000000000002",
@@ -24,6 +29,7 @@ const job = (rows: PatientImportJob["rows"]): PatientImportJob =>
       "10000000-0000-4000-8000-000000000002/10000000-0000-4000-8000-000000000001/source.csv",
     content_type: "text/csv",
     file_size: 100,
+    include_opening_balances: includeOpeningBalances,
     columns: ["Name", "Mobile", "Email"],
     mapping: { name: "Name", mobile: "Mobile", email: "Email" },
     rows,
@@ -68,7 +74,9 @@ describe("patient import", () => {
     expect(mapping).toEqual({
       name: "Patient Name",
       mobile: "Phone",
-      email: "Email"
+      email: "Email",
+      openingBalanceAmount: null,
+      openingBalanceNote: null
     });
     expect(rows[0]).toMatchObject({
       duplicateName: "Existing Mae",
@@ -198,5 +206,91 @@ describe("patient import", () => {
     expect(errorRowsCsv(job(rows))).toContain(
       '"\'=HYPERLINK(""https://example.invalid"")"'
     );
+  });
+});
+
+describe("opening balance note import", () => {
+  it("matches existing patients by mobile and rejects an unknown mobile", () => {
+    const source = sourceFromMatrix([
+      ["Mobile", "Opening balance", "Note"],
+      ["+63 917 123 4567", "1200.50", "Balance carried from the old ledger"],
+      ["09991234567", "500", "Unmatched patient"],
+      ["09221234567", "700", "Ambiguous patient"]
+    ]);
+    const mapping = suggestOpeningBalanceMapping(source.columns);
+    const rows = buildOpeningBalanceImportRows(source, mapping, [
+      {
+        id: "10000000-0000-4000-8000-000000000099",
+        name: "Mae Santos",
+        mobile: "09171234567"
+      },
+      {
+        id: "10000000-0000-4000-8000-000000000098",
+        name: "First duplicate",
+        mobile: "09221234567"
+      },
+      {
+        id: "10000000-0000-4000-8000-000000000097",
+        name: "Second duplicate",
+        mobile: "+63 922 123 4567"
+      }
+    ], "PHP");
+
+    expect(mapping).toEqual({
+      name: null,
+      mobile: "Mobile",
+      email: null,
+      openingBalanceAmount: "Opening balance",
+      openingBalanceNote: "Note"
+    });
+    expect(rows[0]).toMatchObject({
+      patientId: "10000000-0000-4000-8000-000000000099",
+      name: "Mae Santos",
+      openingBalanceAmountMinor: 120_050,
+      openingBalanceCurrency: "PHP",
+      openingBalanceNote: "Balance carried from the old ledger",
+      decision: "merge"
+    });
+    expect(rows[1]?.error).toBe("No patient matches this mobile number.");
+    expect(rows[2]?.error).toBe("More than one patient matches this mobile number.");
+  });
+
+  it("creates opening balance events without fabricating payment history", () => {
+    const source = sourceFromMatrix([
+      ["Mobile", "Balance", "Note"],
+      ["09171234567", "800", "Starting amount only"]
+    ]);
+    const rows = buildOpeningBalanceImportRows(
+      source,
+      {
+        name: null,
+        mobile: "Mobile",
+        email: null,
+        openingBalanceAmount: "Balance",
+        openingBalanceNote: "Note"
+      },
+      [{
+        id: "10000000-0000-4000-8000-000000000099",
+        name: "Mae Santos",
+        mobile: "09171234567"
+      }],
+      "PHP"
+    );
+
+    const events = importEvents(job(rows, true), rows, "2026-09-27T10:00:00.000Z");
+
+    expect(events).toEqual([
+      expect.objectContaining({
+        event_type: "opening_balance.noted",
+        record_id: "10000000-0000-4000-8000-000000000099",
+        payload: {
+          patientId: "10000000-0000-4000-8000-000000000099",
+          amountMinor: 80_000,
+          currency: "PHP",
+          note: "Starting amount only"
+        }
+      })
+    ]);
+    expect(events.some((event) => event.event_type === "payment.recorded")).toBe(false);
   });
 });

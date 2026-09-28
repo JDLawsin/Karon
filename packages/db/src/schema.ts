@@ -295,6 +295,7 @@ export const auditEvents = pgTable(
         'chart.appended',
         'quote.created',
         'payment.recorded',
+        'opening_balance.noted',
         'collections.viewed',
         'import.started',
         'import.completed',
@@ -335,6 +336,7 @@ export const clinicEvents = pgTable(
         'chart.appended',
         'quote.created',
         'payment.recorded',
+        'opening_balance.noted',
         'appointment.set',
         'visit.status_changed',
         'reminder.queued'
@@ -389,6 +391,8 @@ export type PatientImportMapping = {
   name: string | null;
   mobile: string | null;
   email: string | null;
+  openingBalanceAmount: string | null;
+  openingBalanceNote: string | null;
 };
 
 export type PatientImportDecision = "skip" | "merge" | "create";
@@ -406,6 +410,9 @@ export type PatientImportRow = {
   duplicateName?: string;
   duplicateEmail?: string;
   decision: PatientImportDecision;
+  openingBalanceAmountMinor?: number;
+  openingBalanceCurrency?: string;
+  openingBalanceNote?: string;
   error?: string;
 };
 
@@ -424,11 +431,12 @@ export const patientImportJobs = pgTable(
     storagePath: text("storage_path").notNull(),
     contentType: text("content_type").notNull(),
     fileSize: integer("file_size").notNull(),
+    includeOpeningBalances: boolean("include_opening_balances").notNull().default(false),
     columns: jsonb("columns").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     mapping: jsonb("mapping")
       .$type<PatientImportMapping>()
       .notNull()
-      .default(sql`'{"name":null,"mobile":null,"email":null}'::jsonb`),
+      .default(sql`'{"name":null,"mobile":null,"email":null,"openingBalanceAmount":null,"openingBalanceNote":null}'::jsonb`),
     rows: jsonb("rows")
       .$type<PatientImportRow[]>()
       .notNull()
