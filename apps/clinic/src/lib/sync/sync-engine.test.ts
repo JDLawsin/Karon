@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -15,10 +13,10 @@ const makeEvent = (
   type: ClinicEvent["type"],
   overrides: Partial<ClinicEvent> = {}
 ): ClinicEvent => ({
-  id: randomUUID(),
+  id: crypto.randomUUID(),
   tenantId: TENANT,
   actorUserId: ACTOR,
-  recordId: randomUUID(),
+  recordId: crypto.randomUUID(),
   occurredAt: new Date().toISOString(),
   type,
   payload:
@@ -26,12 +24,12 @@ const makeEvent = (
       ? { name: "Ana Cruz", mobile: "09171234567" }
       : type === "quote.created"
         ? {
-            patientId: randomUUID(),
-            visitId: randomUUID(),
+            patientId: crypto.randomUUID(),
+            visitId: crypto.randomUUID(),
             status: "accepted",
             lines: [
               {
-                serviceId: randomUUID(),
+                serviceId: crypto.randomUUID(),
                 serviceName: "Cleaning",
                 qty: 1,
                 amountMinor: 150_000,
@@ -133,7 +131,7 @@ describe("sync engine", () => {
 
   it("pulls a remote event without deleting a local sibling", async () => {
     const db = await openClinicDb(TENANT, DEK);
-    const recordId = randomUUID();
+    const recordId = crypto.randomUUID();
     const local = makeEvent("quote.created", { recordId });
     await recordClinicEvent(db, local);
 
@@ -213,8 +211,8 @@ describe("sync engine", () => {
 
   it("records a walk-in pair in one transaction", async () => {
     const db = await openClinicDb(TENANT, DEK);
-    const patientId = randomUUID();
-    const visitId = randomUUID();
+    const patientId = crypto.randomUUID();
+    const visitId = crypto.randomUUID();
     const occurredAt = new Date().toISOString();
 
     await recordClinicEvents(db, [
