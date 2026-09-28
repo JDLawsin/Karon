@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 
 import { parseAuthClaims, parseMembership } from "@/features/auth/parse-membership";
+import { parseEntitlement } from "@/features/billing/entitlement";
 import {
   DEVICE_TRUST_COOKIE,
   redeemDeviceTrust
@@ -21,6 +22,7 @@ const getClinicAccess = async () => {
       deviceTrusted: false,
       passwordRecovery: false,
       mfaOk: false,
+      entitlement: null,
       supabase
     };
   }
@@ -29,14 +31,22 @@ const getClinicAccess = async () => {
   const token = cookieStore.get(DEVICE_TRUST_COOKIE)?.value;
   await redeemDeviceTrust(supabase, token);
 
-  const [{ data: rows }, { data: sessionActive }, { data: mfaOk }] =
-    await Promise.all([
-      supabase.rpc("current_membership"),
-      supabase.rpc("has_active_session"),
-      supabase.rpc("session_mfa_ok"),
-      supabase.rpc("touch_my_session")
-    ]);
+  const [
+    { data: rows },
+    { data: sessionActive },
+    { data: mfaOk },
+    { data: entitlementRows }
+  ] = await Promise.all([
+    supabase.rpc("current_membership"),
+    supabase.rpc("has_active_session"),
+    supabase.rpc("session_mfa_ok"),
+    supabase.rpc("current_entitlement"),
+    supabase.rpc("touch_my_session")
+  ]);
   const row = Array.isArray(rows) ? rows[0] : rows;
+  const entitlementRow = Array.isArray(entitlementRows)
+    ? entitlementRows[0]
+    : entitlementRows;
   const sessionMfaOk = mfaOk === true;
 
   return {
@@ -47,6 +57,7 @@ const getClinicAccess = async () => {
     deviceTrusted: sessionMfaOk && aal !== "aal2",
     passwordRecovery,
     mfaOk: sessionMfaOk,
+    entitlement: parseEntitlement(entitlementRow),
     supabase
   };
 };

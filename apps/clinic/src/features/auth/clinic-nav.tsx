@@ -19,6 +19,7 @@ import {
   BriefcaseMedical,
   CalendarDays,
   ChevronRight,
+  CreditCard,
   LogOut,
   Monitor,
   Moon,
@@ -135,17 +136,41 @@ const ClinicJobNav = ({ role }: JobNavProps) => {
   );
 };
 
-const ClinicAccountNav = () => {
+type AccountNavProps = {
+  role: ClinicRole;
+};
+
+const ClinicAccountNav = ({ role }: AccountNavProps) => {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
-  const active = isCurrentPath(pathname, "/settings");
+  const billingActive = pathname === "/billing";
+  const settingsActive = isCurrentPath(pathname, "/settings");
 
   return (
     <SidebarMenu>
+      {role === "owner" ? (
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild isActive={billingActive} tooltip="Billing">
+            <Link
+              aria-current={billingActive ? "page" : undefined}
+              aria-label="Billing"
+              href="/billing"
+              onClick={() => {
+                if (isMobile) {
+                  setOpenMobile(false);
+                }
+              }}
+            >
+              <CreditCard aria-hidden />
+              <span>Billing</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ) : null}
       <SidebarMenuItem>
-        <SidebarMenuButton asChild isActive={active} tooltip="Settings">
+        <SidebarMenuButton asChild isActive={settingsActive} tooltip="Settings">
           <Link
-            aria-current={active ? "page" : undefined}
+            aria-current={settingsActive ? "page" : undefined}
             aria-label="Settings"
             href="/settings"
             onClick={() => {
@@ -259,4 +284,4 @@ export {
   ClinicBrandLink,
   ClinicJobNav
 };
-export type { AccountMenuProps, JobNavProps };
+export type { AccountMenuProps, AccountNavProps, JobNavProps };

@@ -30,6 +30,7 @@ const isRetryLater = (error: { message: string; code?: string }) => {
     message.includes("failed to fetch") ||
     message.includes("network") ||
     error.code === "PGRST301" ||
+    error.code === "42501" ||
     error.code === "401" ||
     error.code === "403"
   );

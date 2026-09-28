@@ -95,6 +95,14 @@ Ask first: new runtime dependencies; SMS vendor; Google Calendar reconnect. Do n
 
 Never commit `.env*`.
 
+## Development Supabase authorization
+
+The user has authorized agents, across current and future sessions, to use the
+Supabase project configured by the local `.env` files for development testing,
+including migrations and integration/E2E tests. Verify that the configured
+target is development before destructive or irreversible operations. This does
+not authorize production access, exposing secrets, or committing `.env*`.
+
 ## Verify
 
 After a feature, non-trivial bug fix, or refactor: `.cursor/rules/finalize-review.mdc`. Then matching `yarn` scripts. Then `.cursor/rules/clean-runtime.mdc` (existing `next dev` / test terminals). Do not claim done while those are dirty. Changed UI: exercise the flow in the browser when tools exist (fake data).

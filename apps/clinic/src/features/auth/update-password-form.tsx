@@ -87,7 +87,8 @@ const UpdatePasswordForm = ({ passwordRecovery }: Props) => {
         membership: snapshot.membership,
         sessionActive: snapshot.sessionActive,
         deviceTrusted: snapshot.deviceTrusted,
-        passwordRecovery: false
+        passwordRecovery: false,
+        entitlement: snapshot.entitlement
       }) ?? "/today";
 
     if (snapshot.membership && snapshot.userId) {

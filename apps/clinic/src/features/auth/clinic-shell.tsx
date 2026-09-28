@@ -45,6 +45,7 @@ type Props = {
   sessionActive?: boolean;
   appVersion: string;
   children: ReactNode;
+  cloudSyncEnabled?: boolean;
 };
 
 const ClinicShell = ({
@@ -52,7 +53,8 @@ const ClinicShell = ({
   userId,
   sessionActive = true,
   appVersion,
-  children
+  children,
+  cloudSyncEnabled = true
 }: Props) => {
   const router = useRouter();
   const [chromeActions, setChromeActions] = useState<HTMLElement | null>(null);
@@ -61,12 +63,18 @@ const ClinicShell = ({
   const [leaving, setLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
   const role: ClinicRole = membership.role;
-  const { online, pendingCount } = useClinicSync(membership.tenantId);
-  const syncBannerTitle = !online
-    ? "Saved on this device. Will sync when online."
-    : pendingCount > 0
-      ? "Saved on this device. Syncing."
-      : null;
+  const { online, pendingCount } = useClinicSync(
+    membership.tenantId,
+    cloudSyncEnabled
+  );
+  const syncBannerTitle =
+    pendingCount > 0 && !cloudSyncEnabled
+      ? "Saved on this device. Waiting for clinic access to sync."
+      : !online
+        ? "Saved on this device. Will sync when online."
+        : pendingCount > 0
+          ? "Saved on this device. Syncing."
+          : null;
 
   const signOut = async () => {
     setLeaving(true);
@@ -152,7 +160,7 @@ const ClinicShell = ({
                       <SidebarGroupLabel>Account</SidebarGroupLabel>
                       <SidebarGroupContent>
                         <nav aria-label="Account">
-                          <ClinicAccountNav />
+                          <ClinicAccountNav role={role} />
                         </nav>
                       </SidebarGroupContent>
                     </SidebarGroup>

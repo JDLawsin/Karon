@@ -18,7 +18,7 @@ const subscribeOnline = (onChange: () => void) => {
   };
 };
 
-const useClinicSync = (tenantId: string) => {
+const useClinicSync = (tenantId: string, cloudSyncEnabled = true) => {
   const online = useSyncExternalStore(
     subscribeOnline,
     () => navigator.onLine,
@@ -56,7 +56,7 @@ const useClinicSync = (tenantId: string) => {
 
           setPendingCount(count);
 
-          if (count > 0 && navigator.onLine && db.isOpen()) {
+          if (count > 0 && cloudSyncEnabled && navigator.onLine && db.isOpen()) {
             void drainOutbox(db, supabase);
           }
         },
@@ -69,7 +69,7 @@ const useClinicSync = (tenantId: string) => {
       unsubscribe = () => subscription.unsubscribe();
 
       runSync = () => {
-        if (cancelled || !navigator.onLine || !db.isOpen()) {
+        if (cancelled || !cloudSyncEnabled || !navigator.onLine || !db.isOpen()) {
           return;
         }
 
@@ -77,8 +77,10 @@ const useClinicSync = (tenantId: string) => {
         void pullEvents(db, supabase);
       };
 
-      runSync();
-      timer = window.setInterval(runSync, SYNC_INTERVAL_MS);
+      if (cloudSyncEnabled) {
+        runSync();
+        timer = window.setInterval(runSync, SYNC_INTERVAL_MS);
+      }
     };
 
     void start();
@@ -90,7 +92,7 @@ const useClinicSync = (tenantId: string) => {
       unsubscribe?.();
       closeClinicDb();
     };
-  }, [tenantId]);
+  }, [cloudSyncEnabled, tenantId]);
 
   return { online, pendingCount };
 };

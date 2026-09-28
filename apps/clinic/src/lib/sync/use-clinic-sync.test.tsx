@@ -30,6 +30,30 @@ afterEach(async () => {
 });
 
 describe("useClinicSync", () => {
+  it("keeps counting the outbox without cloud sync while access is paused", async () => {
+    const db = await openClinicDb(TENANT);
+    await db.outbox.add({
+      id: randomUUID(),
+      tenantId: TENANT,
+      createdAt: new Date().toISOString(),
+      attempts: 0
+    });
+
+    const { result, unmount } = renderHook(() => useClinicSync(TENANT, false));
+
+    await waitFor(() => {
+      expect(result.current.pendingCount).toBe(1);
+    });
+    expect(drainOutbox).not.toHaveBeenCalled();
+    expect(pullEvents).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new Event("online"));
+    expect(drainOutbox).not.toHaveBeenCalled();
+    expect(pullEvents).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
   it("drains as soon as the browser comes back online", async () => {
     const { unmount } = renderHook(() => useClinicSync(TENANT));
 

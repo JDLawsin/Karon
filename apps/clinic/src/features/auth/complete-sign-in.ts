@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { clearStoredLastActive } from "@/features/auth/idle-lock";
 import { parseAuthClaims, parseMembership } from "@/features/auth/parse-membership";
 import { resolveAuthDestination } from "@/features/auth/resolve-auth-destination";
+import { parseEntitlement } from "@/features/billing/entitlement";
 import { writeAuditEvent } from "@/lib/auth/audit";
 
 const applyDeviceTrust = async () => {
@@ -21,13 +22,21 @@ const readAuthSnapshot = async (supabase: SupabaseClient) => {
   const { data: claimsData } = await supabase.auth.getClaims();
   await supabase.rpc("register_my_session");
   await applyDeviceTrust();
-  const [{ data: rows }, { data: sessionActive }, { data: mfaOk }] =
-    await Promise.all([
-      supabase.rpc("current_membership"),
-      supabase.rpc("has_active_session"),
-      supabase.rpc("session_mfa_ok")
-    ]);
+  const [
+    { data: rows },
+    { data: sessionActive },
+    { data: mfaOk },
+    { data: entitlementRows }
+  ] = await Promise.all([
+    supabase.rpc("current_membership"),
+    supabase.rpc("has_active_session"),
+    supabase.rpc("session_mfa_ok"),
+    supabase.rpc("current_entitlement")
+  ]);
   const row = Array.isArray(rows) ? rows[0] : rows;
+  const entitlementRow = Array.isArray(entitlementRows)
+    ? entitlementRows[0]
+    : entitlementRows;
   const claims = parseAuthClaims(claimsData?.claims);
   const sessionMfaOk = mfaOk === true;
 
@@ -37,7 +46,8 @@ const readAuthSnapshot = async (supabase: SupabaseClient) => {
     membership: parseMembership(row),
     sessionActive: sessionActive === true,
     deviceTrusted: sessionMfaOk && claims.aal !== "aal2",
-    passwordRecovery: claims.passwordRecovery
+    passwordRecovery: claims.passwordRecovery,
+    entitlement: parseEntitlement(entitlementRow)
   };
 };
 

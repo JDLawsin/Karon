@@ -1845,4 +1845,122 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     ]);
   });
 
+  it("expires trials on the server and restores access with manual grace", async () => {
+    const owner = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(owner.client);
+    const assistant = await createAuthedClient(users[1]!.email);
+    const expiredStart = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    const graceStart = new Date().toISOString();
+    const graceEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+    try {
+      const { error: expireError } = await admin
+        .from("clinics")
+        .update({ trial_started_at: expiredStart })
+        .eq("id", clinicIds[0]);
+      expect(expireError).toBeNull();
+
+      const { data: expiredRows, error: entitlementError } = await owner.client.rpc(
+        "current_entitlement"
+      );
+      expect(entitlementError).toBeNull();
+      expect(expiredRows).toEqual([
+        expect.objectContaining({
+          status: "expired",
+          source: "trial",
+          days_remaining: 0,
+          has_access: false
+        })
+      ]);
+
+      const blockedEventId = randomUUID();
+      const { error: blockedWriteError } = await owner.client
+        .from("clinic_events")
+        .insert({
+          id: blockedEventId,
+          tenant_id: clinicIds[0],
+          actor_user_id: users[0]!.id,
+          event_type: "patient.created",
+          record_id: randomUUID(),
+          payload: { name: "Expired Trial", mobile: "09170000016" },
+          occurred_at: new Date().toISOString()
+        });
+      expect(blockedWriteError?.code).toBe("42501");
+
+      const { error: directReadError } = await owner.client
+        .from("clinic_entitlements")
+        .select("tenant_id");
+      expect(directReadError?.code).toBe("42501");
+
+      const { error: graceError } = await admin.from("clinic_entitlements").insert({
+        tenant_id: clinicIds[0],
+        status: "active",
+        source: "manual",
+        starts_at: graceStart,
+        access_until: graceEnd
+      });
+      expect(graceError).toBeNull();
+
+      const { data: restoredRows, error: restoredError } = await assistant.client.rpc(
+        "current_entitlement"
+      );
+      expect(restoredError).toBeNull();
+      expect(restoredRows).toEqual([
+        expect.objectContaining({
+          status: "active",
+          source: "manual",
+          has_access: true
+        })
+      ]);
+
+      const restoredEventId = randomUUID();
+      const { error: restoredWriteError } = await assistant.client
+        .from("clinic_events")
+        .insert({
+          id: restoredEventId,
+          tenant_id: clinicIds[0],
+          actor_user_id: users[1]!.id,
+          event_type: "patient.created",
+          record_id: randomUUID(),
+          payload: { name: "Restored Trial", mobile: "09170000017" },
+          occurred_at: new Date().toISOString()
+        });
+      expect(restoredWriteError).toBeNull();
+
+      const { error: forgedAuditError } = await assistant.client
+        .from("audit_events")
+        .insert({
+          tenant_id: clinicIds[0],
+          actor_user_id: users[1]!.id,
+          event_type: "entitlement.grace_granted",
+          record_id: clinicIds[0],
+          metadata: {}
+        });
+      expect(forgedAuditError?.code).toBe("42501");
+
+      const { data: audits, error: auditError } = await admin
+        .from("audit_events")
+        .select("event_type")
+        .eq("tenant_id", clinicIds[0])
+        .in("event_type", [
+          "entitlement.trial_expired",
+          "entitlement.grace_granted"
+        ]);
+      expect(auditError).toBeNull();
+      expect(audits?.map(({ event_type }) => event_type).sort()).toEqual([
+        "entitlement.grace_granted",
+        "entitlement.trial_expired"
+      ]);
+    } finally {
+      await admin
+        .from("clinic_entitlements")
+        .delete()
+        .eq("tenant_id", clinicIds[0]);
+      await admin
+        .from("clinics")
+        .update({ trial_started_at: new Date().toISOString() })
+        .eq("id", clinicIds[0]);
+    }
+  });
+
 });

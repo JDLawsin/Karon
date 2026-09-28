@@ -21,6 +21,13 @@ const timestamptz = (name: string) =>
 
 export const clinicRoleEnum = pgEnum("clinic_role", ["owner", "assistant"]);
 
+export const clinicEntitlementStatusEnum = pgEnum("clinic_entitlement_status", [
+  "trialing",
+  "active",
+  "past_due",
+  "expired"
+]);
+
 export const patientImportStatusEnum = pgEnum("patient_import_status", [
   "awaiting_upload",
   "uploaded",
@@ -219,6 +226,43 @@ export const clinicSessions = pgTable(
   ]
 ).enableRLS();
 
+export const clinicEntitlements = pgTable(
+  "clinic_entitlements",
+  {
+    tenantId: uuid("tenant_id")
+      .primaryKey()
+      .references(() => clinics.id, { onDelete: "cascade" }),
+    status: clinicEntitlementStatusEnum("status").notNull(),
+    source: text("source").notNull(),
+    startsAt: timestamptz("starts_at").defaultNow().notNull(),
+    accessUntil: timestamptz("access_until"),
+    createdAt: timestamptz("created_at").defaultNow().notNull(),
+    updatedAt: timestamptz("updated_at").defaultNow().notNull()
+  },
+  (table) => [
+    check(
+      "clinic_entitlements_status_check",
+      sql`${table.status} <> 'trialing'::clinic_entitlement_status`
+    ),
+    check(
+      "clinic_entitlements_source_check",
+      sql`${table.source} in ('manual', 'paymongo')`
+    ),
+    check(
+      "clinic_entitlements_window_check",
+      sql`${table.accessUntil} is null or ${table.accessUntil} > ${table.startsAt}`
+    ),
+    check(
+      "clinic_entitlements_manual_expiry_check",
+      sql`${table.source} <> 'manual' or ${table.accessUntil} is not null`
+    ),
+    check(
+      "clinic_entitlements_past_due_expiry_check",
+      sql`${table.status} <> 'past_due'::clinic_entitlement_status or ${table.accessUntil} is not null`
+    )
+  ]
+).enableRLS();
+
 export const trustedDevices = pgTable(
   "trusted_devices",
   {
@@ -300,7 +344,10 @@ export const auditEvents = pgTable(
         'import.started',
         'import.completed',
         'import.failed',
-        'import.checklist_updated'
+        'import.checklist_updated',
+        'entitlement.trial_expired',
+        'entitlement.grace_granted',
+        'entitlement.expired'
       )`
     )
   ]

@@ -12,7 +12,8 @@ const redirectForPath = async (pathname: string) => {
     membership: access.membership,
     sessionActive: access.sessionActive,
     deviceTrusted: access.deviceTrusted,
-    passwordRecovery: access.passwordRecovery
+    passwordRecovery: access.passwordRecovery,
+    entitlement: access.entitlement
   });
 
   if (destination) {

@@ -1,6 +1,31 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveAuthDestination } from "./resolve-auth-destination";
+import { resolveAuthDestination as resolveAuthDestinationImpl } from "./resolve-auth-destination";
+
+type AuthSnapshot = Parameters<typeof resolveAuthDestinationImpl>[0];
+type TestAuthSnapshot = Omit<AuthSnapshot, "entitlement"> & {
+  entitlement?: AuthSnapshot["entitlement"];
+};
+
+const activeEntitlement = {
+  status: "trialing" as const,
+  source: "trial" as const,
+  startsAt: "2026-09-28T00:00:00.000Z",
+  endsAt: "2026-10-05T00:00:00.000Z",
+  daysRemaining: 7,
+  hasAccess: true
+};
+
+const resolveAuthDestination = (snapshot: TestAuthSnapshot) =>
+  resolveAuthDestinationImpl({
+    ...snapshot,
+    entitlement:
+      "entitlement" in snapshot
+        ? (snapshot.entitlement ?? null)
+        : snapshot.membership
+          ? activeEntitlement
+          : null
+  });
 
 const owner = { tenantId: "11111111-1111-4111-8111-111111111111", role: "owner" as const };
 const assistant = {
@@ -235,6 +260,51 @@ describe("resolveAuthDestination", () => {
         sessionActive: true
       })
     ).toBeNull();
+  });
+
+  it("sends expired members to billing but keeps the status screen reachable", () => {
+    const entitlement = {
+      status: "expired" as const,
+      source: "trial" as const,
+      startsAt: "2026-09-01T00:00:00.000Z",
+      endsAt: "2026-09-08T00:00:00.000Z",
+      daysRemaining: 0,
+      hasAccess: false
+    };
+
+    expect(
+      resolveAuthDestination({
+        pathname: "/today",
+        userId: "user-1",
+        aal: "aal2",
+        membership: owner,
+        sessionActive: true,
+        entitlement
+      })
+    ).toBe("/billing");
+    expect(
+      resolveAuthDestination({
+        pathname: "/billing",
+        userId: "user-2",
+        aal: "aal1",
+        membership: assistant,
+        sessionActive: true,
+        entitlement
+      })
+    ).toBeNull();
+  });
+
+  it("fails closed to billing when the server cannot verify entitlement", () => {
+    expect(
+      resolveAuthDestination({
+        pathname: "/today",
+        userId: "user-1",
+        aal: "aal2",
+        membership: owner,
+        sessionActive: true,
+        entitlement: null
+      })
+    ).toBe("/billing");
   });
 
   it("lets anonymous users request a password reset", () => {

@@ -1,3 +1,5 @@
+import type { Entitlement } from "@/features/billing/entitlement";
+
 type ClinicRole = "owner" | "assistant";
 
 type Membership = {
@@ -13,6 +15,7 @@ type AuthSnapshot = {
   sessionActive: boolean;
   deviceTrusted?: boolean;
   passwordRecovery?: boolean;
+  entitlement: Entitlement | null;
 };
 
 const isAuthEntryPath = (pathname: string) =>
@@ -46,7 +49,8 @@ const resolveAuthDestination = ({
   membership,
   sessionActive,
   deviceTrusted = false,
-  passwordRecovery = false
+  passwordRecovery = false,
+  entitlement
 }: AuthSnapshot) => {
   if (!userId) {
     return isAnonymousPublicPath(pathname) ? null : "/login";
@@ -74,6 +78,10 @@ const resolveAuthDestination = ({
 
   if (!membership) {
     return pathname === "/onboarding" ? null : "/onboarding";
+  }
+
+  if (entitlement?.hasAccess !== true && pathname !== "/billing") {
+    return "/billing";
   }
 
   if (pathname.startsWith("/owner") && membership.role !== "owner") {

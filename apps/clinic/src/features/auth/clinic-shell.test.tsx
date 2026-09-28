@@ -70,10 +70,14 @@ vi.mock("@karon/design-system", async () => {
 
 import ClinicShell from "./clinic-shell";
 
-const renderShell = (role: "assistant" | "owner" = "assistant") =>
+const renderShell = (
+  role: "assistant" | "owner" = "assistant",
+  cloudSyncEnabled = true
+) =>
   render(
     <ClinicShell
       appVersion="0.1.0"
+      cloudSyncEnabled={cloudSyncEnabled}
       membership={{
         tenantId: "11111111-1111-4111-8111-111111111111",
         role
@@ -108,6 +112,17 @@ describe("ClinicShell", () => {
     expect(banner).toHaveTextContent("Saved on this device. Syncing.");
     expect(banner).not.toHaveTextContent("Will sync when online.");
     expect(banner.className).toContain("bg-info-subtle");
+  });
+
+  it("shows that queued work is waiting while clinic access is paused", () => {
+    sync.pendingCount = 2;
+    renderShell("owner", false);
+
+    const banner = screen.getByRole("status");
+    expect(banner).toHaveTextContent(
+      "Saved on this device. Waiting for clinic access to sync."
+    );
+    expect(banner).not.toHaveTextContent("Syncing.");
   });
 
   it("hides the sync banner when online and drained", () => {

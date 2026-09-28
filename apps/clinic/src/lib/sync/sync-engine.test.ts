@@ -114,6 +114,23 @@ describe("sync engine", () => {
     expect(await db.events.get(event.id)).toBeTruthy();
   });
 
+  it("keeps the outbox when entitlement rejects the sync", async () => {
+    const db = await openClinicDb(TENANT, DEK);
+    const event = makeEvent("patient.created");
+    await recordClinicEvent(db, event);
+    const { supabase } = mockSupabase({
+      upsertError: { message: "new row violates row-level security", code: "42501" }
+    });
+
+    await drainOutbox(db, supabase);
+
+    expect(await db.outbox.get(event.id)).toMatchObject({
+      id: event.id,
+      attempts: 0
+    });
+    expect(await db.events.get(event.id)).toMatchObject({ id: event.id });
+  });
+
   it("pulls a remote event without deleting a local sibling", async () => {
     const db = await openClinicDb(TENANT, DEK);
     const recordId = randomUUID();
