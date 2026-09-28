@@ -69,13 +69,17 @@ const PatientWorkspace = ({ patientId, visitId }: Props) => {
   if (!patient) {
     return (
       <div className="flex flex-col gap-4">
-        <PageHeader title="Patient not found">
+        <PageHeader title="Patient unavailable">
+          <Button asChild>
+            <Link href="/patients">View patients</Link>
+          </Button>
           <Button asChild variant="outline">
-            <Link href="/today">Back to Today</Link>
+            <Link href="/today">Return to Today</Link>
           </Button>
         </PageHeader>
-        <EmptyState title="Not available on this device">
-          This patient is not available in this clinic on this device.
+        <EmptyState title="This patient could not open">
+          The patient may not be saved on this device yet. Reconnect, then open them
+          from Patients.
         </EmptyState>
       </div>
     );

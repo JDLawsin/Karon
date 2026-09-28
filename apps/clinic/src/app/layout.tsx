@@ -2,10 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import { SerwistProvider } from "@serwist/next/react";
 import { ThemeProvider, Toaster } from "@karon/design-system";
-import { themeInitScript } from "@karon/design-system/theme";
 import type { ReactNode } from "react";
 
 import "./globals.css";
+import ThemeScript from "./theme-script";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -40,9 +40,6 @@ type RootLayoutProps = {
 const RootLayout = ({ children }: RootLayoutProps) => {
   return (
     <html lang="en-PH" className={`${outfit.variable} antialiased`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      </head>
       <body data-density="clinic">
         <ThemeProvider>
           <SerwistProvider
@@ -53,6 +50,7 @@ const RootLayout = ({ children }: RootLayoutProps) => {
           </SerwistProvider>
           <Toaster />
         </ThemeProvider>
+        <ThemeScript />
       </body>
     </html>
   );
