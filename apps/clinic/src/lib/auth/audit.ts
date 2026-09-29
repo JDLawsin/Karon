@@ -19,7 +19,10 @@ type AuditEventType =
   | "import.started"
   | "import.completed"
   | "import.failed"
-  | "import.checklist_updated";
+  | "import.checklist_updated"
+  | "export.started"
+  | "export.completed"
+  | "export.failed";
 
 type AuditWrite = {
   tenantId: string;

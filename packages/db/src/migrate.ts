@@ -43,7 +43,10 @@ const files = [
   "packages/db/drizzle/0034_financial_currency_advisory_lock.sql",
   "packages/db/drizzle/0035_trial_entitlements.sql",
   "packages/db/drizzle/0036_provider_neutral_billing.sql",
-  "packages/db/drizzle/0037_serialize_billing_transitions.sql"
+  "packages/db/drizzle/0037_serialize_billing_transitions.sql",
+  "packages/db/drizzle/0038_clinic_csv_exports.sql",
+  "packages/db/drizzle/0039_clinic_export_indexes.sql",
+  "packages/db/drizzle/0040_export_consistency.sql"
 ];
 
 const splitSql = (contents: string) => {

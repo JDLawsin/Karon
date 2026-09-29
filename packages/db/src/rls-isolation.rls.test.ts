@@ -262,6 +262,97 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(data).toEqual([]);
   });
 
+  it("allows only the tenant owner to write clinic export audits", async () => {
+    const assistant = await createAuthedClient(users[1]!.email);
+    const { error: assistantError } = await assistant.client
+      .from("audit_events")
+      .insert({
+        tenant_id: clinicIds[0],
+        actor_user_id: users[1]!.id,
+        event_type: "export.started",
+        metadata: { kind: "patients", filter: "all", row_count: 1 }
+      });
+
+    expect(assistantError?.code).toBe("42501");
+
+    const owner = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(owner.client);
+    const { data: audit, error: ownerError } = await owner.client
+      .from("audit_events")
+      .insert({
+        tenant_id: clinicIds[0],
+        actor_user_id: users[0]!.id,
+        event_type: "export.completed",
+        metadata: { kind: "patients", filter: "all", row_count: 1 }
+      })
+      .select("id, tenant_id, actor_user_id, event_type, metadata")
+      .single();
+
+    expect(ownerError).toBeNull();
+    expect(audit).toMatchObject({
+      tenant_id: clinicIds[0],
+      actor_user_id: users[0]!.id,
+      event_type: "export.completed",
+      metadata: { kind: "patients", filter: "all", row_count: 1 }
+    });
+
+    const otherOwner = await createAuthedClient(users[2]!.email);
+    await verifyOwnerTotp(otherOwner.client);
+    const { data: otherClinicRows, error: otherClinicError } = await otherOwner.client
+      .from("audit_events")
+      .select("id")
+      .eq("id", audit!.id);
+
+    expect(otherClinicError).toBeNull();
+    expect(otherClinicRows).toEqual([]);
+  });
+
+  it("atomically limits concurrent clinic export reservations", async () => {
+    const owner = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(owner.client);
+
+    await admin
+      .from("audit_events")
+      .delete()
+      .eq("tenant_id", clinicIds[0])
+      .eq("actor_user_id", users[0]!.id)
+      .eq("event_type", "export.started");
+
+    try {
+      const reservations = await Promise.all(
+        Array.from({ length: 12 }, (_, rowCount) =>
+          owner.client.rpc("reserve_clinic_export", {
+            p_tenant_id: clinicIds[0],
+            p_actor_user_id: users[0]!.id,
+            p_kind: "patients",
+            p_row_count: rowCount
+          })
+        )
+      );
+
+      expect(reservations.every(({ error }) => error === null)).toBe(true);
+      expect(reservations.filter(({ data }) => data === true)).toHaveLength(10);
+      expect(reservations.filter(({ data }) => data === false)).toHaveLength(2);
+
+      const { count, error } = await admin
+        .from("audit_events")
+        .select("id", { count: "exact", head: true })
+        .eq("tenant_id", clinicIds[0])
+        .eq("actor_user_id", users[0]!.id)
+        .eq("event_type", "export.started");
+
+      expect(error).toBeNull();
+      expect(count).toBe(10);
+    } finally {
+      await admin
+        .from("audit_events")
+        .delete()
+        .eq("tenant_id", clinicIds[0])
+        .eq("actor_user_id", users[0]!.id)
+        .eq("event_type", "export.started");
+    }
+  });
+
   it("blocks owner clinic reads until TOTP", async () => {
     const ownerA = await createAuthedClient(users[0]!.email);
     const { data: clinics, error } = await ownerA.client

@@ -449,6 +449,9 @@ export const auditEvents = pgTable(
       table.tenantId,
       table.createdAt
     ),
+    index("audit_events_export_rate_limit_idx")
+      .on(table.tenantId, table.actorUserId, table.createdAt)
+      .where(sql`${table.eventType} = 'export.started'`),
     check(
       "audit_events_type_check",
       sql`${table.eventType} in (
@@ -485,7 +488,10 @@ export const auditEvents = pgTable(
         'entitlement.restored',
         'billing.checkout_started',
         'billing.payment_succeeded',
-        'billing.payment_failed'
+        'billing.payment_failed',
+        'export.started',
+        'export.completed',
+        'export.failed'
       )`
     )
   ]
@@ -513,6 +519,21 @@ export const clinicEvents = pgTable(
       table.receivedAt,
       table.id
     ),
+    index("clinic_events_appointment_export_idx")
+      .on(table.tenantId, table.id)
+      .where(sql`${table.eventType} = 'appointment.set'`),
+    index("clinic_events_payment_export_idx")
+      .on(table.tenantId, table.id)
+      .where(sql`${table.eventType} = 'payment.recorded'`),
+    index("clinic_events_visit_status_export_idx")
+      .on(
+        table.tenantId,
+        table.recordId,
+        table.occurredAt,
+        table.receivedAt,
+        table.id
+      )
+      .where(sql`${table.eventType} = 'visit.status_changed'`),
     check(
       "clinic_events_type_check",
       sql`${table.eventType} in (

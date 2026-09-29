@@ -84,6 +84,7 @@ describe("ClinicSettings", () => {
     ).toBeTruthy();
     expect(screen.queryByText("Password form")).toBeNull();
     expect(screen.queryByText("Clinic details")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Export clinic data" })).toBeNull();
   });
 
   it("shows account, clinic, integrations, and members tabs for owners", () => {
@@ -98,6 +99,10 @@ describe("ClinicSettings", () => {
     expect(
       screen.getByRole("switch", { name: "Lock after 30 minutes idle" })
     ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Export clinic data" })).toHaveAttribute(
+      "href",
+      "/settings/export"
+    );
     expect(screen.queryByText("Password form")).toBeNull();
   });
 

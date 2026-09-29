@@ -87,12 +87,15 @@ const ClinicSettings = () => {
           <CardHeader>
             <CardTitle>Move clinic data</CardTitle>
             <CardDescription>
-              Preview patients or services before clinic data changes.
+              Import with a preview, or download portable clinic records.
             </CardDescription>
           </CardHeader>
-          <CardFooter>
+          <CardFooter className="flex-wrap">
             <Button asChild variant="outline">
               <Link href="/settings/import">Import clinic data</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/settings/export">Export clinic data</Link>
             </Button>
           </CardFooter>
         </Card>
