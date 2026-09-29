@@ -6,12 +6,19 @@ export { decodeJwtClaims, sessionRoleForClaims } from "./claims";
 export type { JwtClaims } from "./claims";
 export {
   auditEvents,
+  billingCheckoutSessions,
+  billingCheckoutStatusEnum,
+  billingIntervalEnum,
+  billingWebhookEvents,
+  billingWebhookStatusEnum,
   bookingLinks,
   bookingRequestStatusEnum,
   bookingRequests,
   calendarImportStatusEnum,
   calendarImports,
   clinicEvents,
+  clinicEntitlements,
+  clinicEntitlementStatusEnum,
   clinicMembers,
   clinicRoleEnum,
   clinicServices,
@@ -26,6 +33,8 @@ export {
 } from "./schema";
 export type {
   AuditEvent,
+  BillingCheckoutSession,
+  BillingWebhookEvent,
   BookingLink,
   BookingRequest,
   Clinic,

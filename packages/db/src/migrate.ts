@@ -41,7 +41,9 @@ const files = [
   "packages/db/drizzle/0032_migration_checklist_unique_items.sql",
   "packages/db/drizzle/0033_opening_balance_notes.sql",
   "packages/db/drizzle/0034_financial_currency_advisory_lock.sql",
-  "packages/db/drizzle/0035_trial_entitlements.sql"
+  "packages/db/drizzle/0035_trial_entitlements.sql",
+  "packages/db/drizzle/0036_provider_neutral_billing.sql",
+  "packages/db/drizzle/0037_serialize_billing_transitions.sql"
 ];
 
 const splitSql = (contents: string) => {

@@ -1963,4 +1963,352 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     }
   });
 
+  it("isolates billing ledgers and applies idempotent payment transitions", async () => {
+    const owner = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(owner.client);
+    const assistant = await createAuthedClient(users[1]!.email);
+    const originalTrialStart = new Date().toISOString();
+    const expiredTrialStart = new Date(
+      Date.now() - 8 * 24 * 60 * 60 * 1000
+    ).toISOString();
+    const checkoutIds: string[] = [];
+
+    const reserveCheckout = async () => {
+      const { data, error } = await admin.rpc("reserve_billing_checkout", {
+        p_tenant_id: clinicIds[0],
+        p_actor_user_id: users[0]!.id,
+        p_provider: "paymongo",
+        p_interval: "monthly",
+        p_amount_minor: 69_900,
+        p_currency_code: "PHP",
+        p_livemode: false
+      });
+
+      expect(error).toBeNull();
+      expect(data).toEqual(expect.any(String));
+      checkoutIds.push(data as string);
+      return data as string;
+    };
+
+    try {
+      const { error: expireError } = await admin
+        .from("clinics")
+        .update({ trial_started_at: expiredTrialStart })
+        .eq("id", clinicIds[0]);
+      expect(expireError).toBeNull();
+
+      const { error: ownerLedgerError } = await owner.client
+        .from("billing_checkout_sessions")
+        .select("id");
+      const { error: assistantLedgerError } = await assistant.client
+        .from("billing_webhook_events")
+        .select("provider_event_id");
+      expect(ownerLedgerError?.code).toBe("42501");
+      expect(assistantLedgerError?.code).toBe("42501");
+
+      const { error: directRpcError } = await owner.client.rpc(
+        "reserve_billing_checkout",
+        {
+          p_tenant_id: clinicIds[0],
+          p_actor_user_id: users[0]!.id,
+          p_provider: "paymongo",
+          p_interval: "monthly",
+          p_amount_minor: 69_900,
+          p_currency_code: "PHP",
+          p_livemode: false
+        }
+      );
+      expect(directRpcError?.code).toBe("42501");
+
+      const paidCheckoutId = await reserveCheckout();
+      const providerCheckoutId = `cs_${suffix}_paid`;
+      const { data: completed, error: completeError } = await admin.rpc(
+        "complete_billing_checkout",
+        {
+          p_checkout_id: paidCheckoutId,
+          p_provider_checkout_id: providerCheckoutId
+        }
+      );
+      expect(completeError).toBeNull();
+      expect(completed).toBe(true);
+
+      const paidEventId = `evt_${suffix}_paid`;
+      const paidAt = new Date().toISOString();
+      const paidPayloadHash = createHash("sha256")
+        .update(paidEventId)
+        .digest("hex");
+      const paidWebhook = {
+        p_provider: "paymongo",
+        p_provider_event_id: paidEventId,
+        p_event_type: "checkout_session.payment.paid",
+        p_event_kind: "payment_succeeded",
+        p_checkout_id: paidCheckoutId,
+        p_provider_checkout_id: providerCheckoutId,
+        p_livemode: false,
+        p_amount_minor: 69_900,
+        p_currency_code: "PHP",
+        p_provider_occurred_at: paidAt,
+        p_payload_sha256: paidPayloadHash,
+        p_access_until: null
+      };
+      const { data: paidResult, error: paidError } = await admin.rpc(
+        "apply_billing_webhook",
+        paidWebhook
+      );
+      expect(paidError).toBeNull();
+      expect(paidResult).toBe("processed");
+
+      const { data: duplicateResult, error: duplicateError } = await admin.rpc(
+        "apply_billing_webhook",
+        paidWebhook
+      );
+      expect(duplicateError).toBeNull();
+      expect(duplicateResult).toBe("duplicate");
+
+      const { data: activeEntitlement, error: entitlementError } =
+        await owner.client.rpc("current_entitlement");
+      expect(entitlementError).toBeNull();
+      expect(activeEntitlement).toEqual([
+        expect.objectContaining({
+          status: "active",
+          source: "billing",
+          has_access: true
+        })
+      ]);
+
+      const { data: paidAudits, error: paidAuditError } = await admin
+        .from("audit_events")
+        .select("event_type")
+        .eq("record_id", paidCheckoutId)
+        .in("event_type", [
+          "billing.checkout_started",
+          "billing.payment_succeeded",
+          "entitlement.restored"
+        ]);
+      expect(paidAuditError).toBeNull();
+      expect(paidAudits?.map(({ event_type }) => event_type).sort()).toEqual([
+        "billing.checkout_started",
+        "billing.payment_succeeded",
+        "entitlement.restored"
+      ]);
+
+      const pastStart = new Date(
+        Date.now() - 32 * 24 * 60 * 60 * 1000
+      ).toISOString();
+      const pastEnd = new Date(
+        Date.now() - 24 * 60 * 60 * 1000
+      ).toISOString();
+      const { error: lapseError } = await admin
+        .from("clinic_entitlements")
+        .update({ starts_at: pastStart, access_until: pastEnd })
+        .eq("tenant_id", clinicIds[0]);
+      expect(lapseError).toBeNull();
+
+      const failedCheckoutId = await reserveCheckout();
+      const failedProviderCheckoutId = `cs_${suffix}_failed`;
+      const { error: failedCompleteError } = await admin.rpc(
+        "complete_billing_checkout",
+        {
+          p_checkout_id: failedCheckoutId,
+          p_provider_checkout_id: failedProviderCheckoutId
+        }
+      );
+      expect(failedCompleteError).toBeNull();
+
+      const failedEventId = `evt_${suffix}_failed`;
+      const failedWebhook = {
+        p_provider: "paymongo",
+        p_provider_event_id: failedEventId,
+        p_event_type: "payment.failed",
+        p_event_kind: "payment_failed",
+        p_checkout_id: failedCheckoutId,
+        p_provider_checkout_id: failedProviderCheckoutId,
+        p_livemode: false,
+        p_amount_minor: null,
+        p_currency_code: null,
+        p_provider_occurred_at: new Date().toISOString(),
+        p_payload_sha256: createHash("sha256")
+          .update(failedEventId)
+          .digest("hex"),
+        p_access_until: null
+      };
+      const { data: failedResult, error: failedError } = await admin.rpc(
+        "apply_billing_webhook",
+        failedWebhook
+      );
+      expect(failedError).toBeNull();
+      expect(failedResult).toBe("processed");
+
+      const { data: graceRows, error: graceError } = await assistant.client.rpc(
+        "current_entitlement"
+      );
+      expect(graceError).toBeNull();
+      expect(graceRows).toEqual([
+        expect.objectContaining({
+          status: "past_due",
+          source: "billing",
+          has_access: true
+        })
+      ]);
+
+      const { data: graceBeforeReplay } = await admin
+        .from("clinic_entitlements")
+        .select("access_until")
+        .eq("tenant_id", clinicIds[0])
+        .single();
+      const { data: failedReplay, error: failedReplayError } = await admin.rpc(
+        "apply_billing_webhook",
+        failedWebhook
+      );
+      const { data: graceAfterReplay } = await admin
+        .from("clinic_entitlements")
+        .select("access_until")
+        .eq("tenant_id", clinicIds[0])
+        .single();
+      expect(failedReplayError).toBeNull();
+      expect(failedReplay).toBe("duplicate");
+      expect(graceAfterReplay?.access_until).toBe(
+        graceBeforeReplay?.access_until
+      );
+
+      await reserveCheckout();
+      await reserveCheckout();
+      await reserveCheckout();
+      const { error: rateLimitError } = await admin.rpc(
+        "reserve_billing_checkout",
+        {
+          p_tenant_id: clinicIds[0],
+          p_actor_user_id: users[0]!.id,
+          p_provider: "paymongo",
+          p_interval: "monthly",
+          p_amount_minor: 69_900,
+          p_currency_code: "PHP",
+          p_livemode: false
+        }
+      );
+      expect(rateLimitError?.message).toContain("billing checkout rate limited");
+    } finally {
+      await admin
+        .from("clinic_entitlements")
+        .delete()
+        .eq("tenant_id", clinicIds[0]);
+      if (checkoutIds.length > 0) {
+        await admin
+          .from("billing_webhook_events")
+          .delete()
+          .in("checkout_id", checkoutIds);
+        await admin.from("audit_events").delete().in("record_id", checkoutIds);
+        await admin.from("billing_checkout_sessions").delete().in("id", checkoutIds);
+      }
+      await admin
+        .from("clinics")
+        .update({ trial_started_at: originalTrialStart })
+        .eq("id", clinicIds[0]);
+    }
+  }, 20_000);
+
+  it("serializes concurrent payments and never shortens manual access", async () => {
+    const checkoutIds: string[] = [];
+    const startsAt = new Date().toISOString();
+    const manualEnd = new Date(
+      Date.now() + 60 * 24 * 60 * 60 * 1000
+    ).toISOString();
+
+    try {
+      const { error: manualError } = await admin
+        .from("clinic_entitlements")
+        .insert({
+          tenant_id: clinicIds[1],
+          status: "active",
+          source: "manual",
+          starts_at: startsAt,
+          access_until: manualEnd
+        });
+      expect(manualError).toBeNull();
+
+      for (const index of [1, 2]) {
+        const { data: checkoutId, error: reserveError } = await admin.rpc(
+          "reserve_billing_checkout",
+          {
+            p_tenant_id: clinicIds[1],
+            p_actor_user_id: users[2]!.id,
+            p_provider: "paymongo",
+            p_interval: "monthly",
+            p_amount_minor: 69_900,
+            p_currency_code: "PHP",
+            p_livemode: false
+          }
+        );
+        expect(reserveError).toBeNull();
+        checkoutIds.push(checkoutId as string);
+
+        const { error: completeError } = await admin.rpc(
+          "complete_billing_checkout",
+          {
+            p_checkout_id: checkoutId,
+            p_provider_checkout_id: `cs_${suffix}_concurrent_${index}`
+          }
+        );
+        expect(completeError).toBeNull();
+      }
+
+      const results = await Promise.all(
+        checkoutIds.map((checkoutId, index) => {
+          const eventId = `evt_${suffix}_concurrent_${index + 1}`;
+
+          return admin.rpc("apply_billing_webhook", {
+            p_provider: "paymongo",
+            p_provider_event_id: eventId,
+            p_event_type: "checkout_session.payment.paid",
+            p_event_kind: "payment_succeeded",
+            p_checkout_id: checkoutId,
+            p_provider_checkout_id: `cs_${suffix}_concurrent_${index + 1}`,
+            p_livemode: false,
+            p_amount_minor: 69_900,
+            p_currency_code: "PHP",
+            p_provider_occurred_at: new Date().toISOString(),
+            p_payload_sha256: createHash("sha256").update(eventId).digest("hex"),
+            p_access_until: null
+          });
+        })
+      );
+      expect(results.map(({ data }) => data)).toEqual([
+        "processed",
+        "processed"
+      ]);
+      expect(results.every(({ error }) => error === null)).toBe(true);
+
+      const { data: entitlement, error: entitlementError } = await admin
+        .from("clinic_entitlements")
+        .select("source, provider, access_until")
+        .eq("tenant_id", clinicIds[1])
+        .single();
+      expect(entitlementError).toBeNull();
+      expect(entitlement).toEqual(
+        expect.objectContaining({ source: "billing", provider: "paymongo" })
+      );
+      expect(new Date(entitlement!.access_until).getTime()).toBeGreaterThan(
+        Date.now() + 110 * 24 * 60 * 60 * 1000
+      );
+    } finally {
+      await admin
+        .from("clinic_entitlements")
+        .delete()
+        .eq("tenant_id", clinicIds[1]);
+      if (checkoutIds.length > 0) {
+        await admin
+          .from("billing_webhook_events")
+          .delete()
+          .in("checkout_id", checkoutIds);
+        await admin.from("audit_events").delete().in("record_id", checkoutIds);
+        await admin.from("billing_checkout_sessions").delete().in("id", checkoutIds);
+      }
+      await admin
+        .from("audit_events")
+        .delete()
+        .eq("record_id", clinicIds[1])
+        .eq("event_type", "entitlement.grace_granted");
+    }
+  }, 20_000);
+
 });

@@ -62,4 +62,90 @@ describe("EntitlementScreen", () => {
     expect(screen.getByText(/no public checkout is needed/i)).toBeVisible();
     expect(screen.queryByRole("button", { name: /pay/i })).toBeNull();
   });
+
+  it("offers checkout after manual access expires", () => {
+    render(
+      <EntitlementScreen
+        billingConfig={{
+          checkoutEnabled: true,
+          provider: "paymongo",
+          skuName: "Karon clinic",
+          prices: [
+            { interval: "monthly", amountMinor: 69_950, currency: "PHP" }
+          ]
+        }}
+        entitlement={{
+          status: "expired",
+          source: "manual",
+          startsAt: "2026-09-01T00:00:00.000Z",
+          endsAt: "2026-09-08T00:00:00.000Z",
+          daysRemaining: 0,
+          hasAccess: false
+        }}
+        role="owner"
+      />
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Continue to secure checkout" })
+    ).toBeVisible();
+    expect(screen.getByText("₱699.50")).toBeVisible();
+  });
+
+  it("offers configured server prices to an owner without accepting an amount", () => {
+    render(
+      <EntitlementScreen
+        billingConfig={{
+          checkoutEnabled: true,
+          provider: "paymongo",
+          skuName: "Karon clinic",
+          prices: [
+            { interval: "monthly", amountMinor: 69_900, currency: "PHP" }
+          ]
+        }}
+        entitlement={{
+          status: "expired",
+          source: "trial",
+          startsAt: "2026-09-01T00:00:00.000Z",
+          endsAt: "2026-09-08T00:00:00.000Z",
+          daysRemaining: 0,
+          hasAccess: false
+        }}
+        role="owner"
+      />
+    );
+
+    expect(screen.getByRole("radio", { name: /monthly/i })).toBeChecked();
+    expect(
+      screen.getByRole("button", { name: "Continue to secure checkout" })
+    ).toBeVisible();
+    expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
+  it("never renders checkout controls for an assistant", () => {
+    render(
+      <EntitlementScreen
+        billingConfig={{
+          checkoutEnabled: true,
+          provider: "paymongo",
+          skuName: "Karon clinic",
+          prices: [
+            { interval: "monthly", amountMinor: 69_900, currency: "PHP" }
+          ]
+        }}
+        entitlement={{
+          status: "expired",
+          source: "trial",
+          startsAt: "2026-09-01T00:00:00.000Z",
+          endsAt: "2026-09-08T00:00:00.000Z",
+          daysRemaining: 0,
+          hasAccess: false
+        }}
+        role="assistant"
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: /checkout/i })).toBeNull();
+    expect(screen.queryByRole("radio")).toBeNull();
+  });
 });

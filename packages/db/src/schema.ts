@@ -28,6 +28,25 @@ export const clinicEntitlementStatusEnum = pgEnum("clinic_entitlement_status", [
   "expired"
 ]);
 
+export const billingIntervalEnum = pgEnum("billing_interval", [
+  "monthly",
+  "yearly"
+]);
+
+export const billingCheckoutStatusEnum = pgEnum("billing_checkout_status", [
+  "pending",
+  "open",
+  "paid",
+  "failed",
+  "cancelled"
+]);
+
+export const billingWebhookStatusEnum = pgEnum("billing_webhook_status", [
+  "received",
+  "processed",
+  "ignored"
+]);
+
 export const patientImportStatusEnum = pgEnum("patient_import_status", [
   "awaiting_upload",
   "uploaded",
@@ -226,6 +245,106 @@ export const clinicSessions = pgTable(
   ]
 ).enableRLS();
 
+export const billingCheckoutSessions = pgTable(
+  "billing_checkout_sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => clinics.id, { onDelete: "cascade" }),
+    actorUserId: uuid("actor_user_id").notNull(),
+    provider: text("provider").notNull(),
+    billingInterval: billingIntervalEnum("billing_interval").notNull(),
+    amountMinor: integer("amount_minor").notNull(),
+    currencyCode: text("currency_code").notNull(),
+    status: billingCheckoutStatusEnum("status").notNull().default("pending"),
+    providerCheckoutId: text("provider_checkout_id"),
+    livemode: boolean("livemode").notNull(),
+    lastProviderEventAt: timestamptz("last_provider_event_at"),
+    createdAt: timestamptz("created_at").defaultNow().notNull(),
+    updatedAt: timestamptz("updated_at").defaultNow().notNull()
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.actorUserId],
+      foreignColumns: [authUsers.id],
+      name: "billing_checkout_sessions_actor_user_id_fkey"
+    }).onDelete("restrict"),
+    index("billing_checkout_tenant_created_idx").on(
+      table.tenantId,
+      table.createdAt
+    ),
+    uniqueIndex("billing_checkout_provider_id_idx")
+      .on(table.provider, table.providerCheckoutId)
+      .where(sql`${table.providerCheckoutId} is not null`),
+    check(
+      "billing_checkout_provider_format",
+      sql`${table.provider} ~ '^[a-z][a-z0-9_-]{0,39}$'`
+    ),
+    check(
+      "billing_checkout_amount_positive",
+      sql`${table.amountMinor} > 0`
+    ),
+    check(
+      "billing_checkout_currency_format",
+      sql`${table.currencyCode} ~ '^[A-Z]{3}$'`
+    ),
+    check(
+      "billing_checkout_provider_id_length",
+      sql`${table.providerCheckoutId} is null or char_length(${table.providerCheckoutId}) between 1 and 255`
+    )
+  ]
+).enableRLS();
+
+export const billingWebhookEvents = pgTable(
+  "billing_webhook_events",
+  {
+    provider: text("provider").notNull(),
+    providerEventId: text("provider_event_id").notNull(),
+    tenantId: uuid("tenant_id").references(() => clinics.id, {
+      onDelete: "set null"
+    }),
+    checkoutId: uuid("checkout_id").references(
+      () => billingCheckoutSessions.id,
+      { onDelete: "set null" }
+    ),
+    eventType: text("event_type").notNull(),
+    processingStatus: billingWebhookStatusEnum("processing_status")
+      .notNull()
+      .default("received"),
+    livemode: boolean("livemode").notNull(),
+    payloadSha256: text("payload_sha256").notNull(),
+    providerOccurredAt: timestamptz("provider_occurred_at").notNull(),
+    receivedAt: timestamptz("received_at").defaultNow().notNull(),
+    processedAt: timestamptz("processed_at")
+  },
+  (table) => [
+    primaryKey({ columns: [table.provider, table.providerEventId] }),
+    index("billing_webhook_tenant_received_idx")
+      .on(table.tenantId, table.receivedAt)
+      .where(sql`${table.tenantId} is not null`),
+    index("billing_webhook_checkout_idx")
+      .on(table.checkoutId)
+      .where(sql`${table.checkoutId} is not null`),
+    check(
+      "billing_webhook_provider_format",
+      sql`${table.provider} ~ '^[a-z][a-z0-9_-]{0,39}$'`
+    ),
+    check(
+      "billing_webhook_event_id_length",
+      sql`char_length(${table.providerEventId}) between 1 and 255`
+    ),
+    check(
+      "billing_webhook_event_type_length",
+      sql`char_length(${table.eventType}) between 1 and 120`
+    ),
+    check(
+      "billing_webhook_payload_hash_format",
+      sql`${table.payloadSha256} ~ '^[a-f0-9]{64}$'`
+    )
+  ]
+).enableRLS();
+
 export const clinicEntitlements = pgTable(
   "clinic_entitlements",
   {
@@ -234,6 +353,11 @@ export const clinicEntitlements = pgTable(
       .references(() => clinics.id, { onDelete: "cascade" }),
     status: clinicEntitlementStatusEnum("status").notNull(),
     source: text("source").notNull(),
+    provider: text("provider"),
+    billingCheckoutId: uuid("billing_checkout_id").references(
+      () => billingCheckoutSessions.id,
+      { onDelete: "set null" }
+    ),
     startsAt: timestamptz("starts_at").defaultNow().notNull(),
     accessUntil: timestamptz("access_until"),
     createdAt: timestamptz("created_at").defaultNow().notNull(),
@@ -246,7 +370,7 @@ export const clinicEntitlements = pgTable(
     ),
     check(
       "clinic_entitlements_source_check",
-      sql`${table.source} in ('manual', 'paymongo')`
+      sql`${table.source} in ('manual', 'billing')`
     ),
     check(
       "clinic_entitlements_window_check",
@@ -259,6 +383,15 @@ export const clinicEntitlements = pgTable(
     check(
       "clinic_entitlements_past_due_expiry_check",
       sql`${table.status} <> 'past_due'::clinic_entitlement_status or ${table.accessUntil} is not null`
+    ),
+    check(
+      "clinic_entitlements_provider_format",
+      sql`${table.provider} is null or ${table.provider} ~ '^[a-z][a-z0-9_-]{0,39}$'`
+    ),
+    check(
+      "clinic_entitlements_source_provider_check",
+      sql`(${table.source} = 'manual' and ${table.provider} is null and ${table.billingCheckoutId} is null)
+        or (${table.source} = 'billing' and ${table.provider} is not null)`
     )
   ]
 ).enableRLS();
@@ -347,7 +480,12 @@ export const auditEvents = pgTable(
         'import.checklist_updated',
         'entitlement.trial_expired',
         'entitlement.grace_granted',
-        'entitlement.expired'
+        'entitlement.expired',
+        'entitlement.past_due',
+        'entitlement.restored',
+        'billing.checkout_started',
+        'billing.payment_succeeded',
+        'billing.payment_failed'
       )`
     )
   ]
@@ -799,6 +937,8 @@ export type ClinicMember = typeof clinicMembers.$inferSelect;
 export type ClinicSession = typeof clinicSessions.$inferSelect;
 export type TrustedDevice = typeof trustedDevices.$inferSelect;
 export type AuditEvent = typeof auditEvents.$inferSelect;
+export type BillingCheckoutSession = typeof billingCheckoutSessions.$inferSelect;
+export type BillingWebhookEvent = typeof billingWebhookEvents.$inferSelect;
 export type MigrationChecklist = typeof migrationChecklists.$inferSelect;
 export type ClinicEvent = typeof clinicEvents.$inferSelect;
 export type Patient = typeof patients.$inferSelect;

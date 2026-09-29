@@ -7,6 +7,18 @@ export const metadata: Metadata = {
   title: "Trial and Pay Karon"
 };
 
-const BillingRoute = () => <BillingPage appVersion={appVersion} />;
+type Props = {
+  searchParams: Promise<{ checkout?: string | string[] }>;
+};
+
+const BillingRoute = async ({ searchParams }: Props) => {
+  const checkout = (await searchParams).checkout;
+  const checkoutNotice =
+    checkout === "returned" || checkout === "cancelled" ? checkout : null;
+
+  return (
+    <BillingPage appVersion={appVersion} checkoutNotice={checkoutNotice} />
+  );
+};
 
 export default BillingRoute;

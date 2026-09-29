@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const entitlementRowSchema = z.object({
   status: z.enum(["trialing", "active", "past_due", "expired"]),
-  source: z.enum(["trial", "manual", "paymongo"]),
+  source: z.enum(["trial", "manual", "billing"]),
   starts_at: z.iso.datetime({ offset: true }),
   ends_at: z.iso.datetime({ offset: true }).nullable(),
   days_remaining: z.number().int().nonnegative().nullable(),
