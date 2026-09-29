@@ -290,6 +290,8 @@ const submitPublicBooking = async (
     service_id: service.id,
     service_name: service.name,
     note: parsed.data.note ?? null,
+    privacy_notice_version: parsed.data.privacyNoticeVersion,
+    privacy_acknowledged_at: now.toISOString(),
     starts_at: slot.startsAt,
     status: "pending",
     idempotency_key: idempotencyKey.data
@@ -302,13 +304,28 @@ const submitPublicBooking = async (
   if (error.code === "23505") {
     const { data: existing } = await admin
       .from("booking_requests")
-      .select("starts_at, service_id, mobile")
+      .select("id, starts_at, service_id, mobile, privacy_notice_version")
       .eq("tenant_id", link.data.tenant_id)
       .eq("idempotency_key", idempotencyKey.data)
       .maybeSingle();
     const replay = bookingReplayRowSchema.safeParse(existing);
 
     if (replay.success && bookingReplayMatches(replay.data, parsed.data)) {
+      if (replay.data.privacy_notice_version !== parsed.data.privacyNoticeVersion) {
+        const { error: acknowledgmentError } = await admin
+          .from("booking_requests")
+          .update({
+            privacy_notice_version: parsed.data.privacyNoticeVersion,
+            privacy_acknowledged_at: now.toISOString()
+          })
+          .eq("id", replay.data.id)
+          .eq("tenant_id", link.data.tenant_id);
+
+        if (acknowledgmentError) {
+          return { ok: false, status: 409, error: SEND_FAILED };
+        }
+      }
+
       return { ok: true };
     }
 

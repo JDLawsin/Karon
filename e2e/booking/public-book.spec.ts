@@ -20,6 +20,11 @@ test.describe("public booking link", () => {
     await page.getByRole("button", { name: "Mon, Sep 14" }).click();
     await page.getByRole("button", { name: "9:00 AM" }).click();
     await booking.fillContact();
+    await expect(page.getByRole("button", { name: "Review booking" })).toBeDisabled();
+    await expect(
+      page.getByRole("link", { name: "Read the full privacy notice" })
+    ).toHaveAttribute("href", "/book/happytee1/privacy");
+    await booking.acknowledgePrivacy();
     await expect(page.getByRole("button", { name: "Review booking" })).toBeEnabled();
     await page.getByRole("button", { name: "Review booking" }).click();
 
@@ -35,7 +40,18 @@ test.describe("public booking link", () => {
     await expect(dialog.getByText("123 Osmena Blvd, Cebu City")).toBeVisible();
 
     await expect(dialog.getByRole("button", { name: "Send request" })).toBeEnabled();
+    const requestPromise = page.waitForRequest(
+      (request) =>
+        request.method() === "POST" && request.url().includes("/api/book/")
+    );
     await dialog.getByRole("button", { name: "Send request" }).click();
+    const request = await requestPromise;
+
+    expect(request.postDataJSON()).toEqual(
+      expect.objectContaining({
+        privacyNoticeVersion: "2026-09-29-design-partner-v1"
+      })
+    );
 
     await expect(
       page.getByRole("status").getByText("Booking request sent")
@@ -55,6 +71,7 @@ test.describe("public booking link", () => {
     await page.getByRole("button", { name: "Mon, Sep 14" }).click();
     await page.getByRole("button", { name: "9:00 AM" }).click();
     await booking.fillContact();
+    await booking.acknowledgePrivacy();
     await page.getByRole("button", { name: "Review booking" }).click();
     await page.getByRole("button", { name: "Send request" }).click();
 
@@ -90,6 +107,9 @@ test.describe("public booking link", () => {
       await expect(page.getByText("Address")).toBeVisible();
       await expect(page.getByRole("button", { name: "Review booking" })).toBeVisible();
       await expect(page.getByLabel("Name")).toBeVisible();
+      await expect(
+        page.getByLabel("I acknowledge this privacy notice before requesting a booking.")
+      ).toBeVisible();
     });
   }
 });

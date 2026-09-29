@@ -4,6 +4,7 @@ const SLUG = "happytee1";
 
 const publicBookingPayload = {
   clinicName: "Happy Teeth",
+  locale: "en-PH",
   timezone: "Asia/Manila",
   hoursLabel: "Mon–Sat, 9:00 am – 6:00 pm",
   phone: "09171234567",
@@ -80,6 +81,12 @@ class PublicBookingPage {
   async fillContact() {
     await this.page.getByLabel("Name").fill("Ana Cruz");
     await this.page.getByLabel("Mobile").fill("09171234567");
+  }
+
+  async acknowledgePrivacy() {
+    await this.page
+      .getByLabel("I acknowledge this privacy notice before requesting a booking.")
+      .check();
   }
 }
 

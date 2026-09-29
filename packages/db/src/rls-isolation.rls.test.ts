@@ -1547,6 +1547,80 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(ownerDeleteError).toBeNull();
   });
 
+  it("allows status changes but keeps booking privacy acknowledgments immutable", async () => {
+    const linkId = randomUUID();
+    const requestId = randomUUID();
+    const acknowledgedAt = new Date().toISOString();
+
+    try {
+      const { error: linkError } = await admin.from("booking_links").insert({
+        id: linkId,
+        tenant_id: clinicIds[0],
+        user_id: users[0]!.id,
+        slug: `rls-${suffix}`
+      });
+      expect(linkError).toBeNull();
+
+      const { error: requestError } = await admin.from("booking_requests").insert({
+        id: requestId,
+        tenant_id: clinicIds[0],
+        link_id: linkId,
+        name: "Privacy Test Patient",
+        mobile: "09170000000",
+        service_id: "privacy-test",
+        service_name: "Privacy test",
+        starts_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        status: "pending",
+        privacy_notice_version: "test-version",
+        privacy_acknowledged_at: acknowledgedAt
+      });
+      expect(requestError).toBeNull();
+
+      const assistant = await createAuthedClient(users[1]!.email);
+      const { data: statusRow, error: statusError } = await assistant.client
+        .from("booking_requests")
+        .update({
+          status: "accepted",
+          visit_id: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", requestId)
+        .select("status")
+        .single();
+      expect(statusError).toBeNull();
+      expect(statusRow?.status).toBe("accepted");
+
+      const owner = await createAuthedClient(users[0]!.email);
+      await verifyOwnerTotp(owner.client);
+
+      for (const client of [assistant.client, owner.client]) {
+        const { error } = await client
+          .from("booking_requests")
+          .update({
+            privacy_notice_version: null,
+            privacy_acknowledged_at: null
+          })
+          .eq("id", requestId)
+          .select("id");
+
+        expect(error?.code).toBe("42501");
+      }
+
+      const { data: unchanged, error: readError } = await admin
+        .from("booking_requests")
+        .select("privacy_notice_version, privacy_acknowledged_at")
+        .eq("id", requestId)
+        .single();
+      expect(readError).toBeNull();
+      expect(unchanged?.privacy_notice_version).toBe("test-version");
+      expect(Date.parse(unchanged!.privacy_acknowledged_at!)).toBe(
+        Date.parse(acknowledgedAt)
+      );
+    } finally {
+      await admin.from("booking_links").delete().eq("id", linkId);
+    }
+  });
+
   it("lets members read own calendar imports and hides other clinics", async () => {
     const ownId = randomUUID();
     const otherId = randomUUID();

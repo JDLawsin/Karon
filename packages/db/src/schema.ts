@@ -922,6 +922,8 @@ export const bookingRequests = pgTable(
     serviceId: text("service_id").notNull(),
     serviceName: text("service_name").notNull(),
     note: text("note"),
+    privacyNoticeVersion: text("privacy_notice_version"),
+    privacyAcknowledgedAt: timestamptz("privacy_acknowledged_at"),
     startsAt: timestamptz("starts_at").notNull(),
     status: bookingRequestStatusEnum("status").notNull().default("pending"),
     visitId: uuid("visit_id"),
@@ -948,6 +950,14 @@ export const bookingRequests = pgTable(
     check(
       "booking_requests_note_length",
       sql`${table.note} is null or char_length(${table.note}) <= 500`
+    ),
+    check(
+      "booking_requests_privacy_ack_pair",
+      sql`(${table.privacyNoticeVersion} is null) = (${table.privacyAcknowledgedAt} is null)`
+    ),
+    check(
+      "booking_requests_privacy_notice_version_length",
+      sql`${table.privacyNoticeVersion} is null or char_length(${table.privacyNoticeVersion}) between 1 and 80`
     )
   ]
 ).enableRLS();

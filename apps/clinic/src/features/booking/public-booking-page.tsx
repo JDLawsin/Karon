@@ -24,6 +24,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { formatBookingDateChip, formatClinicTimezone } from "@/features/booking/booking-clinic-display";
 import PublicBookingBackdrop from "@/features/booking/public-booking-backdrop";
 import PublicBookingClinicCard from "@/features/booking/public-booking-clinic-card";
+import { BOOKING_PRIVACY_NOTICE } from "@/features/privacy/privacy-policy";
 import {
   bookingApiErrorSchema,
   bookingIdempotencyKeySchema,
@@ -127,6 +128,7 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [note, setNote] = useState("");
+  const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
   const [bookingReference, setBookingReference] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [pending, setPending] = useState(false);
@@ -338,6 +340,7 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
         mobile,
         startsAt,
         serviceId,
+        privacyNoticeVersion: BOOKING_PRIVACY_NOTICE.version,
         bookingReference,
         ...(TURNSTILE_SITE_KEY ? { turnstileToken } : {}),
         ...(note.trim() ? { note: note.trim() } : {})
@@ -373,7 +376,13 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
       ? `${formatBookingDateChip(date, page?.locale)} · ${selectedSlot.label}`
       : "";
   const canReview =
-    Boolean(startsAt && serviceId && name.trim() && mobile.trim()) && !pending;
+    Boolean(
+      startsAt &&
+        serviceId &&
+        name.trim() &&
+        mobile.trim() &&
+        privacyAcknowledged
+    ) && !pending;
   const bookableDates = page?.dates ?? [];
   const selectedDateIndex = bookableDates.indexOf(date);
   const visibleDateCount = Math.min(dateWindowSize, bookableDates.length);
@@ -674,6 +683,45 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
                       value={note}
                     />
                   </div>
+                  <section
+                    aria-labelledby="booking-privacy-heading"
+                    className="flex min-w-0 flex-col gap-3 rounded-lg border-(length:var(--surface-border-width)) border-border bg-card p-4"
+                  >
+                    <div className="flex min-w-0 flex-col gap-1">
+                      <h2 className="font-medium" id="booking-privacy-heading">
+                        Privacy notice
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        {BOOKING_PRIVACY_NOTICE.summary(page.clinicName)}
+                      </p>
+                      <a
+                        className="inline-flex min-h-11 w-fit items-center text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        href={`/book/${encodeURIComponent(slug)}/privacy`}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        Read the full privacy notice
+                      </a>
+                    </div>
+                    <label
+                      className="flex min-h-11 cursor-pointer items-start gap-3 text-sm"
+                      htmlFor="book-privacy-acknowledgment"
+                    >
+                      <input
+                        checked={privacyAcknowledged}
+                        className="mt-0.5 size-5 shrink-0 accent-primary"
+                        disabled={pending}
+                        id="book-privacy-acknowledgment"
+                        onChange={(event) =>
+                          setPrivacyAcknowledged(event.target.checked)
+                        }
+                        type="checkbox"
+                      />
+                      <span>
+                        {BOOKING_PRIVACY_NOTICE.acknowledgment}
+                      </span>
+                    </label>
+                  </section>
                   <Button disabled={!canReview} type="submit">
                     Review booking
                   </Button>

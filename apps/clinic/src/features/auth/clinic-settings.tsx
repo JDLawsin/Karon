@@ -33,6 +33,7 @@ import IdleLockSettings from "@/features/auth/idle-lock-settings";
 import SyncOfflineSettings from "@/features/auth/sync-offline-settings";
 import UpdatePasswordForm from "@/features/auth/update-password-form";
 import ClinicBookingSettings from "@/features/booking/clinic-booking-settings";
+import { BOOKING_PRIVACY_NOTICE } from "@/features/privacy/privacy-policy";
 import ClinicStaff from "@/features/staff/clinic-staff";
 import { useClinicSession } from "@/lib/auth/clinic-session";
 
@@ -83,22 +84,46 @@ const ClinicSettings = () => {
       <IdleLockSettings />
       <SyncOfflineSettings />
       {isOwner ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Move clinic data</CardTitle>
-            <CardDescription>
-              Import with a preview, or download portable clinic records.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter className="flex-wrap">
-            <Button asChild variant="outline">
-              <Link href="/settings/import">Import clinic data</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/settings/export">Export clinic data</Link>
-            </Button>
-          </CardFooter>
-        </Card>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Move clinic data</CardTitle>
+              <CardDescription>
+                Import with a preview, or download portable clinic records.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="flex-wrap">
+              <Button asChild variant="outline">
+                <Link href="/settings/import">Import clinic data</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/settings/export">Export clinic data</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Privacy and agreements</CardTitle>
+              <CardDescription>
+                Design-partner documents are available now. Counsel approval still
+                blocks open production.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="flex-wrap">
+              <Button asChild variant="outline">
+                <Link href="/privacy">View privacy notice</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <a
+                  download
+                  href={BOOKING_PRIVACY_NOTICE.processingAgreementDownload}
+                >
+                  Download processing agreement
+                </a>
+              </Button>
+            </CardFooter>
+          </Card>
+        </>
       ) : null}
     </div>
   );

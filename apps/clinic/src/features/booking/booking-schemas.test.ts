@@ -6,8 +6,10 @@ import {
   bookingReplayMatches,
   bookingTurnstileTokenOf,
   isBookingHoneypotFilled,
-  publicBookingPageSchema
+  publicBookingPageSchema,
+  publicBookingSubmitSchema
 } from "./booking-schemas";
+import { BOOKING_PRIVACY_NOTICE } from "@/features/privacy/privacy-policy";
 
 describe("isBookingHoneypotFilled", () => {
   it("rejects the trap field without treating browser website autofill as a bot", () => {
@@ -30,9 +32,11 @@ describe("bookingTurnstileTokenOf", () => {
 describe("bookingReplayMatches", () => {
   it("matches the same slot, service, and mobile", () => {
     const existing = {
+      id: "11111111-1111-4111-8111-111111111111",
       starts_at: "2026-09-14T01:00:00.000Z",
       service_id: "prophy",
-      mobile: "09171234567"
+      mobile: "09171234567",
+      privacy_notice_version: BOOKING_PRIVACY_NOTICE.version
     };
 
     expect(
@@ -57,6 +61,31 @@ describe("bookingIdempotencyKeySchema", () => {
     expect(bookingIdempotencyKeySchema.safeParse("not-a-uuid").success).toBe(false);
     expect(
       bookingIdempotencyKeySchema.safeParse("11111111-1111-4111-8111-111111111111").success
+    ).toBe(true);
+  });
+});
+
+describe("publicBookingSubmitSchema", () => {
+  const booking = {
+    name: "Ana Cruz",
+    mobile: "09171234567",
+    startsAt: "2026-09-29T01:00:00.000Z",
+    serviceId: "11111111-1111-4111-8111-111111111111"
+  };
+
+  it("requires the current privacy notice acknowledgment version", () => {
+    expect(publicBookingSubmitSchema.safeParse(booking).success).toBe(false);
+    expect(
+      publicBookingSubmitSchema.safeParse({
+        ...booking,
+        privacyNoticeVersion: "older-notice"
+      }).success
+    ).toBe(false);
+    expect(
+      publicBookingSubmitSchema.safeParse({
+        ...booking,
+        privacyNoticeVersion: BOOKING_PRIVACY_NOTICE.version
+      }).success
     ).toBe(true);
   });
 });

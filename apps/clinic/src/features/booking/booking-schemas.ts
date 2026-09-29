@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { BOOKING_PRIVACY_NOTICE } from "@/features/privacy/privacy-policy";
+
 const bookingSlugSchema = z
   .string()
   .trim()
@@ -12,6 +14,7 @@ const publicBookingSubmitSchema = z.object({
   mobile: z.string().trim().min(1, "Enter a mobile number.").max(20),
   startsAt: z.string().trim().min(1, "Choose a time."),
   serviceId: z.string().trim().min(1, "Choose a service.").max(80),
+  privacyNoticeVersion: z.literal(BOOKING_PRIVACY_NOTICE.version),
   note: z
     .string()
     .trim()
@@ -95,9 +98,11 @@ const bookingApiErrorSchema = z.object({
 });
 
 const bookingReplayRowSchema = z.object({
+  id: z.uuid(),
   starts_at: z.string(),
   service_id: z.string(),
-  mobile: z.string()
+  mobile: z.string(),
+  privacy_notice_version: z.string().nullable()
 });
 
 const isBookingHoneypotFilled = (body: unknown) => {
