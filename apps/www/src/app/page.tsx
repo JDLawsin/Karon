@@ -1,12 +1,20 @@
 import { pageMetadata } from "@/lib/page-metadata";
+import Claim from "@/features/claim/claim";
 import SitePage from "@/features/site-page/site-page";
+import { claimText } from "../../content/claims";
+import { headlineClaimId } from "../../content/headline-proof";
 
-const title = "Karon for small dental clinics";
-const description = "A clearer way to run the day with your clinic team.";
+const titleId = headlineClaimId();
 
 export const dynamic = "force-static";
-export const metadata = pageMetadata("/", title, description);
+export const metadata = pageMetadata("/", claimText(titleId), claimText("entity-sentence"));
 
-const HomePage = () => <SitePage description={description} pageId="home" title={title} />;
+const HomePage = () => (
+  <SitePage
+    description={<Claim id="subhead-founding" slot="description" />}
+    pageId="home"
+    title={<Claim id={titleId} slot="shipped-benefit" />}
+  />
+);
 
 export default HomePage;

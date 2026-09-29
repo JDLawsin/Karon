@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { siteConfig } from "../../../content/site.config";
 import { primaryNavigation } from "../../../content/site-routes";
+import Claim from "../claim/claim";
 
 const SiteFooter = () => (
   <footer className="relative z-10 bg-card" data-sticky-cta-stop>
@@ -10,7 +11,7 @@ const SiteFooter = () => (
       <div className="space-y-3">
         <KaronWordmark />
         <p className="max-w-md text-sm text-muted-foreground">
-          Karon is a dental clinic management app built for small clinics with 1 to 2 chairs, starting in the Philippines.
+          <Claim id="entity-sentence" />
         </p>
       </div>
       <nav aria-label="Footer navigation" className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">

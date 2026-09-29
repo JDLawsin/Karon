@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
+import { entitySentence } from "@karon/claims";
 
 const manifest = (): MetadataRoute.Manifest => ({
   name: "Karon",
   short_name: "Karon",
-  description: "Offline-first clinic software for small dental practices.",
+  description: entitySentence,
   start_url: "/",
   display: "standalone",
   background_color: "#FFFFFF",

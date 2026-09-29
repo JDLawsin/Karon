@@ -6,6 +6,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      release_candidate:
+        description: Run release-only claim proof and oracle gates
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   quality:
@@ -14,6 +20,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v5
         with:
@@ -74,6 +82,16 @@ jobs:
         env:
           APP_URL: ${{ secrets.APP_URL }}
         run: yarn check:www-build
+
+      - name: Check public claims
+        env:
+          DEMO_SUPABASE_PROJECT_REF: ${{ secrets.DEMO_SUPABASE_PROJECT_REF }}
+          DEMO_DEPLOYMENT_ID: ${{ secrets.DEMO_DEPLOYMENT_ID }}
+        run: yarn check:claims
+
+      - name: Check release claim proofs
+        if: github.event_name == 'workflow_dispatch' && inputs.release_candidate
+        run: yarn check:claims:release
 
   www-mode-guard:
     runs-on: ubuntu-latest

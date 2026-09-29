@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { siteOrigins } from "@/lib/site-origins";
 import SiteFooter from "@/features/site-shell/site-footer";
 import SiteHeader from "@/features/site-shell/site-header";
+import { claimText } from "../../content/claims";
 
 import "./globals.css";
 
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteOrigins.www),
   applicationName: "Karon",
   title: { default: "Karon", template: "%s | Karon" },
-  description: "Karon is a dental clinic management app for small clinics.",
+  description: claimText("entity-sentence"),
   robots: { index: true, follow: true }
 };
 
@@ -42,7 +43,7 @@ const RootLayout = ({ children }: RootLayoutProps) => {
     name: "Karon",
     url: siteOrigins.www,
     logo: new URL("/logo.svg", siteOrigins.www).toString(),
-    description: "Karon is a dental clinic management app built for small clinics with 1 to 2 chairs, starting in the Philippines."
+    description: claimText("entity-sentence")
   };
 
   return (

@@ -1916,6 +1916,14 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@karon/claims@workspace:*, @karon/claims@workspace:packages/claims":
+  version: 0.0.0-use.local
+  resolution: "@karon/claims@workspace:packages/claims"
+  dependencies:
+    typescript: "npm:^5"
+  languageName: unknown
+  linkType: soft
+
 "@karon/clinic@workspace:apps/clinic":
   version: 0.0.0-use.local
   resolution: "@karon/clinic@workspace:apps/clinic"
@@ -1935,6 +1943,7 @@ __metadata:
     "@dicebear/thumbs": "npm:9.4.2"
     "@dnd-kit/core": "npm:^6.3.1"
     "@hookform/resolvers": "npm:^5.9.1"
+    "@karon/claims": "workspace:*"
     "@karon/db": "workspace:^"
     "@karon/design-system": "workspace:*"
     "@loglayer/plugin-opentelemetry": "npm:^3.3.0"
@@ -2026,6 +2035,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@karon/www@workspace:apps/www"
   dependencies:
+    "@karon/claims": "workspace:*"
     "@karon/design-system": "workspace:*"
     "@tailwindcss/postcss": "npm:^4"
     "@types/node": "npm:24"

@@ -1,12 +1,13 @@
 import { Button } from "@karon/design-system";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { siteConfig } from "../../../content/site.config";
 import StickyCta from "../site-shell/sticky-cta";
 
 type Props = {
-  title: string;
-  description: string;
+  title: ReactNode;
+  description: ReactNode;
   pageId: string;
   showCtas?: boolean;
   lastUpdated?: string;

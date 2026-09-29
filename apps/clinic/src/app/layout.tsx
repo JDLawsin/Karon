@@ -3,6 +3,7 @@ import { Outfit } from "next/font/google";
 import { SerwistProvider } from "@serwist/next/react";
 import { ThemeProvider, Toaster } from "@karon/design-system";
 import type { ReactNode } from "react";
+import { entitySentence } from "@karon/claims";
 
 import "./globals.css";
 import ThemeScript from "./theme-script";
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
     default: "Karon",
     template: "%s | Karon"
   },
-  description: "Offline-first clinic software for small dental practices.",
+  description: entitySentence,
   robots: {
     index: false,
     follow: false

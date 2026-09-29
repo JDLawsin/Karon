@@ -1,0 +1,98 @@
+{
+  "entity-sentence": {
+    "status": "live",
+    "text": "Karon is a dental clinic management app built for small clinics with 1 to 2 chairs, starting in the Philippines."
+  },
+  "booking-link": {
+    "status": "live",
+    "text": "Share a booking link for patient requests."
+  },
+  "booking-inbox": {
+    "status": "live",
+    "text": "Review booking requests in one inbox."
+  },
+  "today-board": {
+    "status": "live",
+    "text": "Run today's visits from one screen."
+  },
+  "secure-staff-access": {
+    "status": "live",
+    "text": "Owners control staff access to clinic work."
+  },
+  "services-catalog": {
+    "status": "live",
+    "text": "Keep services, prices, and visit durations together."
+  },
+  "clinic-profile": {
+    "status": "live",
+    "text": "Manage clinic details and timezone."
+  },
+  "headline-today-screen": {
+    "status": "exists-not-marketed",
+    "text": "Bookings land on your Today screen, not in your Messenger chats."
+  },
+  "headline-one-inbox": {
+    "status": "live",
+    "text": "Every booking lands in one inbox, not in your Messenger chats."
+  },
+  "subhead-founding": {
+    "status": "live",
+    "text": "Built at the chair with founding clinics."
+  },
+  "patient-records": {
+    "status": "building",
+    "text": "Patient records"
+  },
+  "dental-chart": {
+    "status": "building",
+    "text": "Dental chart"
+  },
+  "quotes": {
+    "status": "building",
+    "text": "Treatment quotes"
+  },
+  "collect-payment": {
+    "status": "building",
+    "text": "Record patient payments"
+  },
+  "owner-collections": {
+    "status": "building",
+    "text": "Owner collections view"
+  },
+  "unsaved-work-protected": {
+    "status": "building",
+    "text": "Protect pending chair work before sign-out."
+  },
+  "google-calendar": {
+    "status": "exists-not-marketed",
+    "text": "Deferred calendar connection"
+  },
+  "offline-durable": {
+    "status": "absent",
+    "text": "Offline durability is not yet a public claim."
+  },
+  "import": {
+    "status": "absent",
+    "text": "Data import is not yet offered publicly."
+  },
+  "online-billing": {
+    "status": "absent",
+    "text": "Online billing is not yet open."
+  },
+  "sound-alerts": {
+    "status": "absent",
+    "text": "Sound alerts are not available."
+  },
+  "multi-currency-locale": {
+    "status": "absent",
+    "text": "Multiple currencies and locales are not available."
+  },
+  "compliance": {
+    "status": "absent",
+    "text": "No regulatory compliance claim is made."
+  },
+  "no-show-outcome": {
+    "status": "absent",
+    "text": "No no-show outcome claim is made."
+  }
+}
