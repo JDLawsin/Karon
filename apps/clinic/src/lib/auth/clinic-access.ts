@@ -6,6 +6,8 @@ import {
   DEVICE_TRUST_COOKIE,
   redeemDeviceTrust
 } from "@/lib/auth/device-trust";
+import { ensureDevelopmentEntitlement } from "@/lib/billing/development-entitlement";
+import { createAdminSupabase } from "@/lib/supabase/admin";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 const getClinicAccess = async () => {
@@ -48,16 +50,57 @@ const getClinicAccess = async () => {
     ? entitlementRows[0]
     : entitlementRows;
   const sessionMfaOk = mfaOk === true;
+  const membership = parseMembership(row);
+  let entitlement = parseEntitlement(entitlementRow);
+
+  if (membership) {
+    entitlement = await ensureDevelopmentEntitlement({
+      entitlement,
+      tenantId: membership.tenantId,
+      grant: async ({ tenantId, startsAt, accessUntil }) => {
+        const { error } = await createAdminSupabase()
+          .from("clinic_entitlements")
+          .upsert(
+            {
+              tenant_id: tenantId,
+              status: "active",
+              source: "manual",
+              provider: null,
+              billing_checkout_id: null,
+              starts_at: startsAt,
+              access_until: accessUntil,
+              updated_at: startsAt
+            },
+            { onConflict: "tenant_id" }
+          );
+
+        return error === null;
+      },
+      reload: async () => {
+        const { data: reloadedRows, error } = await supabase.rpc(
+          "current_entitlement"
+        );
+
+        if (error) {
+          return null;
+        }
+
+        return parseEntitlement(
+          Array.isArray(reloadedRows) ? reloadedRows[0] : reloadedRows
+        );
+      }
+    });
+  }
 
   return {
     userId,
     aal,
-    membership: parseMembership(row),
+    membership,
     sessionActive: sessionActive === true,
     deviceTrusted: sessionMfaOk && aal !== "aal2",
     passwordRecovery,
     mfaOk: sessionMfaOk,
-    entitlement: parseEntitlement(entitlementRow),
+    entitlement,
     supabase
   };
 };

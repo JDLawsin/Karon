@@ -4,6 +4,8 @@ if (process.env.FORCE_COLOR) {
   delete process.env.NO_COLOR;
 }
 
+process.env.KARON_TEST_ACCESS_ENABLED ??= "true";
+
 const isCi = Boolean(process.env.CI);
 const externalBaseUrl = process.env.PLAYWRIGHT_BASE_URL;
 const baseURL = externalBaseUrl ?? "http://localhost:3000";

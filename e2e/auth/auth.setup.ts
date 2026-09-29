@@ -29,6 +29,7 @@ const admin = createClient(supabaseUrl, serviceKey, {
 const TEST_PASSWORD = "Clinic-test-pass-12";
 const suffix = randomUUID().slice(0, 8);
 const authDir = resolve(process.cwd(), "e2e/.auth");
+const TEST_ACCESS_DAYS = 30;
 
 const identities = {
   password: TEST_PASSWORD,
@@ -135,6 +136,31 @@ setup("seed clinics and storage states", async ({ page }) => {
 
   if (memberError) {
     throw memberError;
+  }
+
+  if (process.env.KARON_TEST_ACCESS_ENABLED === "true") {
+    const startsAt = new Date();
+    const accessUntil = new Date(startsAt);
+    accessUntil.setUTCDate(accessUntil.getUTCDate() + TEST_ACCESS_DAYS);
+    const { error: entitlementError } = await admin
+      .from("clinic_entitlements")
+      .upsert(
+        [identities.clinicA, identities.clinicB].map((tenantId) => ({
+          tenant_id: tenantId,
+          status: "active",
+          source: "manual",
+          provider: null,
+          billing_checkout_id: null,
+          starts_at: startsAt.toISOString(),
+          access_until: accessUntil.toISOString(),
+          updated_at: startsAt.toISOString()
+        })),
+        { onConflict: "tenant_id" }
+      );
+
+    if (entitlementError) {
+      throw entitlementError;
+    }
   }
 
   const { error: serviceError } = await admin.from("clinic_services").insert({
