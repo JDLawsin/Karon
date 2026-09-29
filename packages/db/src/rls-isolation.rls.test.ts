@@ -262,6 +262,183 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(data).toEqual([]);
   });
 
+  it("audits patient and appointment events without storing SPI", async () => {
+    const assistant = await createAuthedClient(users[1]!.email);
+    const patientId = randomUUID();
+    const appointmentId = randomUUID();
+    const beforeWrite = Date.now();
+    const rows = [
+      {
+        id: randomUUID(),
+        tenant_id: clinicIds[0],
+        actor_user_id: users[1]!.id,
+        event_type: "patient.created",
+        record_id: patientId,
+        payload: {
+          name: "Audit Patient",
+          mobile: "09171234567",
+          email: "audit-patient@example.com"
+        },
+        occurred_at: new Date().toISOString()
+      },
+      {
+        id: randomUUID(),
+        tenant_id: clinicIds[0],
+        actor_user_id: users[1]!.id,
+        event_type: "patient.updated",
+        record_id: patientId,
+        payload: {
+          name: "Audit Patient Updated",
+          mobile: "09177654321",
+          email: "audit-patient-updated@example.com"
+        },
+        occurred_at: new Date(Date.now() + 1).toISOString()
+      },
+      {
+        id: randomUUID(),
+        tenant_id: clinicIds[0],
+        actor_user_id: users[1]!.id,
+        event_type: "appointment.set",
+        record_id: appointmentId,
+        payload: {
+          patientId,
+          startsAt: new Date(Date.now() + 86_400_000).toISOString(),
+          status: "confirmed",
+          serviceName: "Private treatment",
+          note: "Sensitive appointment note"
+        },
+        occurred_at: new Date(Date.now() + 2).toISOString()
+      }
+    ];
+
+    const { error: writeError } = await assistant.client
+      .from("clinic_events")
+      .insert(rows);
+
+    expect(writeError).toBeNull();
+
+    const { data: audits, error: auditError } = await admin
+      .from("audit_events")
+      .select(
+        "tenant_id, actor_user_id, event_type, record_id, metadata, created_at"
+      )
+      .in("record_id", [patientId, appointmentId])
+      .in("event_type", ["patient.created", "patient.updated", "appointment.set"])
+      .order("created_at");
+
+    expect(auditError).toBeNull();
+    expect(audits).toHaveLength(3);
+    expect(audits).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        tenant_id: clinicIds[0],
+        actor_user_id: users[1]!.id,
+        event_type: "patient.created",
+        record_id: patientId,
+        metadata: {}
+      }),
+      expect.objectContaining({
+        tenant_id: clinicIds[0],
+        actor_user_id: users[1]!.id,
+        event_type: "patient.updated",
+        record_id: patientId,
+        metadata: {}
+      }),
+      expect.objectContaining({
+        tenant_id: clinicIds[0],
+        actor_user_id: users[1]!.id,
+        event_type: "appointment.set",
+        record_id: appointmentId,
+        metadata: { patient_id: patientId, status: "confirmed" }
+      })
+    ]));
+    expect(
+      audits?.every(({ created_at }) => {
+        const createdAt = new Date(created_at).getTime();
+        return createdAt >= beforeWrite - 1_000 && createdAt <= Date.now() + 1_000;
+      })
+    ).toBe(true);
+    expect(JSON.stringify(audits)).not.toMatch(
+      /Audit Patient|0917|example\.com|Private treatment|Sensitive appointment note/
+    );
+
+    const ownerB = await createAuthedClient(users[2]!.email);
+    await verifyOwnerTotp(ownerB.client);
+    const { data: otherTenantRows, error: otherTenantError } = await ownerB.client
+      .from("audit_events")
+      .select("id")
+      .in("record_id", [patientId, appointmentId]);
+
+    expect(otherTenantError).toBeNull();
+    expect(otherTenantRows).toEqual([]);
+
+    const { error: invalidAppointmentError } = await assistant.client
+      .from("clinic_events")
+      .insert({
+        id: randomUUID(),
+        tenant_id: clinicIds[0],
+        actor_user_id: users[1]!.id,
+        event_type: "appointment.set",
+        record_id: randomUUID(),
+        payload: {
+          patientId: "09171234567",
+          startsAt: new Date(Date.now() + 86_400_000).toISOString(),
+          status: "confirmed"
+        },
+        occurred_at: new Date().toISOString()
+      });
+
+    expect(invalidAppointmentError?.code).toBe("22P02");
+  });
+
+  it("rejects forged clinical audit rows and member mutation", async () => {
+    const assistant = await createAuthedClient(users[1]!.email);
+    const { error: forgedError } = await assistant.client
+      .from("audit_events")
+      .insert({
+        tenant_id: clinicIds[0],
+        actor_user_id: users[1]!.id,
+        event_type: "patient.created",
+        record_id: randomUUID(),
+        metadata: { mobile: "09171234567" }
+      });
+
+    expect(forgedError?.code).toBe("42501");
+
+    const { error: rawMetadataError } = await assistant.client
+      .from("audit_events")
+      .insert({
+        tenant_id: clinicIds[0],
+        actor_user_id: users[1]!.id,
+        event_type: "auth.login",
+        metadata: { mobile: "09171234567" }
+      });
+
+    expect(rawMetadataError?.code).toBe("22023");
+
+    const owner = await createAuthedClient(users[0]!.email);
+    await verifyOwnerTotp(owner.client);
+    const { data: existing } = await owner.client
+      .from("audit_events")
+      .select("id")
+      .eq("tenant_id", clinicIds[0])
+      .limit(1)
+      .single();
+
+    expect(existing?.id).toEqual(expect.any(String));
+
+    const { error: updateError } = await owner.client
+      .from("audit_events")
+      .update({ metadata: { overwritten: true } })
+      .eq("id", existing!.id);
+    const { error: deleteError } = await owner.client
+      .from("audit_events")
+      .delete()
+      .eq("id", existing!.id);
+
+    expect(updateError?.code).toBe("42501");
+    expect(deleteError?.code).toBe("42501");
+  });
+
   it("allows only the tenant owner to write clinic export audits", async () => {
     const assistant = await createAuthedClient(users[1]!.email);
     const { error: assistantError } = await assistant.client
@@ -708,10 +885,14 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
 
     expect(otherInsertError).toBeNull();
 
-    const { data, error } = await assistant.client.from("clinic_events").select("id");
+    const { data, error } = await assistant.client
+      .from("clinic_events")
+      .select("id");
 
     expect(error).toBeNull();
-    expect(data?.map((row) => row.id)).toEqual([eventId]);
+    const visibleIds = data?.map((row) => row.id) ?? [];
+    expect(visibleIds).toContain(eventId);
+    expect(visibleIds).not.toContain(otherId);
 
     const { data: otherClinic, error: otherError } = await assistant.client
       .from("clinic_events")
@@ -777,6 +958,7 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     for (const event of events) {
       const eventId = randomUUID();
       const recordId = randomUUID();
+      const note = "x".repeat(500);
       const { error } = await event.client.from("clinic_events").insert({
         id: eventId,
         tenant_id: clinicIds[0],
@@ -788,7 +970,7 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
           visitId,
           toothCode: event.toothCode,
           finding: { kind: "condition", code: "caries" },
-          note: "Sensitive chart note"
+          note
         },
         occurred_at: new Date().toISOString()
       });
@@ -805,9 +987,9 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
         actor_user_id: event.actorUserId,
         event_type: "chart.appended",
         record_id: recordId,
-        metadata: { patient_id: patientId, visit_id: visitId, note_length: 20 }
+        metadata: { patient_id: patientId, visit_id: visitId, note_length: 500 }
       });
-      expect(JSON.stringify(audit)).not.toContain("Sensitive chart note");
+      expect(JSON.stringify(audit)).not.toContain(note);
     }
 
     const { error: invalidError } = await assistant.client.from("clinic_events").insert({

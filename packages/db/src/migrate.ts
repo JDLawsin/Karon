@@ -48,7 +48,9 @@ const files = [
   "packages/db/drizzle/0039_clinic_export_indexes.sql",
   "packages/db/drizzle/0040_export_consistency.sql",
   "packages/db/drizzle/0041_booking_privacy_acknowledgment.sql",
-  "packages/db/drizzle/0042_booking_privacy_acknowledgment_grants.sql"
+  "packages/db/drizzle/0042_booking_privacy_acknowledgment_grants.sql",
+  "packages/db/drizzle/0043_extended_audit.sql",
+  "packages/db/drizzle/0046_audit_metadata_guard.sql"
 ];
 
 const splitSql = (contents: string) => {

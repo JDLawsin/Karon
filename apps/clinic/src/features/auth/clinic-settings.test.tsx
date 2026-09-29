@@ -85,6 +85,7 @@ describe("ClinicSettings", () => {
     expect(screen.queryByText("Password form")).toBeNull();
     expect(screen.queryByText("Clinic details")).toBeNull();
     expect(screen.queryByRole("link", { name: "Export clinic data" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "View audit activity" })).toBeNull();
   });
 
   it("shows account, clinic, integrations, and members tabs for owners", () => {
@@ -102,6 +103,10 @@ describe("ClinicSettings", () => {
     expect(screen.getByRole("link", { name: "Export clinic data" })).toHaveAttribute(
       "href",
       "/settings/export"
+    );
+    expect(screen.getByRole("link", { name: "View audit activity" })).toHaveAttribute(
+      "href",
+      "/settings/audit"
     );
     expect(screen.queryByText("Password form")).toBeNull();
   });

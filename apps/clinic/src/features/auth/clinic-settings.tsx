@@ -103,6 +103,20 @@ const ClinicSettings = () => {
           </Card>
           <Card>
             <CardHeader>
+              <CardTitle>Audit trail</CardTitle>
+              <CardDescription>
+                Review recent clinical, financial, import, export, and account
+                actions without exposing patient content.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Button asChild variant="outline">
+                <Link href="/settings/audit">View audit activity</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+          <Card>
+            <CardHeader>
               <CardTitle>Privacy and agreements</CardTitle>
               <CardDescription>
                 Design-partner documents are available now. Counsel approval still
