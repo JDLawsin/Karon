@@ -2,6 +2,9 @@ name: Quality
 
 # Manual only until CI is wanted. Restore pull_request + push to main then.
 on:
+  pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -22,6 +25,15 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --immutable
+
+      - name: Repository host and path policy
+        run: yarn check:repo-policy
+
+      - name: App-origin parity
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+        run: yarn check:app-origin
 
       - name: Lint
         run: yarn lint
@@ -48,6 +60,8 @@ jobs:
 
       - name: Build and run E2E
         env:
+          WWW_URL: ${{ secrets.WWW_URL }}
+          APP_URL: ${{ secrets.APP_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
@@ -55,3 +69,30 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: yarn test:e2e:ci
+
+      - name: Check design-partner www output
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: yarn check:www-build
+
+  www-mode-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        missing: [KR-008, KR-017, KR-018, KR-020, price]
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: yarn
+      - run: corepack enable
+      - run: yarn install --immutable
+      - name: Guard rejects ${{ matrix.missing }}
+        env:
+          WWW_URL: https://www.example.test
+          APP_URL: https://app.example.test
+        run: yarn vitest run apps/www/content/site-config.test.ts -t "rejects ${{ matrix.missing }}"

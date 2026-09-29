@@ -117,6 +117,10 @@
   --control-min-height: 3.5rem;
 }
 
+[data-density="marketing"] {
+  --control-min-height: 2.75rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --motion-duration: 0s;

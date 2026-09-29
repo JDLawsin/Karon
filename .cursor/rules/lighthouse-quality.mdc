@@ -21,7 +21,7 @@ Ponytail still wins: no extra libraries “for Lighthouse.” Use Next, the desi
 |---|---|---|
 | `apps/clinic` chair + login | **Primary** (NFR-08 tap size, gloves) | **Low** — `noindex` authenticated app is fine |
 | `apps/admin` (later) | **Primary** | **Low** — same; do not chase public SERP |
-| `apps/marketing` (later) | **Primary** | **Primary** — titles, description, headings, crawlable HTML |
+| `apps/www` | **Primary** | **Primary** — titles, description, headings, crawlable HTML |
 
 ## Performance
 

@@ -69,5 +69,5 @@ AppShell, PageHeader, EmptyState, StatusBadge, StatCard, SyncBanner — build in
 ## Don’t
 
 - Recreate Button/Input from `DESIGN.md` YAML while the primitive exists.
-- Scaffold Storybook or `apps/marketing` to preview tokens.
+- Scaffold Storybook or another app to preview tokens; public marketing belongs in `apps/www`.
 - Green primary, mint toothpaste brand, cream paper, pill CTAs, ALL CAPS eyebrows, Chair Azure, IBM Plex.

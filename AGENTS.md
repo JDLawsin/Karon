@@ -89,7 +89,7 @@ Playwright: `.cursor/rules/writing-e2e.mdc` + `.cursor/rules/e2e-test.mdc`. Revi
 
 Always: offline for **supported** surfaces (intake + visit status today); owner vs assistant on the **server**; no SPI in ops logs; PayMongo is dentist → us (**Missing** until built).
 
-Never: service-role in the PWA; Server Actions as odontogram save; HMO/AI/photos in V1; NestJS booking service; empty `apps/marketing` or `apps/admin` unless asked; claim Frozen chair SaaS as shipped.
+Never: service-role in the PWA; Server Actions as odontogram save; HMO/AI/photos in V1; NestJS booking service; empty `apps/admin` unless asked; claim Frozen chair SaaS as shipped.
 
 Ask first: new runtime dependencies; SMS vendor; Google Calendar reconnect. Do not seed PayMongo / `plans` pesos until [docs/pricing.md](docs/pricing.md) **(private)** is Accepted (it is **draft**).
 

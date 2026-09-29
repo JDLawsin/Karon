@@ -25,6 +25,9 @@
     "db:generate": "yarn workspace @karon/db db:generate",
     "db:migrate": "yarn workspace @karon/db db:migrate",
     "test:rls": "vitest run --config vitest.rls.config.mts"
+    ,"check:repo-policy": "node scripts/check-repository-policy.mjs"
+    ,"check:app-origin": "node scripts/check-app-origin-parity.mjs"
+    ,"check:www-build": "node scripts/check-www-build.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Karon</title>
+  <rect width="64" height="64" rx="12" fill="#2563eb"/>
+  <path d="M20 18c4-5 20-5 24 0 4 6-1 12-3 20-2 8-5 10-9 3-4 7-7 5-9-3-2-8-7-14-3-20Z" fill="#fff"/>
+</svg>

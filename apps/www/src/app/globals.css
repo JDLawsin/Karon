@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@import "@karon/design-system/styles.css";
+@source "../../../../packages/design-system/src";
+
+:root {
+  --sticky-cta-space: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  scroll-padding-bottom: var(--sticky-cta-space);
+}
+
+body {
+  line-height: 1.5;
+}
+
+.with-mobile-sticky {
+  padding-bottom: var(--sticky-cta-space);
+}
+
+@media (min-width: 64rem) {
+  :root {
+    scroll-padding-bottom: 0;
+  }
+
+  .with-mobile-sticky {
+    padding-bottom: 0;
+  }
+}

@@ -201,7 +201,7 @@ next patient → fat verb → calm booking interrupt.
 ### Brand vs product
 
 One type family everywhere in product chrome: Outfit. No display serif, no second
-“marketing font” until `apps/marketing` exists — and even then the landing page
+“marketing font” for `apps/www` — the landing page
 SHOULD stay in the same family so clinic and brochure are one product. MUST NOT
 load IBM Plex Sans.
 
@@ -593,7 +593,7 @@ Public booking inbox must not be silent or toast-spam.
 - Put patient name, mobile, odontogram, or GCash ref in `console.*` or Pino/SigNoz
   (NFR-21).
 - Require a public marketing Storybook for V1. MAY add package-level visual tests /
-  minimal catalog for Today primitives (D12). Do not scaffold `apps/marketing` empty.
+  minimal catalog for Today primitives (D12). Keep public marketing in `apps/www`.
 
 ---
 

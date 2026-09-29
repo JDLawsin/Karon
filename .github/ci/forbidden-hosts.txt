@@ -1,0 +1,10 @@
+# Candidate and rejected production domains. This file is the only tracked allowlist.
+karon.com
+www.karon.com
+app.karon.com
+getkaron.com
+www.getkaron.com
+app.getkaron.com
+karon.app
+www.karon.app
+app.karon.app

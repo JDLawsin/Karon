@@ -29,7 +29,7 @@ Visual language: `DESIGN.md` + `docs/design-system.md`. UI skill: `.agents/skill
 6. **Tokens + a11y:** `@karon/design-system` only. No `shadcn add` inside an app. Semantic tokens, not `bg-sky-500`. Overlay motion is `--overlay-duration` + `data-slot` CSS (`.cursor/rules/overlay-motion.mdc`), not `animate-in` in a feature file. Aim Lighthouse-minded 90+ (`.cursor/rules/lighthouse-quality.mdc`); do not run Chrome DevTools unless asked. SEO is secondary on clinic/admin.
 7. **TanStack Query** = network only. **useState** = chrome. No Zustand as a data store.
 8. **PayMongo** = dentist → us (F-17). Patient GCash = record only (F-08).
-9. **Do not scaffold** empty `apps/marketing` or `apps/admin` until asked.
+9. Public marketing belongs in `apps/www`. **Do not scaffold** an empty `apps/admin` until asked.
 
 ## When other skills conflict
 

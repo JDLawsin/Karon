@@ -23,6 +23,7 @@ export default defineConfig({
           environment: "node",
           include: [
             "apps/clinic/src/**/*.test.ts",
+            "apps/www/**/*.test.ts",
             "packages/db/src/**/*.test.ts",
             "packages/design-system/src/**/*.test.ts",
             "supabase/templates/**/*.test.ts"
@@ -30,7 +31,11 @@ export default defineConfig({
           exclude: [
             "packages/db/src/**/*.rls.test.ts",
             "apps/clinic/src/**/*.rls.test.ts"
-          ]
+          ],
+          env: {
+            WWW_URL: "https://www.example.test",
+            APP_URL: "https://app.example.test"
+          }
         }
       },
       {
