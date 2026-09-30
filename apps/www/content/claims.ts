@@ -152,6 +152,42 @@ export const claims = {
     unlocks: ["clinic profile", "timezone"],
     includeInLlms: true
   },
+  "clinic-data-export": {
+    text: "Clinic owners can export patients, appointments, and payments as CSV files.",
+    status: "live",
+    oracleRef: { row: "Export patients, appointments, payments (CSV)", commit: oracleCommit },
+    proof: { kind: "artifact", path: "apps/clinic/src/features/clinic-export/clinic-data-export.tsx", commit: "9d6ca2d" },
+    lastVerified: "2026-09-30",
+    unlocks: ["export clinic data"]
+  },
+  "clinicph-patient-staff-cap": {
+    text: "ClinicPH, a multi-specialty tool rather than dental-only, lists a plan capped at 200 patients per month and 2 staff.",
+    status: "live",
+    oracleRef: { row: "ClinicPH pricing comparison", commit: oracleCommit },
+    proof: { kind: "artifact", path: "apps/www/content/claims.ts", commit: "7a14101" },
+    lastVerified: "2026-09-30",
+    unlocks: [],
+    type: "competitor",
+    source: "https://www.clinicph.health/pricing",
+    asOf: "2026-09-26",
+    approvedBy: ["James", "Counsel"]
+  },
+  "pricing-page-title": {
+    text: "Pricing for small dental clinics",
+    status: "live",
+    oracleRef: { row: "Pricing page title", commit: oracleCommit },
+    proof: { kind: "artifact", path: "apps/www/content/claims.ts", commit: "7a14101" },
+    lastVerified: "2026-09-30",
+    unlocks: []
+  },
+  "pricing-page-description": {
+    text: "See Karon's Philippines launch pricing band and founding-clinic program for small dental clinics.",
+    status: "live",
+    oracleRef: { row: "Pricing page description", commit: oracleCommit },
+    proof: { kind: "artifact", path: "apps/www/content/claims.ts", commit: "7a14101" },
+    lastVerified: "2026-09-30",
+    unlocks: []
+  },
   "headline-today-screen": {
     text: "Bookings land on your Today screen, not in your Messenger chats.",
     status: "exists-not-marketed",

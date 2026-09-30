@@ -1,12 +1,13 @@
 import { pageMetadata } from "@/lib/page-metadata";
-import SitePage from "@/features/site-page/site-page";
+import PricingPage from "@/features/pricing/pricing-page";
+import { claimText } from "../../../content/claims";
 
-const title = "Pricing";
-const description = "Founding clinic pricing is discussed during your application.";
+const title = claimText("pricing-page-title");
+const description = claimText("pricing-page-description");
 
 export const dynamic = "force-static";
 export const metadata = pageMetadata("/pricing", title, description);
 
-const PricingPage = () => <SitePage description={description} pageId="pricing" title={title} />;
+const PricingRoute = () => <PricingPage />;
 
-export default PricingPage;
+export default PricingRoute;

@@ -43,6 +43,22 @@
     "status": "live",
     "text": "Manage clinic details and timezone."
   },
+  "clinic-data-export": {
+    "status": "live",
+    "text": "Clinic owners can export patients, appointments, and payments as CSV files."
+  },
+  "clinicph-patient-staff-cap": {
+    "status": "live",
+    "text": "ClinicPH, a multi-specialty tool rather than dental-only, lists a plan capped at 200 patients per month and 2 staff."
+  },
+  "pricing-page-title": {
+    "status": "live",
+    "text": "Pricing for small dental clinics"
+  },
+  "pricing-page-description": {
+    "status": "live",
+    "text": "See Karon's Philippines launch pricing band and founding-clinic program for small dental clinics."
+  },
   "headline-today-screen": {
     "status": "exists-not-marketed",
     "text": "Bookings land on your Today screen, not in your Messenger chats."

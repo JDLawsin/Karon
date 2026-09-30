@@ -32,12 +32,16 @@ export type SiteConfig = {
     status: "draft";
   };
   planTerms: null | string;
-  billingUnit: null | "clinic-month";
+  billingUnit: null | "clinic";
+  billingUnitConfirmedAt: null | `${number}-${number}-${number}`;
+  billingUnitConfirmedBy: "Joshua";
   foundingSlots: {
     value: null | number;
     setBy: "Joshua";
     reviewedAt: "2026-09-26";
   };
+  foundingPriceLockMonths: null | number;
+  foundingCommitments: ReadonlyArray<string>;
   price: null | number;
   trialLengthDays: null | number;
   releaseGates: Record<GateId, boolean>;
@@ -64,7 +68,10 @@ const designPartnerCtas = {
   }
 } as const;
 
-export const validateSiteConfig = (config: SiteConfig) => {
+export const validateSiteConfig = (
+  config: SiteConfig,
+  environment = process.env.NODE_ENV
+) => {
   const ctas = Object.values(config.ctas);
   const wrongModeCtas = ctas.filter((cta) => cta.mode !== config.mode);
 
@@ -90,6 +97,19 @@ export const validateSiteConfig = (config: SiteConfig) => {
     }
   }
 
+  if (environment === "production") {
+    const missingFoundingTerms = [
+      config.foundingSlots.value === null ? "foundingSlots" : null,
+      config.foundingPriceLockMonths === null ? "foundingPriceLockMonths" : null,
+      config.planTerms === null ? "planTerms" : null,
+      config.foundingCommitments.length === 0 ? "foundingCommitments" : null
+    ].filter((term): term is string => term !== null);
+
+    if (missingFoundingTerms.length > 0) {
+      throw new Error(`Production pricing is blocked by: ${missingFoundingTerms.join(", ")}`);
+    }
+  }
+
   return config;
 };
 
@@ -104,11 +124,17 @@ export const siteConfig = validateSiteConfig({
   },
   planTerms: null,
   billingUnit: null,
+  billingUnitConfirmedAt: null,
+  billingUnitConfirmedBy: "Joshua",
   foundingSlots: {
     value: null,
     setBy: "Joshua",
     reviewedAt: "2026-09-26"
   },
+  foundingPriceLockMonths: null,
+  foundingCommitments: [
+    "A direct line to the Karon team while your clinic tests the full patient visit."
+  ],
   price: null,
   trialLengthDays: null,
   releaseGates: {

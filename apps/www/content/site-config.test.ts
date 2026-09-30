@@ -37,4 +37,10 @@ describe("site mode guard", () => {
     expect(renderedCtas).not.toMatch(/signup|checkout|paymongo/i);
     expect(siteConfig.ctas.primary.label).toBe("Apply as a founding clinic");
   });
+
+  it("rejects production pricing without Joshua's founding terms", () => {
+    expect(() => validateSiteConfig(siteConfig, "production")).toThrow(
+      "foundingSlots, foundingPriceLockMonths, planTerms"
+    );
+  });
 });
