@@ -7,6 +7,7 @@ const isProduction = process.env.VERCEL_ENV === "production";
 const siteOrigins = readSiteOrigins(process.env);
 
 const nextConfig: NextConfig = {
+  agentRules: false,
   poweredByHeader: false,
   transpilePackages: ["@karon/design-system"],
   allowedDevOrigins: ["127.0.0.1"],

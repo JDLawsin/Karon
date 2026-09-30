@@ -1,4 +1,8 @@
 {
+  "category-small-dental": {
+    "status": "live",
+    "text": "Dental clinic software for 1 to 2 chair clinics"
+  },
   "entity-sentence": {
     "status": "live",
     "text": "Karon is a dental clinic management app built for small clinics with 1 to 2 chairs, starting in the Philippines."
@@ -17,7 +21,19 @@
   },
   "secure-staff-access": {
     "status": "live",
-    "text": "Owners control staff access to clinic work."
+    "text": "Staff get role-based access as Owner or Assistant."
+  },
+  "owner-two-step": {
+    "status": "live",
+    "text": "Owners sign in with two-step verification."
+  },
+  "tenant-isolation": {
+    "status": "live",
+    "text": "Each clinic's data is kept separate from every other clinic's."
+  },
+  "idle-lock": {
+    "status": "live",
+    "text": "Idle screens lock automatically."
   },
   "services-catalog": {
     "status": "live",
@@ -69,11 +85,11 @@
   },
   "offline-durable": {
     "status": "absent",
-    "text": "Offline durability is not yet a public claim."
+    "text": "Working without a connection while keeping every pending change is not ready for public use yet."
   },
   "import": {
     "status": "absent",
-    "text": "Data import is not yet offered publicly."
+    "text": "Bringing existing records into Karon is planned before public launch."
   },
   "online-billing": {
     "status": "absent",

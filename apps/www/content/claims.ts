@@ -58,6 +58,14 @@ const seededCommit = "e56899d";
 const oracleCommit = "6ff7468";
 
 export const claims = {
+  "category-small-dental": {
+    text: "Dental clinic software for 1 to 2 chair clinics",
+    status: "live",
+    oracleRef: { row: "Create clinic; profile, hours, phone, address, logo", commit: oracleCommit },
+    proof: { kind: "artifact", path: "apps/clinic/src/app/(auth)/onboarding/page.tsx", commit: seededCommit },
+    lastVerified: "2026-09-30",
+    unlocks: []
+  },
   "entity-sentence": {
     text: entitySentence,
     status: "live",
@@ -94,13 +102,37 @@ export const claims = {
     includeInLlms: true
   },
   "secure-staff-access": {
-    text: "Owners control staff access to clinic work.",
+    text: "Staff get role-based access as Owner or Assistant.",
     status: "live",
     oracleRef: { row: "Roles Owner vs Assistant in UI + server", commit: oracleCommit },
     proof: { kind: "artifact", path: "apps/clinic/src/features/staff/authorize-owner.test.ts", commit: seededCommit },
     lastVerified: "2026-09-30",
     unlocks: ["staff access"],
     includeInLlms: true
+  },
+  "owner-two-step": {
+    text: "Owners sign in with two-step verification.",
+    status: "live",
+    oracleRef: { row: "Owner MFA (TOTP) + trusted devices", commit: oracleCommit },
+    proof: { kind: "artifact", path: "apps/clinic/src/features/auth/mfa-form.test.tsx", commit: seededCommit },
+    lastVerified: "2026-09-30",
+    unlocks: []
+  },
+  "tenant-isolation": {
+    text: "Each clinic's data is kept separate from every other clinic's.",
+    status: "live",
+    oracleRef: { row: "Tenant isolation (RLS)", commit: oracleCommit },
+    proof: { kind: "artifact", path: "packages/db/src/rls-isolation.rls.test.ts", commit: seededCommit },
+    lastVerified: "2026-09-30",
+    unlocks: []
+  },
+  "idle-lock": {
+    text: "Idle screens lock automatically.",
+    status: "live",
+    oracleRef: { row: "Assistant invite/remove; session revoke; idle lock", commit: oracleCommit },
+    proof: { kind: "artifact", path: "apps/clinic/src/features/auth/idle-lock.test.ts", commit: seededCommit },
+    lastVerified: "2026-09-30",
+    unlocks: []
   },
   "services-catalog": {
     text: "Keep services, prices, and visit durations together.",
@@ -192,14 +224,14 @@ export const claims = {
     unlocks: []
   },
   "offline-durable": {
-    text: "Offline durability is not yet a public claim.",
+    text: "Working without a connection while keeping every pending change is not ready for public use yet.",
     status: "absent",
     oracleRef: { row: "Outbox survives idle lock / sign-out", commit: oracleCommit },
     ticket: "KR-011",
     unlocks: ["offline-first", "offline durable"]
   },
   import: {
-    text: "Data import is not yet offered publicly.",
+    text: "Bringing existing records into Karon is planned before public launch.",
     status: "absent",
     oracleRef: { row: "Import / Migrate SPI", commit: oracleCommit },
     ticket: "KR-012",

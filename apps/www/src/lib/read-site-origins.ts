@@ -2,7 +2,13 @@ const readOrigin = (
   environment: NodeJS.ProcessEnv,
   name: "WWW_URL" | "APP_URL"
 ) => {
-  const value = environment[name];
+  const developmentOrigins = {
+    WWW_URL: "http://localhost:3001",
+    APP_URL: "http://localhost:3000"
+  } as const;
+  const value = environment[name] ?? (
+    environment.NODE_ENV === "development" ? developmentOrigins[name] : undefined
+  );
 
   if (!value) {
     throw new Error(`${name} is required`);

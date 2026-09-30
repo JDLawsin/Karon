@@ -44,9 +44,14 @@ export default defineConfig({
           environment: "jsdom",
           include: [
             "apps/clinic/src/**/*.test.tsx",
+            "apps/www/src/**/*.test.tsx",
             "packages/design-system/src/**/*.test.tsx"
           ],
-          setupFiles: ["./vitest.setup.ts"]
+          setupFiles: ["./vitest.setup.ts"],
+          env: {
+            WWW_URL: "https://www.example.test",
+            APP_URL: "https://app.example.test"
+          }
         }
       }
     ]
