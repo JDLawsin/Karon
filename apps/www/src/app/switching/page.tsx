@@ -1,12 +1,14 @@
 import { pageMetadata } from "@/lib/page-metadata";
-import SitePage from "@/features/site-page/site-page";
-
-const title = "Switching to Karon";
-const description = "Plan a careful move with your clinic team.";
+import SwitchingPage from "@/features/switching/switching-page";
+import { switchingMetadata } from "../../../content/switching";
 
 export const dynamic = "force-static";
-export const metadata = pageMetadata("/switching", title, description);
+export const metadata = pageMetadata(
+  "/switching",
+  switchingMetadata.title,
+  switchingMetadata.description
+);
 
-const SwitchingPage = () => <SitePage description={description} pageId="switching" title={title} />;
+const Page = () => <SwitchingPage />;
 
-export default SwitchingPage;
+export default Page;

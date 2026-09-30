@@ -15,6 +15,86 @@ body {
   padding-bottom: var(--sticky-cta-space);
 }
 
+.switching-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+
+.switching-comparison thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.switching-comparison tbody,
+.switching-comparison tr {
+  display: contents;
+}
+
+.switching-comparison th,
+.switching-comparison td {
+  min-width: 0;
+  border-top: 1px solid var(--border);
+  padding: 1rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.switching-comparison tbody th {
+  grid-column: 1 / -1;
+  background: var(--muted);
+  font-weight: 700;
+}
+
+.comparison-mobile-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+@media (min-width: 37.5rem) {
+  .switching-comparison {
+    grid-template-columns: minmax(9rem, 0.8fr) repeat(2, minmax(0, 1fr));
+  }
+
+  .switching-comparison thead {
+    position: static;
+    display: contents;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  .switching-comparison thead tr {
+    display: contents;
+  }
+
+  .switching-comparison thead th {
+    border-top: 0;
+    background: var(--muted);
+    font-weight: 700;
+  }
+
+  .switching-comparison tbody th {
+    grid-column: auto;
+    background: transparent;
+  }
+
+  .comparison-mobile-label {
+    display: none;
+  }
+}
+
 @media (min-width: 64rem) {
   :root {
     scroll-padding-bottom: 0;

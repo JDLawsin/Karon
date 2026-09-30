@@ -1,8 +1,9 @@
 import "server-only";
 
 import { siteOrigins } from "../src/lib/site-origins";
+import { siteMode, type SiteMode } from "./site-mode";
 
-export type SiteMode = "design-partner" | "open";
+export type { SiteMode } from "./site-mode";
 export type GateId = "KR-008" | "KR-017" | "KR-018" | "KR-020";
 export type CtaId =
   | "founding-application"
@@ -114,7 +115,7 @@ export const validateSiteConfig = (
 };
 
 export const siteConfig = validateSiteConfig({
-  mode: "design-partner",
+  mode: siteMode,
   ctas: designPartnerCtas,
   pricingBand: {
     currency: "PHP",
