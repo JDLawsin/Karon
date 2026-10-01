@@ -10,6 +10,7 @@ import { extname, join, relative, resolve } from "node:path";
 import { claims } from "../apps/www/content/claims.ts";
 import { headlineProof } from "../apps/www/content/headline-proof.ts";
 import { imageManifest } from "../apps/www/content/image-manifest.ts";
+import { findUnlinkedCounselWording } from "../apps/www/content/security-copy-guard.ts";
 
 const root = resolve(import.meta.dirname, "..");
 const releaseCandidate = process.env.KARON_RELEASE_CANDIDATE === "1" || process.argv.includes("--release");
@@ -161,6 +162,7 @@ const validateRenderedOutput = () => {
       if (!publicExtensions.has(extname(file).toLowerCase())) return;
       const content = readFileSync(file, "utf8");
       if (extname(file).toLowerCase() === ".body" && !/^[\s<{#[\]]/u.test(content)) return;
+      const outputPath = relative(root, file).replaceAll("\\", "/");
       never.forEach((pattern) => {
         if (pattern.test(content)) violations.push(`${relative(root, file)}: forbidden public claim ${pattern}`);
       });
@@ -179,6 +181,11 @@ const validateRenderedOutput = () => {
 
       if (/data-claim-status="(?:building|absent|exists-not-marketed)"[^<]{0,200}Live now/isu.test(content)) {
         violations.push(`${relative(root, file)}: non-live claim carries the Live now label`);
+      }
+
+      if (/^apps\/www\/\.next\/server\/app\/security(?:\/|\.)/u.test(outputPath)) {
+        findUnlinkedCounselWording(content)
+          .forEach((message) => violations.push(`${outputPath}: ${message}`));
       }
 
       const siteConfig = readFileSync(join(root, "apps/www/content/site.config.ts"), "utf8");

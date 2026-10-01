@@ -1,12 +1,10 @@
 import { pageMetadata } from "@/lib/page-metadata";
-import SitePage from "@/features/site-page/site-page";
-
-const title = "Security";
-const description = "Read how Karon approaches product security and responsible disclosure.";
+import SecurityPage from "@/features/security/security-page";
+import { securityPageCopy } from "../../../content/security";
 
 export const dynamic = "force-static";
-export const metadata = pageMetadata("/security", title, description);
+export const metadata = pageMetadata("/security", securityPageCopy.title, securityPageCopy.description);
 
-const SecurityPage = () => <SitePage description={description} pageId="security" title={title} />;
+const Page = () => <SecurityPage />;
 
-export default SecurityPage;
+export default Page;
