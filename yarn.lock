@@ -1989,7 +1989,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@karon/db@workspace:^, @karon/db@workspace:packages/db":
+"@karon/db@workspace:*, @karon/db@workspace:^, @karon/db@workspace:packages/db":
   version: 0.0.0-use.local
   resolution: "@karon/db@workspace:packages/db"
   dependencies:
@@ -2036,6 +2036,7 @@ __metadata:
   resolution: "@karon/www@workspace:apps/www"
   dependencies:
     "@karon/claims": "workspace:*"
+    "@karon/db": "workspace:*"
     "@karon/design-system": "workspace:*"
     "@tailwindcss/postcss": "npm:^4"
     "@types/node": "npm:24"

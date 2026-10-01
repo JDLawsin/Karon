@@ -59,6 +59,14 @@
     "status": "live",
     "text": "See Karon's Philippines launch pricing band and founding-clinic program for small dental clinics."
   },
+  "demo-page-title": {
+    "status": "building",
+    "text": "Work with us as a founding clinic"
+  },
+  "demo-page-description": {
+    "status": "building",
+    "text": "Tell us about your clinic, or ask for a short demo of what Karon can do today."
+  },
   "headline-today-screen": {
     "status": "exists-not-marketed",
     "text": "Bookings land on your Today screen, not in your Messenger chats."

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@karon/claims": "workspace:*",
+    "@karon/db": "workspace:*",
     "@karon/design-system": "workspace:*",
     "next": "16.3.4",
     "react": "19.2.8",

@@ -188,6 +188,20 @@ export const claims = {
     lastVerified: "2026-09-30",
     unlocks: []
   },
+  "demo-page-title": {
+    text: "Work with us as a founding clinic",
+    status: "building",
+    oracleRef: { row: "KR-030 approved demo heading", commit: oracleCommit },
+    ticket: "KR-030",
+    unlocks: []
+  },
+  "demo-page-description": {
+    text: "Tell us about your clinic, or ask for a short demo of what Karon can do today.",
+    status: "building",
+    oracleRef: { row: "KR-030 approved demo description", commit: oracleCommit },
+    ticket: "KR-030",
+    unlocks: []
+  },
   "headline-today-screen": {
     text: "Bookings land on your Today screen, not in your Messenger chats.",
     status: "exists-not-marketed",

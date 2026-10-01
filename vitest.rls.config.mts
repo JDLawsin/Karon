@@ -1,8 +1,14 @@
 process.env.KARON_REQUIRE_RLS = "1";
 
 import { defineConfig } from "vitest/config";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "server-only": fileURLToPath(new URL("./vitest.server-only.ts", import.meta.url))
+    }
+  },
   test: {
     environment: "node",
     hookTimeout: 30_000,

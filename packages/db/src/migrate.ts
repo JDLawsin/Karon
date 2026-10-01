@@ -50,7 +50,9 @@ const files = [
   "packages/db/drizzle/0041_booking_privacy_acknowledgment.sql",
   "packages/db/drizzle/0042_booking_privacy_acknowledgment_grants.sql",
   "packages/db/drizzle/0043_extended_audit.sql",
-  "packages/db/drizzle/0046_audit_metadata_guard.sql"
+  "packages/db/drizzle/0046_audit_metadata_guard.sql",
+  "packages/db/drizzle/0047_marketing_leads.sql",
+  "packages/db/drizzle/0048_optional_demo_time.sql"
 ];
 
 const splitSql = (contents: string) => {

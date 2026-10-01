@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { siteOrigins } from "@/lib/site-origins";
 import SiteFooter from "@/features/site-shell/site-footer";
 import SiteHeader from "@/features/site-shell/site-header";
+import AttributionCapture from "@/features/demo/attribution-capture";
 import { claimText } from "../../content/claims";
 
 import "./globals.css";
@@ -16,8 +17,6 @@ const outfit = Outfit({
   weight: ["400", "500", "600", "700", "800"],
   display: "swap"
 });
-
-export const dynamic = "force-static";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigins.www),
@@ -49,6 +48,7 @@ const RootLayout = ({ children }: RootLayoutProps) => {
   return (
     <html className={`${outfit.variable} antialiased`} lang="en-PH">
       <body data-density="marketing">
+        <AttributionCapture />
         <a className="sr-only z-50 bg-background p-3 focus:not-sr-only focus:fixed focus:left-2 focus:top-2" href="#main-content">Skip to content</a>
         <SiteHeader />
         <div id="main-content">{children}</div>

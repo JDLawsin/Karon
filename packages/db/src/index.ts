@@ -2,6 +2,20 @@ import "server-only";
 
 export { createDb } from "./client";
 export type { KaronDb } from "./client";
+export {
+  createMarketingLeadStore,
+  heardAboutSchema,
+  leadEmailHash,
+  marketingLeadInputSchema,
+  marketingLeadSchemaColumns,
+  MarketingLeadRateLimitedError,
+  normalizeLeadMobile
+} from "./marketing-leads";
+export type {
+  HeardAboutInput,
+  MarketingLeadInput,
+  RateLimitKeys
+} from "./marketing-leads";
 export { decodeJwtClaims, sessionRoleForClaims } from "./claims";
 export type { JwtClaims } from "./claims";
 export {
