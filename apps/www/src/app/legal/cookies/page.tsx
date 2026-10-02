@@ -1,12 +1,10 @@
 import { pageMetadata } from "@/lib/page-metadata";
-import SitePage from "@/features/site-page/site-page";
-
-const title = "Cookie notice";
-const description = "How the Karon website uses browser storage and cookies.";
+import LegalPage from "@/features/legal/legal-page";
+import { cookieNotice } from "../../../../content/legal";
 
 export const dynamic = "force-static";
-export const metadata = pageMetadata("/legal/cookies", title, description);
+export const metadata = pageMetadata("/legal/cookies", cookieNotice.title, cookieNotice.description);
 
-const CookiesPage = () => <SitePage description={description} lastUpdated="2026-09-30" pageId="cookies" showCtas={false} title={title} />;
+const CookiesPage = () => <LegalPage {...cookieNotice} pageId="cookies" />;
 
 export default CookiesPage;

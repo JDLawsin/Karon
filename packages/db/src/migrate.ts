@@ -52,7 +52,8 @@ const files = [
   "packages/db/drizzle/0043_extended_audit.sql",
   "packages/db/drizzle/0046_audit_metadata_guard.sql",
   "packages/db/drizzle/0047_marketing_leads.sql",
-  "packages/db/drizzle/0048_optional_demo_time.sql"
+  "packages/db/drizzle/0048_optional_demo_time.sql",
+  "packages/db/drizzle/0049_marketing_lead_retention.sql"
 ];
 
 const splitSql = (contents: string) => {

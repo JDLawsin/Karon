@@ -1,12 +1,10 @@
 import { pageMetadata } from "@/lib/page-metadata";
-import SitePage from "@/features/site-page/site-page";
-
-const title = "Processing agreement summary";
-const description = "A summary of Karon's data processing terms for clinics.";
+import LegalPage from "@/features/legal/legal-page";
+import { processingAgreementNotice } from "../../../../content/legal";
 
 export const dynamic = "force-static";
-export const metadata = pageMetadata("/legal/processing-agreement", title, description);
+export const metadata = pageMetadata("/legal/processing-agreement", processingAgreementNotice.title, processingAgreementNotice.description);
 
-const ProcessingAgreementPage = () => <SitePage description={description} lastUpdated="2026-09-30" pageId="processing-agreement" showCtas={false} title={title} />;
+const ProcessingAgreementPage = () => <LegalPage {...processingAgreementNotice} pageId="processing-agreement" />;
 
 export default ProcessingAgreementPage;

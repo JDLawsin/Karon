@@ -4,6 +4,7 @@ import { handleHeardAboutPatch, handleLeadPost } from "@/features/demo/lead-requ
 import { notifyLead } from "@/features/demo/lead-notification";
 import { verifyLeadTurnstile } from "@/features/demo/lead-turnstile";
 import { siteOrigins } from "@/lib/site-origins";
+import { legalLaunchReady } from "../../../../content/legal-status";
 
 let store: ReturnType<typeof createMarketingLeadStore> | undefined;
 
@@ -19,7 +20,9 @@ const unavailable = () => Response.json(
   { status: 503 }
 );
 
-const enabled = () => process.env.NODE_ENV !== "production" || process.env.LEAD_FORM_ENABLED === "true";
+const enabled = () => process.env.NODE_ENV !== "production" || (
+  process.env.LEAD_FORM_ENABLED === "true" && legalLaunchReady()
+);
 
 export const POST = async (request: Request) => {
   if (!enabled()) return unavailable();

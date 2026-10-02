@@ -1,12 +1,10 @@
 import { pageMetadata } from "@/lib/page-metadata";
-import SitePage from "@/features/site-page/site-page";
-
-const title = "Terms";
-const description = "The terms for using the Karon website.";
+import LegalPage from "@/features/legal/legal-page";
+import { termsNotice } from "../../../../content/legal";
 
 export const dynamic = "force-static";
-export const metadata = pageMetadata("/legal/terms", title, description);
+export const metadata = pageMetadata("/legal/terms", termsNotice.title, termsNotice.description);
 
-const TermsPage = () => <SitePage description={description} lastUpdated="2026-09-30" pageId="terms" showCtas={false} title={title} />;
+const TermsPage = () => <LegalPage {...termsNotice} pageId="terms" />;
 
 export default TermsPage;

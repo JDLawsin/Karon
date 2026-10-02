@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { UTM_STORAGE_KEY } from "./attribution-capture";
 import { trackLeadSubmitted } from "./lead-analytics";
 import { countries, philippineProvinces } from "./lead-options";
+import { LEGAL_NOTICE_VERSION } from "../../../content/legal-status";
 
 type Intent = "application" | "demo";
 type Props = {
@@ -33,7 +34,6 @@ declare global {
 
 const selectClass = "min-h-11 w-full rounded-md border-0 bg-(--input-fill) px-3 text-base text-foreground outline-none focus-visible:border-2 focus-visible:border-primary focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring aria-invalid:border-2 aria-invalid:border-destructive";
 const radioClass = "size-6 shrink-0 accent-primary";
-const PRIVACY_NOTICE_VERSION = "2026-09-30";
 const MARKETING_WORDING_VERSION = "2026-09-30";
 
 const DemoForm = ({
@@ -167,7 +167,7 @@ const DemoForm = ({
         message: data.get("message"),
         privacyAcknowledged: data.get("privacyAcknowledged") === "on",
         marketingOptIn: data.get("marketingOptIn") === "on",
-        privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
+        privacyNoticeVersion: LEGAL_NOTICE_VERSION,
         marketingWordingVersion: MARKETING_WORDING_VERSION,
         sourcePage: "/demo",
         renderedAt: renderedAt.current,

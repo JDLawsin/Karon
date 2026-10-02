@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  leadRetentionCutoff,
+  leadRetentionDaysSchema,
+  marketingLeadDeletionSchema,
   marketingLeadInputSchema,
   marketingLeadSchemaColumns,
   normalizeLeadMobile
@@ -95,5 +98,19 @@ describe("marketing lead schema", () => {
         "payment_reference"
       ])
     );
+  });
+
+  it("requires an explicit bounded retention period and computes its cutoff", () => {
+    expect(leadRetentionDaysSchema.parse("365")).toBe(365);
+    expect(leadRetentionDaysSchema.safeParse(0).success).toBe(false);
+    expect(leadRetentionDaysSchema.safeParse(3_651).success).toBe(false);
+    expect(leadRetentionCutoff(new Date("2026-10-01T00:00:00.000Z"), 30).toISOString())
+      .toBe("2026-09-01T00:00:00.000Z");
+  });
+
+  it("normalizes deletion-request email addresses", () => {
+    expect(marketingLeadDeletionSchema.parse({ email: " DENTIST@EXAMPLE.TEST " }).email)
+      .toBe("dentist@example.test");
+    expect(marketingLeadDeletionSchema.safeParse({ email: "not-an-email" }).success).toBe(false);
   });
 });

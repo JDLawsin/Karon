@@ -98,6 +98,17 @@ const heardAboutSchema = z
     }
   });
 
+const marketingLeadDeletionSchema = z.object({
+  email: z.string().trim().pipe(z.email().max(254)).transform((value) => value.toLowerCase())
+}).strict();
+
+const leadRetentionDaysSchema = z.coerce.number().int().min(1).max(3_650);
+
+const leadRetentionCutoff = (now: Date, retentionDays: number) => {
+  const days = leadRetentionDaysSchema.parse(retentionDays);
+  return new Date(now.getTime() - days * 24 * 60 * 60 * 1_000);
+};
+
 const marketingLeadSchemaColumns = [
   "id",
   "submission_id",
@@ -259,9 +270,36 @@ const createMarketingLeadStore = (databaseUrl: string) => {
     });
   };
 
+  const deleteExpired = async (cutoff: Date) => connection.begin(async (transaction) => {
+    await transaction.unsafe("set local role service_role");
+    const rows = await transaction<{ count: number }[]>`
+      with deleted as (
+        delete from marketing.marketing_leads
+        where created_at < ${cutoff}
+        returning id
+      )
+      select count(*)::integer as count from deleted
+    `;
+    return rows[0]?.count ?? 0;
+  });
+
+  const deleteByEmail = async (email: string) => connection.begin(async (transaction) => {
+    await transaction.unsafe("set local role service_role");
+    const normalizedEmail = marketingLeadDeletionSchema.parse({ email }).email;
+    const rows = await transaction<{ count: number }[]>`
+      with deleted as (
+        delete from marketing.marketing_leads
+        where email = ${normalizedEmail}
+        returning id
+      )
+      select count(*)::integer as count from deleted
+    `;
+    return rows[0]?.count ?? 0;
+  });
+
   const close = () => connection.end();
 
-  return { submit, saveHeardAbout, close };
+  return { submit, saveHeardAbout, deleteExpired, deleteByEmail, close };
 };
 
 const leadEmailHash = (email: string) =>
@@ -271,7 +309,10 @@ export {
   createMarketingLeadStore,
   heardAboutSchema,
   leadEmailHash,
+  leadRetentionCutoff,
+  leadRetentionDaysSchema,
   marketingLeadInputSchema,
+  marketingLeadDeletionSchema,
   marketingLeadSchemaColumns,
   MarketingLeadRateLimitedError,
   normalizeLeadMobile

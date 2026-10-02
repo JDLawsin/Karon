@@ -3,6 +3,7 @@ import DemoForm from "@/features/demo/demo-form";
 import Claim from "@/features/claim/claim";
 import { claimText } from "../../../content/claims";
 import { randomUUID } from "node:crypto";
+import { legalLaunchReady } from "../../../content/legal-status";
 
 const title = claimText("demo-page-title");
 const description = claimText("demo-page-description");
@@ -24,7 +25,8 @@ const DemoPage = async ({ searchParams }: Props) => {
     process.env.LEAD_FORM_ENABLED === "true" &&
     configuredResponsePromise &&
     configuredContactEmail &&
-    turnstileSiteKey
+    turnstileSiteKey &&
+    legalLaunchReady()
   );
 
   return (

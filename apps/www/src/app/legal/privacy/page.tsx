@@ -1,12 +1,14 @@
 import { pageMetadata } from "@/lib/page-metadata";
-import SitePage from "@/features/site-page/site-page";
+import LegalPage from "@/features/legal/legal-page";
+import { privacyNotice } from "../../../../content/legal";
+import { readLegalContactEmail } from "../../../../content/legal-status";
 
-const title = "Privacy notice";
-const description = "The Karon website privacy notice.";
+const contactEmail = readLegalContactEmail(process.env.LEGAL_CONTACT_EMAIL);
+const notice = privacyNotice(contactEmail);
 
 export const dynamic = "force-static";
-export const metadata = pageMetadata("/legal/privacy", title, description);
+export const metadata = pageMetadata("/legal/privacy", notice.title, notice.description);
 
-const PrivacyPage = () => <SitePage description={description} lastUpdated="2026-09-30" pageId="privacy" showCtas={false} title={title} />;
+const PrivacyPage = () => <LegalPage {...notice} pageId="privacy" />;
 
 export default PrivacyPage;

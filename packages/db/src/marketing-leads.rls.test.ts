@@ -130,6 +130,43 @@ describe.skipIf(!configured)("KR-030 marketing lead isolation", () => {
     await expect(hit(admin)).resolves.toBe(true);
   });
 
+  it("deletes only leads older than the configured cutoff", async () => {
+    const expiredSubmissionId = randomUUID();
+    const currentSubmissionId = randomUUID();
+    const expiredEmail = `expired-${suffix}@example.test`;
+    const currentEmail = `current-${suffix}@example.test`;
+
+    try {
+      await admin`
+        insert into marketing.marketing_leads (
+          submission_id, intent, name, clinic_name, country_code, city, email,
+          clinic_size, role, privacy_acknowledged_at, privacy_notice_version,
+          created_at, updated_at
+        ) values
+          (${expiredSubmissionId}, 'application', 'Expired Lead', 'Old Clinic', 'PH',
+            'Cebu City', ${expiredEmail}, '1_chair', 'owner_dentist', now(), 'test',
+            '2025-01-01T00:00:00.000Z', '2025-01-01T00:00:00.000Z'),
+          (${currentSubmissionId}, 'application', 'Current Lead', 'Current Clinic', 'PH',
+            'Cebu City', ${currentEmail}, '1_chair', 'owner_dentist', now(), 'test',
+            '2026-09-15T00:00:00.000Z', '2026-09-15T00:00:00.000Z')
+      `;
+
+      await expect(store.deleteExpired(new Date("2026-09-01T00:00:00.000Z"))).resolves.toBe(1);
+      const rows = await admin<{ email: string }[]>`
+        select email from marketing.marketing_leads
+        where submission_id in (${expiredSubmissionId}, ${currentSubmissionId})
+      `;
+      expect(rows).toEqual([{ email: currentEmail }]);
+
+      await expect(store.deleteByEmail(currentEmail.toUpperCase())).resolves.toBe(1);
+    } finally {
+      await admin`
+        delete from marketing.marketing_leads
+        where submission_id in (${expiredSubmissionId}, ${currentSubmissionId})
+      `;
+    }
+  });
+
   it("uses opaque HMAC-style keys rather than raw IP addresses", () => {
     const key = createHmac("sha256", "test-secret").update("203.0.113.9").digest("hex");
     expect(key).not.toContain("203.0.113.9");
