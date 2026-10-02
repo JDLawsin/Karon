@@ -1,4 +1,9 @@
-// ponytail: in-memory per instance; upgrade to Redis if booking spam spans serverless replicas
+import "server-only";
+
+import { createHmac } from "node:crypto";
+
+import { createSharedRateLimitStore } from "@karon/db";
+
 const BOOKING_POST_WINDOW_MS = 10 * 60 * 1000;
 const BOOKING_POST_IP_LIMIT = 8;
 const BOOKING_POST_SLUG_LIMIT = 40;
@@ -6,57 +11,73 @@ const BOOKING_GET_WINDOW_MS = 10 * 60 * 1000;
 const BOOKING_GET_IP_LIMIT = 60;
 const BOOKING_GET_SLUG_LIMIT = 240;
 
-const hits = new Map<string, number[]>();
+const bookingClientKey = (request: Request) => {
+  return request.headers.get("x-vercel-forwarded-for")?.trim() || "unavailable";
+};
 
-const isLimited = (key: string, limit: number, now: number, windowMs: number) => {
-  const recent = (hits.get(key) ?? []).filter((at) => now - at < windowMs);
+type RateLimitHit = (key: string, windowMinutes: number, limit: number) => Promise<boolean>;
 
-  if (recent.length >= limit) {
-    hits.set(key, recent);
-    return true;
+const bookingRateLimitKeys = (
+  request: Request,
+  slug: string,
+  method: "get" | "post",
+  secret: string
+) => {
+  const ip = bookingClientKey(request);
+  const slugKey = slug.slice(0, 64);
+  const hash = (value: string) =>
+    createHmac("sha256", secret).update(value).digest("hex");
+
+  return {
+    ip: `booking-${method}-ip:${hash(`${ip}:${slugKey}`)}`,
+    slug: `booking-${method}-slug:${hash(slugKey)}`
+  };
+};
+
+const isPublicBookingLimited = async (
+  request: Request,
+  slug: string,
+  method: "get" | "post",
+  secret: string,
+  hit: RateLimitHit
+) => {
+  const keys = bookingRateLimitKeys(request, slug, method, secret);
+  const ipLimit = method === "post" ? BOOKING_POST_IP_LIMIT : BOOKING_GET_IP_LIMIT;
+  const slugLimit =
+    method === "post" ? BOOKING_POST_SLUG_LIMIT : BOOKING_GET_SLUG_LIMIT;
+
+  const [ipLimited, slugLimited] = await Promise.all([
+    hit(keys.ip, 10, ipLimit),
+    hit(keys.slug, 10, slugLimit)
+  ]);
+
+  return ipLimited || slugLimited;
+};
+
+let store: ReturnType<typeof createSharedRateLimitStore> | undefined;
+
+const bookingLimiter = () => {
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  const secret = process.env.BOOKING_RATE_LIMIT_SECRET?.trim() ||
+    (process.env.NODE_ENV === "production" ? undefined : "karon-local-booking-limiter");
+
+  if (!databaseUrl || !secret) {
+    throw new Error("Booking rate limiter is not configured");
   }
 
-  recent.push(now);
-  hits.set(key, recent);
-  return false;
+  store ??= createSharedRateLimitStore(databaseUrl);
+
+  return { hit: store.hit, secret };
 };
 
-const bookingClientKey = (request: Request) => {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const ip =
-    forwarded?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip")?.trim() ||
-    "unknown";
-
-  return ip;
+const isPublicBookingPostLimited = async (request: Request, slug: string) => {
+  const { hit, secret } = bookingLimiter();
+  return isPublicBookingLimited(request, slug, "post", secret, hit);
 };
 
-const isPublicBookingPostLimited = (
-  request: Request,
-  slug: string,
-  now = Date.now()
-) => {
-  const ip = bookingClientKey(request);
-  const slugKey = slug.slice(0, 64);
-
-  return (
-    isLimited(`post-ip:${ip}:${slugKey}`, BOOKING_POST_IP_LIMIT, now, BOOKING_POST_WINDOW_MS) ||
-    isLimited(`post-slug:${slugKey}`, BOOKING_POST_SLUG_LIMIT, now, BOOKING_POST_WINDOW_MS)
-  );
-};
-
-const isPublicBookingGetLimited = (
-  request: Request,
-  slug: string,
-  now = Date.now()
-) => {
-  const ip = bookingClientKey(request);
-  const slugKey = slug.slice(0, 64);
-
-  return (
-    isLimited(`get-ip:${ip}:${slugKey}`, BOOKING_GET_IP_LIMIT, now, BOOKING_GET_WINDOW_MS) ||
-    isLimited(`get-slug:${slugKey}`, BOOKING_GET_SLUG_LIMIT, now, BOOKING_GET_WINDOW_MS)
-  );
+const isPublicBookingGetLimited = async (request: Request, slug: string) => {
+  const { hit, secret } = bookingLimiter();
+  return isPublicBookingLimited(request, slug, "get", secret, hit);
 };
 
 export {
@@ -67,6 +88,9 @@ export {
   BOOKING_POST_SLUG_LIMIT,
   BOOKING_POST_WINDOW_MS,
   bookingClientKey,
+  bookingRateLimitKeys,
+  isPublicBookingLimited,
   isPublicBookingGetLimited,
   isPublicBookingPostLimited
 };
+export type { RateLimitHit };

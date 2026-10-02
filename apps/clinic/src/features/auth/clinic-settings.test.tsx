@@ -84,6 +84,7 @@ describe("ClinicSettings", () => {
     ).toBeTruthy();
     expect(screen.queryByText("Password form")).toBeNull();
     expect(screen.queryByText("Clinic details")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Bookings" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Export clinic data" })).toBeNull();
     expect(screen.queryByRole("link", { name: "View audit activity" })).toBeNull();
   });

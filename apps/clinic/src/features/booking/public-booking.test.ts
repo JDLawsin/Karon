@@ -85,7 +85,9 @@ const admin = {
                   hours: { days: [0, 1, 2, 3, 4, 5, 6], open: "09:00", close: "17:00" },
                   phone: null,
                   address: null,
-                  logo_path: null
+                  logo_path: null,
+                  region: "ph",
+                  booking_page_indexable: false
                 },
                 error: null
               })

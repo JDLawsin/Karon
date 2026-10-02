@@ -1540,6 +1540,109 @@ describe.skipIf(!configured)("F-13 tenant isolation", () => {
     expect(restoreError).toBeNull();
   });
 
+  it("lets only the owner enable indexing for a complete booking page and audits changes", async () => {
+    const serviceId = randomUUID();
+    const { error: serviceError } = await admin.from("clinic_services").insert({
+      id: serviceId,
+      tenant_id: clinicIds[0],
+      name: `Indexing service ${suffix}`,
+      created_by: users[0]!.id,
+      updated_by: users[0]!.id
+    });
+    expect(serviceError).toBeNull();
+
+    try {
+      const owner = await createAuthedClient(users[0]!.email);
+      await verifyOwnerTotp(owner.client);
+      const { error: ownerError } = await owner.client
+        .from("clinics")
+        .update({
+          phone: "09171234567",
+          address: { line1: "123 Osmena Blvd", city: "Cebu City" },
+          hours: { days: [1, 2, 3, 4, 5], open: "09:00", close: "17:00" },
+          booking_page_indexable: true
+        })
+        .eq("id", clinicIds[0]);
+      expect(ownerError).toBeNull();
+
+      const assistant = await createAuthedClient(users[1]!.email);
+      const { error: assistantError } = await assistant.client
+        .from("clinics")
+        .update({ booking_page_indexable: false })
+        .eq("id", clinicIds[0]);
+      expect(assistantError?.code).toBe("42501");
+
+      const otherOwner = await createAuthedClient(users[2]!.email);
+      await verifyOwnerTotp(otherOwner.client);
+      const { data: crossTenantRows, error: crossTenantError } = await otherOwner.client
+        .from("clinics")
+        .update({ booking_page_indexable: false })
+        .eq("id", clinicIds[0])
+        .select("id");
+      expect(crossTenantError).toBeNull();
+      expect(crossTenantRows).toEqual([]);
+
+      const { data: indexed } = await owner.client
+        .from("clinics")
+        .select("booking_page_indexable")
+        .eq("id", clinicIds[0])
+        .single();
+      expect(indexed?.booking_page_indexable).toBe(true);
+
+      const { data: audit } = await admin
+        .from("audit_events")
+        .select("actor_user_id, event_type, metadata")
+        .eq("tenant_id", clinicIds[0]!)
+        .eq("event_type", "booking.indexing_changed")
+        .contains("metadata", { indexable: true })
+        .single();
+      expect(audit).toMatchObject({
+        actor_user_id: users[0]!.id,
+        event_type: "booking.indexing_changed",
+        metadata: { indexable: true }
+      });
+
+      const { error: invalidDaysError } = await owner.client
+        .from("clinics")
+        .update({
+          hours: { days: [7, "Monday"], open: "09:00", close: "17:00" }
+        })
+        .eq("id", clinicIds[0]);
+      expect(invalidDaysError).toBeNull();
+
+      const { data: invalidDaysResult } = await owner.client
+        .from("clinics")
+        .select("booking_page_indexable")
+        .eq("id", clinicIds[0])
+        .single();
+      expect(invalidDaysResult?.booking_page_indexable).toBe(false);
+
+      const { error: restoreHoursError } = await owner.client
+        .from("clinics")
+        .update({
+          hours: { days: [1, 2, 3, 4, 5], open: "09:00", close: "17:00" },
+          booking_page_indexable: true
+        })
+        .eq("id", clinicIds[0]);
+      expect(restoreHoursError).toBeNull();
+
+      const { error: incompleteError } = await owner.client
+        .from("clinics")
+        .update({ address: { line1: "123 Osmena Blvd", city: "   " } })
+        .eq("id", clinicIds[0]);
+      expect(incompleteError).toBeNull();
+
+      const { data: reverted } = await owner.client
+        .from("clinics")
+        .select("booking_page_indexable")
+        .eq("id", clinicIds[0])
+        .single();
+      expect(reverted?.booking_page_indexable).toBe(false);
+    } finally {
+      await admin.from("clinic_services").delete().eq("id", serviceId);
+    }
+  });
+
   it("hides google calendar tokens from assistants and other clinics", async () => {
     const connectionId = randomUUID();
     const { error: insertError } = await admin.from("google_calendar_connections").insert({

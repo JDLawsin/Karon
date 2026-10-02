@@ -394,6 +394,7 @@ const PublicBookingPage = ({ slug, initialPage }: Props) => {
 
   return (
     <>
+      {done ? <meta content="noindex, follow" name="robots" /> : null}
       <PublicBookingBackdrop />
       <main className="relative mx-auto flex min-h-dvh w-full min-w-0 max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
         <header className="flex min-w-0 justify-end">

@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  htmlLimitedBots: /.*/,
   poweredByHeader: false,
   transpilePackages: ["@karon/design-system", "@karon/db"],
   allowedDevOrigins: ["127.0.0.1"],

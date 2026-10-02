@@ -1,11 +1,16 @@
 import "server-only";
 
+import { unstable_noStore as noStore } from "next/cache";
 import { cache } from "react";
 
 import { clinicLogoPreviewUrl } from "@/features/auth/clinic-logo";
 import { log } from "@/lib/logger/server";
 import { DEFAULT_CLINIC_REGIONAL_SETTINGS } from "@/lib/clinic/regional-settings";
 import { createAdminSupabase } from "@/lib/supabase/admin";
+import {
+  clinicCityOf,
+  isBookingPageComplete
+} from "./booking-indexing";
 import {
   clinicEventRowSchema,
   toClinicEvent
@@ -22,9 +27,11 @@ import {
   bookingLinkRowSchema,
   bookingReplayMatches,
   bookingReplayRowSchema,
+  bookingSitemapLinkRowSchema,
   bookingSlugSchema,
   bookingTurnstileTokenOf,
   clinicBookingRowSchema,
+  indexableClinicRowSchema,
   isBookingHoneypotFilled,
   publicBookingSubmitSchema
 } from "./booking-schemas";
@@ -52,11 +59,19 @@ type PublicBookingPage = {
   hoursLabel: string;
   phone: string | null;
   address: string | null;
+  addressData: {
+    streetAddress?: string;
+    addressLocality: string;
+    addressRegion?: string;
+    postalCode?: string;
+    addressCountry: string;
+  } | null;
   logoUrl: string | null;
   services: { id: string; name: string }[];
   dates: string[];
   date: string | null;
   slots: { clock: string; startsAt: string; label: string }[];
+  indexable: boolean;
 };
 
 type SubmitPublicBookingOptions = {
@@ -78,6 +93,29 @@ const toPublicBookingPayload = (page: PublicBookingPage) => ({
   date: page.date,
   slots: page.slots
 });
+
+const structuredAddressOf = (address: unknown, region: string) => {
+  const city = clinicCityOf(address);
+
+  if (!city || !address || typeof address !== "object") {
+    return null;
+  }
+
+  const row = address as Record<string, unknown>;
+  const text = (key: string) => {
+    const value = row[key];
+    return typeof value === "string" && value.trim() ? value.trim() : undefined;
+  };
+  const streetAddress = [text("line1"), text("barangay")].filter(Boolean).join(", ");
+
+  return {
+    ...(streetAddress ? { streetAddress } : {}),
+    addressLocality: city,
+    ...(text("province") ? { addressRegion: text("province") } : {}),
+    ...(text("postalCode") ? { postalCode: text("postalCode") } : {}),
+    addressCountry: region.trim().toUpperCase()
+  };
+};
 
 const occupiedStarts = async (
   admin: ReturnType<typeof createAdminSupabase>,
@@ -136,6 +174,7 @@ const loadPublicBookingPage = async (
   rawDate: string | null,
   now = new Date()
 ): Promise<{ ok: true; page: PublicBookingPage } | { ok: false; status: 404 }> => {
+  noStore();
   const slug = bookingSlugSchema.safeParse(rawSlug);
 
   if (!slug.success) {
@@ -152,7 +191,9 @@ const loadPublicBookingPage = async (
   const [{ data: clinicRow }, { data: serviceRows }] = await Promise.all([
     admin
       .from("clinics")
-      .select("name, locale, timezone, hours, phone, address, logo_path")
+      .select(
+        "name, locale, timezone, hours, phone, address, logo_path, region, booking_page_indexable"
+      )
       .eq("id", link.data.tenant_id)
       .maybeSingle(),
     admin
@@ -178,6 +219,7 @@ const loadPublicBookingPage = async (
   const date =
     rawDate && DATE.test(rawDate) && dates.includes(rawDate) ? rawDate : (dates[0] ?? null);
   const address = formatClinicAddress(clinic.data.address);
+  const services = bookableServicesOf(serviceRows);
   const [occupied, logoUrl] = await Promise.all([
     occupiedStarts(admin, link.data.tenant_id),
     clinicLogoPreviewUrl(admin, clinic.data.logo_path, LOGO_SIGNED_SECONDS)
@@ -203,16 +245,61 @@ const loadPublicBookingPage = async (
       hoursLabel: formatClinicHours(hours, locale),
       phone: clinicPhoneOf(clinic.data.phone),
       address,
+      addressData: structuredAddressOf(clinic.data.address, clinic.data.region),
       logoUrl,
-      services: bookableServicesOf(serviceRows),
+      services,
       dates,
       date,
-      slots
+      slots,
+      indexable:
+        clinic.data.booking_page_indexable &&
+        isBookingPageComplete(clinic.data, services.length)
     }
   };
 };
 
 const loadPublicBooking = cache(loadPublicBookingPage);
+
+const loadIndexableBookingPages = async () => {
+  noStore();
+  const admin = createAdminSupabase();
+  const [{ data: clinicRows }, { data: linkRows }, { data: serviceRows }] =
+    await Promise.all([
+      admin
+        .from("clinics")
+        .select(
+          "id, name, locale, timezone, hours, phone, address, logo_path, region, booking_page_indexable, updated_at"
+        )
+        .eq("booking_page_indexable", true),
+      admin.from("booking_links").select("tenant_id, slug"),
+      admin.from("clinic_services").select("tenant_id")
+    ]);
+  const clinics = (clinicRows ?? []).flatMap((row) => {
+    const parsed = indexableClinicRowSchema.safeParse(row);
+    return parsed.success ? [parsed.data] : [];
+  });
+  const links = (linkRows ?? []).flatMap((row) => {
+    const parsed = bookingSitemapLinkRowSchema.safeParse(row);
+    return parsed.success ? [parsed.data] : [];
+  });
+  const serviceCounts = new Map<string, number>();
+
+  for (const row of serviceRows ?? []) {
+    if (row && typeof row.tenant_id === "string") {
+      serviceCounts.set(row.tenant_id, (serviceCounts.get(row.tenant_id) ?? 0) + 1);
+    }
+  }
+
+  return clinics.flatMap((clinic) => {
+    if (!isBookingPageComplete(clinic, serviceCounts.get(clinic.id) ?? 0)) {
+      return [];
+    }
+
+    return links
+      .filter((link) => link.tenant_id === clinic.id)
+      .map((link) => ({ slug: link.slug, updatedAt: clinic.updated_at }));
+  });
+};
 
 const submitPublicBooking = async (
   rawSlug: string,
@@ -339,5 +426,10 @@ const submitPublicBooking = async (
   return { ok: false, status: 409, error: SLOT_TAKEN };
 };
 
-export { loadPublicBooking, submitPublicBooking, toPublicBookingPayload };
+export {
+  loadIndexableBookingPages,
+  loadPublicBooking,
+  submitPublicBooking,
+  toPublicBookingPayload
+};
 export type { PublicBookingPage, SubmitPublicBookingOptions };

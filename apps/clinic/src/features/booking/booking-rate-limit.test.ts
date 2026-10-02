@@ -1,58 +1,79 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   BOOKING_GET_IP_LIMIT,
   BOOKING_POST_IP_LIMIT,
-  BOOKING_POST_WINDOW_MS,
-  isPublicBookingGetLimited,
-  isPublicBookingPostLimited
+  bookingClientKey,
+  bookingRateLimitKeys,
+  isPublicBookingLimited,
+  type RateLimitHit
 } from "./booking-rate-limit";
 
-const requestFor = (ip: string) =>
+const requestFor = (vercelIp: string, spoofedIp = "198.51.100.99") =>
   new Request("http://localhost/api/book/demo", {
-    headers: { "x-forwarded-for": ip }
+    headers: {
+      "x-forwarded-for": spoofedIp,
+      "x-real-ip": spoofedIp,
+      "x-vercel-forwarded-for": vercelIp
+    }
   });
 
-describe("isPublicBookingPostLimited", () => {
-  it("allows a burst then blocks the same IP and slug", () => {
-    const start = 1_000_000;
-    const slug = `slug-${start}`;
-    const request = requestFor(`203.0.113.${start % 200}`);
+const sharedHit = (): RateLimitHit => {
+  const hits = new Map<string, number>();
 
-    for (let i = 0; i < BOOKING_POST_IP_LIMIT; i += 1) {
-      expect(isPublicBookingPostLimited(request, slug, start + i)).toBe(false);
+  return async (key, _windowMinutes, limit) => {
+    const next = (hits.get(key) ?? 0) + 1;
+    hits.set(key, next);
+    return next > limit;
+  };
+};
+
+describe("public booking shared rate limit", () => {
+  it("holds across callers that share the database-backed hit function", async () => {
+    const hit = sharedHit();
+    const request = requestFor("203.0.113.9");
+
+    for (let index = 0; index < BOOKING_POST_IP_LIMIT; index += 1) {
+      await expect(
+        isPublicBookingLimited(request, "happytee1", "post", "secret", hit)
+      ).resolves.toBe(false);
     }
 
-    expect(isPublicBookingPostLimited(request, slug, start + BOOKING_POST_IP_LIMIT)).toBe(
-      true
+    await expect(
+      isPublicBookingLimited(request, "happytee1", "post", "secret", hit)
+    ).resolves.toBe(true);
+  });
+
+  it("uses only Vercel's trusted forwarding header for the client key", () => {
+    const first = requestFor("203.0.113.10", "1.1.1.1");
+    const second = requestFor("203.0.113.10", "8.8.8.8");
+
+    expect(bookingClientKey(first)).toBe("203.0.113.10");
+    expect(bookingClientKey(second)).toBe("203.0.113.10");
+    expect(bookingRateLimitKeys(first, "happytee1", "post", "secret")).toEqual(
+      bookingRateLimitKeys(second, "happytee1", "post", "secret")
     );
   });
 
-  it("allows the same IP again after the window", () => {
-    const start = 2_000_000;
-    const slug = `slug-${start}`;
-    const request = requestFor("198.51.100.9");
-
-    for (let i = 0; i < BOOKING_POST_IP_LIMIT; i += 1) {
-      isPublicBookingPostLimited(request, slug, start);
-    }
-
-    expect(isPublicBookingPostLimited(request, slug, start + BOOKING_POST_WINDOW_MS)).toBe(
-      false
+  it("keeps raw client IPs out of stored keys", () => {
+    const keys = bookingRateLimitKeys(
+      requestFor("203.0.113.11"),
+      "happytee1",
+      "post",
+      "secret"
     );
+
+    expect(keys.ip).not.toContain("203.0.113.11");
+    expect(keys.slug).not.toContain("happytee1");
   });
-});
 
-describe("isPublicBookingGetLimited", () => {
-  it("allows more availability reads than posts before blocking", () => {
-    const start = 3_000_000;
-    const slug = `slug-${start}`;
-    const request = requestFor("203.0.113.10");
+  it("allows a larger read budget and propagates limiter errors", async () => {
+    const request = requestFor("203.0.113.12");
+    const hit = vi.fn<RateLimitHit>().mockRejectedValue(new Error("database unavailable"));
 
-    for (let i = 0; i < BOOKING_GET_IP_LIMIT; i += 1) {
-      expect(isPublicBookingGetLimited(request, slug, start + i)).toBe(false);
-    }
-
-    expect(isPublicBookingGetLimited(request, slug, start + BOOKING_GET_IP_LIMIT)).toBe(true);
+    expect(BOOKING_GET_IP_LIMIT).toBeGreaterThan(BOOKING_POST_IP_LIMIT);
+    await expect(
+      isPublicBookingLimited(request, "happytee1", "get", "secret", hit)
+    ).rejects.toThrow("database unavailable");
   });
 });

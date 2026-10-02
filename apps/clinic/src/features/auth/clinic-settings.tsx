@@ -83,6 +83,7 @@ const ClinicSettings = () => {
       </Card>
       <IdleLockSettings />
       <SyncOfflineSettings />
+      {isOwner ? null : <ClinicBookingSettings />}
       {isOwner ? (
         <>
           <Card>

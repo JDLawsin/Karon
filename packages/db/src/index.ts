@@ -2,6 +2,7 @@ import "server-only";
 
 export { createDb } from "./client";
 export type { KaronDb } from "./client";
+export { createSharedRateLimitStore } from "./rate-limit";
 export {
   createMarketingLeadStore,
   heardAboutSchema,

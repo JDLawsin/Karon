@@ -97,6 +97,7 @@ export const clinics = pgTable(
     hours: jsonb("hours").$type<ClinicHours>(),
     logoPath: text("logo_path"),
     autoConfirmBookings: boolean("auto_confirm_bookings").notNull().default(true),
+    bookingPageIndexable: boolean("booking_page_indexable").notNull().default(false),
     trialStartedAt: timestamptz("trial_started_at").defaultNow().notNull(),
     createdAt: timestamptz("created_at").defaultNow().notNull(),
     updatedAt: timestamptz("updated_at").defaultNow().notNull()

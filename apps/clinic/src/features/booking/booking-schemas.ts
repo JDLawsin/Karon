@@ -42,6 +42,11 @@ const bookingLinkRowSchema = z.object({
   tenant_id: z.uuid()
 });
 
+const bookingSitemapLinkRowSchema = z.object({
+  tenant_id: z.uuid(),
+  slug: bookingSlugSchema
+});
+
 const clinicBookingRowSchema = z.object({
   name: z.string().min(1),
   locale: z.string().min(1).max(35),
@@ -49,7 +54,14 @@ const clinicBookingRowSchema = z.object({
   hours: z.unknown(),
   phone: z.string().nullable().optional(),
   address: z.unknown().optional(),
-  logo_path: z.string().nullable().optional()
+  logo_path: z.string().nullable().optional(),
+  region: z.string().min(1),
+  booking_page_indexable: z.boolean()
+});
+
+const indexableClinicRowSchema = clinicBookingRowSchema.extend({
+  id: z.uuid(),
+  updated_at: z.string()
 });
 
 const bookableServiceRowSchema = z.object({
@@ -87,6 +99,15 @@ const publicBookingPageSchema = z.object({
       label: z.string()
     })
   )
+});
+
+const bookingSettingsClinicSchema = z.object({
+  auto_confirm_bookings: z.boolean(),
+  booking_page_indexable: z.boolean(),
+  name: z.string(),
+  phone: z.string().nullable(),
+  address: z.unknown(),
+  hours: z.unknown()
 });
 
 const bookingLinkResponseSchema = z.object({
@@ -149,11 +170,14 @@ export {
   bookingIdempotencyKeySchema,
   bookingLinkResponseSchema,
   bookingLinkRowSchema,
+  bookingSitemapLinkRowSchema,
   bookingReplayMatches,
   bookingReplayRowSchema,
+  bookingSettingsClinicSchema,
   bookingSlugSchema,
   bookingTurnstileTokenOf,
   clinicBookingRowSchema,
+  indexableClinicRowSchema,
   inboxRowSchema,
   liveInboxRowSchema,
   isBookingHoneypotFilled,

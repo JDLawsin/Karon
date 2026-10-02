@@ -16,6 +16,17 @@ const isAnonymousPublicPath = (pathname: string) =>
 const shouldSkipLoginRedirect = (pathname: string) =>
   isAnonymousPublicPath(pathname) || pathname.startsWith("/api/");
 
+const isBookingPagePath = (pathname: string) =>
+  pathname !== "/book/sitemap.xml" && /^\/book\/[^/]+\/?$/u.test(pathname);
+
+const withRobotsHeader = (pathname: string, response: NextResponse) => {
+  if (!isBookingPagePath(pathname)) {
+    response.headers.set("X-Robots-Tag", "noindex");
+  }
+
+  return response;
+};
+
 const copyCookies = (from: NextResponse, to: NextResponse) => {
   from.cookies.getAll().forEach((cookie) => {
     to.cookies.set(cookie);
@@ -48,20 +59,20 @@ const updateSession = async (request: NextRequest) => {
   const pathname = request.nextUrl.pathname;
 
   if (!userId && !shouldSkipLoginRedirect(pathname)) {
-    return copyCookies(
+    return withRobotsHeader(pathname, copyCookies(
       supabaseResponse,
       NextResponse.redirect(clinicAppUrl("/login"))
-    );
+    ));
   }
 
   if (userId && pathname === "/") {
-    return copyCookies(
+    return withRobotsHeader(pathname, copyCookies(
       supabaseResponse,
       NextResponse.redirect(clinicAppUrl("/today"))
-    );
+    ));
   }
 
-  return supabaseResponse;
+  return withRobotsHeader(pathname, supabaseResponse);
 };
 
-export { shouldSkipLoginRedirect, updateSession };
+export { isBookingPagePath, shouldSkipLoginRedirect, updateSession };
