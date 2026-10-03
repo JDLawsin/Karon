@@ -41,15 +41,9 @@ type TodayBoardRow = {
   syncState: "local" | "synced";
 };
 
-type TodaySnapshot = {
-  patientsToday: number;
-  arrived: number;
-};
-
 type TodayHuddle = {
   rows: TodayBoardRow[];
   leftoverByDate: Record<string, Partial<Record<BoardStatus, number>>>;
-  snapshot: TodaySnapshot;
 };
 
 const BOARD_STATUS_LABEL: Record<BoardStatus, string> = {
@@ -356,7 +350,6 @@ const projectFoldedBoard = (
   const { patients, visits } = folded;
   const rows: TodayBoardRow[] = [];
   const leftoverByDate: TodayHuddle["leftoverByDate"] = {};
-  let patientsToday = 0;
 
   for (const [visitId, visit] of visits) {
     const patient = patients.get(visit.patientId);
@@ -367,10 +360,6 @@ const projectFoldedBoard = (
 
     const clinicDate = calendarDateInClinic(visit.startsAt, timeZone);
     const isToday = clinicDate === today;
-
-    if (isToday && visit.status !== "cancelled") {
-      patientsToday += 1;
-    }
 
     if (isToday) {
       const status = boardStatusOf(visit.status, visit.startsAt, nowMs);
@@ -405,16 +394,7 @@ const projectFoldedBoard = (
 
   return {
     rows: sortedRows,
-    leftoverByDate,
-    snapshot: {
-      patientsToday,
-      arrived: sortedRows.filter(
-        (row) =>
-          row.status === "waiting" ||
-          row.status === "in_chair" ||
-          row.status === "complete"
-      ).length
-    }
+    leftoverByDate
   };
 };
 
@@ -477,4 +457,4 @@ export {
   visitFromEvents,
   visitStatusFromEvents
 };
-export type { BoardStatus, TodayBoardRow, TodayHuddle, TodaySnapshot };
+export type { BoardStatus, TodayBoardRow, TodayHuddle };

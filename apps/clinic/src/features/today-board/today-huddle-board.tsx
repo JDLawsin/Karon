@@ -30,18 +30,18 @@ import {
   useIsMobile
 } from "@karon/design-system";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   DEFAULT_HUDDLE_HOURS,
   canDropOnBoard,
   carryoverLegendByDay,
+  currentTimePosition,
   formatSlotLabel,
   groupRowsBySlot,
   huddleTimeSlots,
   huddleWeekDays,
   isReverseBoardDrop,
-  nowSlotStart,
   shiftClinicDate,
   visitStatusForColumn,
   type HuddleHours
@@ -94,6 +94,7 @@ type DropCellProps = {
   slot: number;
   rows: TodayBoardRow[];
   dragDisabled: boolean;
+  currentTimeOffset?: number;
   onMark: (visitId: string, status: VisitStatus) => void;
   timezone: string;
 };
@@ -109,12 +110,12 @@ const LEGEND_DOT: Record<
 };
 
 const COLUMN_HEADER: Record<BoardStatus, string> = {
-  pending_review: "border-info bg-info-subtle text-foreground",
-  confirmed: "border-muted-foreground/40 bg-muted text-foreground",
-  late: "border-warning bg-warning-subtle text-warning-foreground",
-  waiting: "border-primary bg-primary/10 text-foreground",
-  in_chair: "border-primary bg-primary text-primary-foreground",
-  complete: "border-success bg-success-subtle text-success"
+  pending_review: "bg-info-subtle text-foreground",
+  confirmed: "bg-muted text-foreground",
+  late: "bg-warning-subtle text-warning-foreground",
+  waiting: "bg-primary/10 text-foreground",
+  in_chair: "bg-primary text-primary-foreground",
+  complete: "bg-success-subtle text-success"
 };
 
 const DraggableVisit = ({
@@ -152,6 +153,7 @@ const DropCell = ({
   slot,
   rows,
   dragDisabled,
+  currentTimeOffset,
   onMark,
   timezone
 }: DropCellProps) => {
@@ -167,7 +169,7 @@ const DropCell = ({
   return (
     <div
       className={cn(
-        "flex min-h-(--control-min-height) min-w-0 flex-col gap-1 rounded-md bg-surface-sunken p-1",
+        "relative z-1 flex min-h-24 min-w-0 flex-col gap-1 rounded-md bg-background/35 p-1",
         isOver && allowed && !reverse && "ring-2 ring-primary",
         isOver && allowed && reverse && "ring-2 ring-warning",
         isOver && !allowed && active && "opacity-60"
@@ -175,7 +177,7 @@ const DropCell = ({
       ref={setNodeRef}
     >
       {rows.length > 0 ? (
-        <ul className="flex min-w-0 flex-col gap-1">
+        <ul className="relative z-1 flex min-w-0 flex-col gap-1">
           {rows.map((row) => (
             <DraggableVisit
               disabled={dragDisabled}
@@ -188,6 +190,14 @@ const DropCell = ({
             />
           ))}
         </ul>
+      ) : null}
+      {currentTimeOffset !== undefined ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 border-t border-primary/70"
+          data-current-time
+          style={{ top: `${currentTimeOffset}%` }}
+        />
       ) : null}
     </div>
   );
@@ -231,10 +241,60 @@ const TodayHuddleBoard = ({
   );
   const bySlot = useMemo(() => groupRowsBySlot(rows, timezone), [rows, timezone]);
   const counts = useMemo(() => countByBoardStatus(rows), [rows]);
+  const currentTime = useMemo(
+    () => currentTimePosition(now, timezone),
+    [now, timezone]
+  );
   const activeRow = rows.find((row) => row.visitId === activeId);
+  const mobileScheduleRef = useRef<HTMLDivElement>(null);
+  const desktopScheduleRef = useRef<HTMLDivElement>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
+
+  useEffect(() => {
+    if (!ready || !viewingToday) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      for (const container of [
+        mobileScheduleRef.current,
+        desktopScheduleRef.current
+      ]) {
+        if (!container || container.clientHeight === 0) {
+          continue;
+        }
+
+        const marker = container.querySelector<HTMLElement>(
+          "[data-current-time]"
+        );
+
+        if (!marker) {
+          continue;
+        }
+
+        const markerTop =
+          marker.getBoundingClientRect().top -
+          container.getBoundingClientRect().top +
+          container.scrollTop;
+
+        container.scrollTop = Math.max(
+          0,
+          markerTop - container.clientHeight * 0.35
+        );
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [
+    hours.close,
+    hours.open,
+    isMobile,
+    ready,
+    viewDay,
+    viewingToday
+  ]);
 
   const markOrConfirm = (visitId: string, to: VisitStatus, name?: string) => {
     const row = rows.find((item) => item.visitId === visitId);
@@ -281,7 +341,7 @@ const TodayHuddleBoard = ({
   return (
     <section
       aria-label="Today huddle"
-      className="flex min-w-0 flex-col gap-4"
+      className="flex min-h-0 min-w-0 flex-1 flex-col gap-3"
     >
       <TooltipProvider delayDuration={200}>
         <div className="flex min-w-0 items-center gap-1">
@@ -383,41 +443,63 @@ const TodayHuddleBoard = ({
           </Button>
         </div>
       </TooltipProvider>
-      {ready && rows.length === 0 ? (
-        <p className="grid min-h-96 place-items-center text-center text-muted-foreground">
-          No patients this day
+      {!ready ? (
+        <p
+          aria-live="polite"
+          className="grid min-h-0 flex-1 place-items-center text-center text-muted-foreground"
+        >
+          Preparing the schedule...
         </p>
       ) : null}
-      {ready && rows.length > 0 ? (
+      {ready && rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No patients this day</p>
+      ) : null}
+      {ready ? (
         <DndContext
           collisionDetection={pointerWithin}
           onDragEnd={handleDragEnd}
           onDragStart={handleDragStart}
           sensors={sensors}
         >
-          <div className="flex min-w-0 flex-col gap-4 md:hidden">
+          <div
+            aria-label="Daily schedule"
+            className="karon-scroll-region-y relative min-h-0 min-w-0 flex-1 overflow-y-auto rounded-lg bg-surface-sunken p-2 md:hidden"
+            ref={mobileScheduleRef}
+            role="region"
+          >
             {slots.map((slot) => {
               const slotRows = bySlot.get(slot) ?? [];
-              const isNow =
-                viewingToday && slot === nowSlotStart(now, timezone);
+              const isNow = viewingToday && slot === currentTime.slot;
 
               if (slotRows.length === 0) {
                 return (
-                  <p
-                    className={cn(
-                      "tabular-nums text-sm text-muted-foreground",
-                      isNow && "font-medium text-primary"
-                    )}
-                    key={slot}
-                  >
-                    {formatSlotLabel(slot, timezone, locale)}
-                    {isNow ? " · Now" : ""}
-                  </p>
+                  <div className="relative min-h-24" key={slot}>
+                    <p
+                      className={cn(
+                        "relative z-1 pt-2 text-sm tabular-nums text-muted-foreground",
+                        isNow && "font-medium text-primary"
+                      )}
+                    >
+                      {formatSlotLabel(slot, timezone, locale)}
+                      {isNow ? " · Now" : ""}
+                    </p>
+                    {isNow ? (
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute right-0 left-16 border-t border-primary/70"
+                        data-current-time
+                        style={{ top: `${currentTime.offsetPercent}%` }}
+                      />
+                    ) : null}
+                  </div>
                 );
               }
 
               return (
-                <section className="flex min-w-0 flex-col gap-2" key={slot}>
+                <section
+                  className="relative flex min-h-24 min-w-0 flex-col gap-2"
+                  key={slot}
+                >
                   <h2 className="flex items-baseline gap-2 text-sm font-medium">
                     <span className="tabular-nums">
                       {formatSlotLabel(slot, timezone, locale)}
@@ -426,7 +508,7 @@ const TodayHuddleBoard = ({
                       <span className="text-xs font-medium text-primary">Now</span>
                     ) : null}
                   </h2>
-                  <ul className="flex min-w-0 flex-col gap-2">
+                  <ul className="relative z-1 flex min-w-0 flex-col gap-2 pl-16">
                     {slotRows.map((row) => (
                       <DraggableVisit
                         disabled
@@ -439,22 +521,38 @@ const TodayHuddleBoard = ({
                       />
                     ))}
                   </ul>
+                  {isNow ? (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute right-0 left-16 border-t border-primary/70"
+                      data-current-time
+                      style={{ top: `${currentTime.offsetPercent}%` }}
+                    />
+                  ) : null}
                 </section>
               );
             })}
           </div>
-          <div className="karon-scroll-region-x hidden min-w-0 overflow-x-auto md:block">
+          <div
+            aria-label="Daily schedule"
+            className="karon-scroll-region-x karon-scroll-region-y relative hidden min-h-0 min-w-0 flex-1 overflow-auto rounded-lg bg-surface-sunken md:block"
+            ref={desktopScheduleRef}
+            role="region"
+          >
             <div
-              className="grid min-w-6xl gap-2"
+              className="relative grid min-w-6xl gap-2 p-2"
               style={{
                 gridTemplateColumns: `3.75rem repeat(${BOARD_STATUSES.length}, minmax(11rem, 1fr))`
               }}
             >
-              <div aria-hidden="true" />
+              <div
+                aria-hidden="true"
+                className="sticky top-0 z-20 bg-surface-sunken"
+              />
               {BOARD_STATUSES.map((status) => (
                 <div
                   className={cn(
-                    "rounded-md border-t-4 px-3 py-2",
+                    "sticky top-0 z-20 rounded-md px-3 py-2",
                     COLUMN_HEADER[status]
                   )}
                   key={status}
@@ -468,8 +566,7 @@ const TodayHuddleBoard = ({
                 </div>
               ))}
               {slots.map((slot) => {
-                const isNow =
-                  viewingToday && slot === nowSlotStart(now, timezone);
+                const isNow = viewingToday && slot === currentTime.slot;
 
                 return (
                   <div className="contents" key={slot}>
@@ -483,6 +580,9 @@ const TodayHuddleBoard = ({
                     </p>
                     {BOARD_STATUSES.map((status) => (
                       <DropCell
+                        currentTimeOffset={
+                          isNow ? currentTime.offsetPercent : undefined
+                        }
                         dragDisabled={isMobile}
                         key={`${status}-${slot}`}
                         locale={locale}

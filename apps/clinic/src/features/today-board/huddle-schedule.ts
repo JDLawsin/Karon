@@ -32,6 +32,16 @@ const slotStart = (minutes: number) =>
 const nowSlotStart = (now: Date, timeZone: string = CLINIC_TZ) =>
   slotStart(clinicMinutes(now.toISOString(), timeZone));
 
+const currentTimePosition = (now: Date, timeZone: string = CLINIC_TZ) => {
+  const minutes = clinicMinutes(now.toISOString(), timeZone);
+  const slot = slotStart(minutes);
+
+  return {
+    slot,
+    offsetPercent: ((minutes - slot) / HUDDLE_SLOT_MINUTES) * 100
+  };
+};
+
 const minutesFromClock = (clock: string) => {
   if (!CLOCK.test(clock)) {
     return null;
@@ -249,6 +259,7 @@ export {
   canDropOnBoard,
   carryoverLegendByDay,
   clinicMinutes,
+  currentTimePosition,
   formatSlotLabel,
   groupRowsBySlot,
   huddleHoursOf,

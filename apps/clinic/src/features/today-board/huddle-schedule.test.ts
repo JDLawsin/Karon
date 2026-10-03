@@ -4,6 +4,7 @@ import {
   canDropOnBoard,
   carryoverLegendByDay,
   clinicMinutes,
+  currentTimePosition,
   formatSlotLabel,
   groupRowsBySlot,
   huddleHoursOf,
@@ -38,6 +39,15 @@ describe("slotStart", () => {
   it("floors to 30-minute buckets", () => {
     expect(slotStart(8 * 60 + 14)).toBe(8 * 60);
     expect(slotStart(8 * 60 + 30)).toBe(8 * 60 + 30);
+  });
+});
+
+describe("currentTimePosition", () => {
+  it("places clinic time within its 30-minute schedule slot", () => {
+    expect(currentTimePosition(new Date("2026-09-12T01:15:00.000Z"))).toEqual({
+      slot: 9 * 60,
+      offsetPercent: 50
+    });
   });
 });
 

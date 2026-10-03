@@ -9,10 +9,11 @@ import {
   DrawerHeader,
   DrawerTitle,
   PageHeader,
+  StatusBadge,
   cn,
   useIsMobile
 } from "@karon/design-system";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -20,6 +21,7 @@ import { useClinicChromeActions } from "@/features/auth/clinic-chrome-actions";
 import BookingInbox from "@/features/booking/booking-inbox";
 import {
   calendarDateInClinic,
+  countByBoardStatus,
   formatClinicDate,
   formatClinicWeekday
 } from "@/features/today-board/project-today-board";
@@ -83,6 +85,7 @@ const TodayBoard = () => {
   const isMobile = useIsMobile();
   const chromeSlot = useClinicChromeActions();
   const [open, setOpen] = useState(false);
+  const [bookingsOpen, setBookingsOpen] = useState(false);
   const [pendingBookingCount, setPendingBookingCount] = useState(0);
 
   if (!regionalSettings) {
@@ -104,11 +107,13 @@ const TodayBoard = () => {
   const dateLabel = formatClinicDate(selectedAt, "UTC", locale);
   const title =
     viewingToday ? "Today" : formatClinicWeekday(selectedAt, "UTC", locale);
+  const counts = countByBoardStatus(huddle.rows);
+  const bookedCount = counts.pending_review + counts.confirmed;
 
   const openDrawer = () => setOpen(true);
 
   return (
-    <div className="flex min-w-0 flex-col gap-6">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden">
       <PageHeader description={dateLabel} title={title}>
         <DateControl
           className="hidden md:inline-flex"
@@ -174,6 +179,7 @@ const TodayBoard = () => {
           aria-live="polite"
           className="flex min-h-(--control-min-height) min-w-0 items-center justify-between gap-3 rounded-lg bg-warning-subtle px-4 py-3 text-warning-foreground transition-transform duration-(--motion-duration) hover:scale-(--surface-hover-scale) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href="#booking-inbox"
+          onClick={() => setBookingsOpen(true)}
         >
           <span className="font-medium">
             {pendingBookingCount} booking {pendingBookingCount === 1 ? "request" : "requests"}
@@ -181,26 +187,17 @@ const TodayBoard = () => {
           <span className="shrink-0 text-sm">Open inbox</span>
         </a>
       ) : null}
-      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2.6fr)_minmax(16rem,0.85fr)] lg:items-start">
-        <div className="flex min-w-0 flex-col gap-4">
-          {ready ? (
-            <ul className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
-              <li className="min-w-0 rounded-lg bg-card px-3 py-3">
-                <p className="text-sm text-muted-foreground">
-                  {viewingToday ? "Patients today" : "Patients this day"}
-                </p>
-                <p className="text-2xl font-semibold tabular-nums">
-                  {huddle.snapshot.patientsToday}
-                </p>
-              </li>
-              <li className="min-w-0 rounded-lg bg-card px-3 py-3">
-                <p className="text-sm text-muted-foreground">Arrived</p>
-                <p className="text-2xl font-semibold tabular-nums">
-                  {huddle.snapshot.arrived}
-                </p>
-              </li>
-            </ul>
-          ) : null}
+      {ready ? (
+        <p
+          aria-label="Day status"
+          className="rounded-lg bg-card px-4 py-3 text-sm font-medium tabular-nums text-foreground"
+        >
+          {dateLabel} · {counts.waiting} waiting · {counts.late} late ·{" "}
+          {counts.in_chair} in chair · {bookedCount} booked
+        </p>
+      ) : null}
+      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-4 md:grid-cols-[minmax(0,1fr)_minmax(14rem,0.7fr)] md:grid-rows-1">
+        <div className="flex min-h-0 min-w-0 flex-col">
           <TodayHuddleBoard
             leftoverByDate={huddle.leftoverByDate}
             hours={hours}
@@ -215,13 +212,35 @@ const TodayBoard = () => {
           />
         </div>
         {ready ? (
-          <BookingInbox
-            autoConfirm={autoConfirm}
-            events={events}
-            locale={locale}
-            onPendingCountChange={setPendingBookingCount}
-            timezone={timezone}
-          />
+          <details
+            className="group min-h-0 min-w-0 overflow-hidden rounded-lg bg-card md:flex md:flex-col md:rounded-none md:bg-transparent"
+            onToggle={(event) => {
+              if (isMobile) {
+                setBookingsOpen(event.currentTarget.open);
+              }
+            }}
+            open={!isMobile || bookingsOpen}
+          >
+            <summary className="flex min-h-(--control-min-height) cursor-pointer list-none items-center gap-2 px-4 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden [&::-webkit-details-marker]:hidden">
+              <span className="min-w-0 flex-1">New bookings</span>
+              <StatusBadge tone={pendingBookingCount > 0 ? "warning" : "neutral"}>
+                {String(pendingBookingCount) + " pending"}
+              </StatusBadge>
+              <ChevronDown
+                aria-hidden
+                className="size-5 shrink-0 transition-transform duration-(--motion-duration) group-open:rotate-180"
+              />
+            </summary>
+            <div className="karon-scroll-region-y max-h-[35dvh] min-h-0 overflow-y-auto md:max-h-none md:flex-1">
+              <BookingInbox
+                autoConfirm={autoConfirm}
+                events={events}
+                locale={locale}
+                onPendingCountChange={setPendingBookingCount}
+                timezone={timezone}
+              />
+            </div>
+          </details>
         ) : null}
       </div>
     </div>

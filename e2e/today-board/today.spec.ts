@@ -116,7 +116,13 @@ const interceptEmptyBoard = async (
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ auto_confirm_bookings: true })
+        body: JSON.stringify({
+          auto_confirm_bookings: true,
+          currency_code: "PHP",
+          hours: { open: "09:00", close: "18:00" },
+          locale: "en-PH",
+          timezone: "Asia/Manila"
+        })
       });
       return;
     }
@@ -282,23 +288,38 @@ test.describe("today board", { tag: "@assistant" }, () => {
     await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
   });
 
-  for (const width of [320, 768, 1280] as const) {
-    test(`stays usable at ${width}px`, async ({ page }) => {
+  for (const viewport of [
+    { width: 320, height: 800 },
+    { width: 568, height: 320 },
+    { width: 768, height: 800 },
+    { width: 1280, height: 800 }
+  ] as const) {
+    test(`stays usable at ${viewport.width}x${viewport.height}px`, async ({ page }) => {
       await interceptEmptyBoard(page);
-      await page.setViewportSize({ width, height: 800 });
+      await page.setViewportSize(viewport);
       const today = new TodayBoardPage(page);
       await today.goto();
 
       await expect(page.getByRole("heading", { name: "Today", level: 1 })).toBeVisible();
       await expect(page.getByRole("button", { name: "Add patient" })).toBeVisible();
       await expect(page.getByText("No patients this day")).toBeVisible();
+      const schedule = page.getByRole("region", { name: "Daily schedule" });
+      await expect(schedule).toBeVisible();
 
-      if (width === 320) {
-        const overflow = await page.evaluate(
-          () => document.documentElement.scrollWidth > document.documentElement.clientWidth
-        );
-        expect(overflow).toBe(false);
-      }
+      const overflow = await page.evaluate(() => ({
+        pageX:
+          document.documentElement.scrollWidth >
+          document.documentElement.clientWidth,
+        pageY:
+          document.documentElement.scrollHeight >
+          document.documentElement.clientHeight
+      }));
+      const scheduleScrolls = await schedule.evaluate(
+        (element) => element.scrollHeight > element.clientHeight
+      );
+
+      expect(overflow).toEqual({ pageX: false, pageY: false });
+      expect(scheduleScrolls).toBe(true);
     });
   }
 });

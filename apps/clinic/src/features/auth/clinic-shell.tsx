@@ -133,7 +133,7 @@ const ClinicShell = ({
             userId={userId}
           >
             <ClinicChromeActionsContext.Provider value={chromeActions}>
-              <SidebarProvider className="relative z-1 min-h-dvh min-w-0 bg-sidebar">
+              <SidebarProvider className="relative z-1 h-dvh max-h-dvh min-w-0 overflow-hidden bg-sidebar">
                 <a
                   className="sr-only focus:not-sr-only focus:absolute focus:z-(--z-sticky) focus:inline-flex focus:min-h-(--control-min-height) focus:items-center focus:rounded-md focus:bg-primary focus:px-4 focus:text-sm focus:font-medium focus:text-primary-foreground focus:ring-2 focus:ring-ring focus:outline-none"
                   href="#clinic-main"
@@ -200,7 +200,7 @@ const ClinicShell = ({
                     </div>
                   ) : null}
                   <main
-                    className="min-w-0 flex-1 px-4 py-4 sm:px-6"
+                    className="karon-scroll-region-y flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-4 py-4 sm:px-6"
                     id="clinic-main"
                     tabIndex={-1}
                   >

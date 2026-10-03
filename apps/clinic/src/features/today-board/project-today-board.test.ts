@@ -295,9 +295,5 @@ describe("countByBoardStatus", () => {
       in_chair: 0,
       complete: 0
     });
-    expect(huddle.snapshot).toEqual({
-      patientsToday: 1,
-      arrived: 1
-    });
   });
 });

@@ -20,6 +20,8 @@ import {
   nextVisitStatus,
   type TodayBoardRow
 } from "@/features/today-board/project-today-board";
+import OverflowTooltipText from "@/features/today-board/overflow-tooltip-text";
+import VisitProcessAction from "@/features/today-board/visit-process-action";
 import {
   isReverseVisitStatus,
   transitionVisitStatus
@@ -48,15 +50,6 @@ const STATUS_TONE = {
   complete: "success"
 } as const;
 
-const ACCENT = {
-  pending_review: "border-l-info",
-  confirmed: "border-l-muted-foreground/40",
-  waiting: "border-l-primary",
-  in_chair: "border-l-primary",
-  late: "border-l-warning",
-  complete: "border-l-success"
-} as const;
-
 const REVERSE_TARGETS = [
   "in_chair",
   "waiting",
@@ -77,7 +70,6 @@ const TodayHuddleCard = ({
   dragProps
 }: Props) => {
   const next = nextVisitStatus(row.status);
-  const nextLabel = next ? VISIT_STATUS_LABEL[next] : null;
   const reverseTargets = REVERSE_TARGETS.filter(
     (status) =>
       transitionVisitStatus(row.storedStatus, status) !== null &&
@@ -92,38 +84,29 @@ const TodayHuddleCard = ({
     <li
       {...dragProps}
       className={cn(
-        "flex min-w-0 flex-col gap-1.5 rounded-lg border border-border border-l-4 bg-background px-2.5 py-2",
-        ACCENT[row.status],
+        "flex min-w-0 flex-col gap-3 rounded-lg bg-background p-3",
         draggable && "cursor-grab",
         isDragging && "opacity-40",
-        overlay && "shadow-md"
+        overlay && "ring-2 ring-primary"
       )}
       ref={dragRef}
       role="listitem"
     >
-      <div className="flex min-w-0 items-start gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs tabular-nums text-muted-foreground">
-            {formatVisitTime(row.startsAt, timezone, locale)}
-          </p>
-          <p className="truncate font-medium leading-5">{row.name}</p>
-          {row.serviceName || row.note ? (
-            <p className="truncate text-xs text-muted-foreground">
-              {[row.serviceName, row.note].filter(Boolean).join(" · ")}
-            </p>
-          ) : null}
-        </div>
+      <div className="flex min-w-0 items-center gap-2">
+        <p className="min-w-0 flex-1 text-sm font-medium tabular-nums text-muted-foreground">
+          {formatVisitTime(row.startsAt, timezone, locale)}
+        </p>
         {hasMenu ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 aria-label={`More actions for ${row.name}`}
-                className="h-8 min-h-8 w-8 max-h-8 shrink-0 px-0 hover:scale-100 [&_svg]:size-3.5"
+                className="size-11 min-h-11 shrink-0 px-0 hover:scale-100 [&_svg]:size-5"
                 onPointerDown={(event) => event.stopPropagation()}
                 type="button"
                 variant="ghost"
               >
-                <EllipsisVertical className="size-3.5" />
+                <EllipsisVertical aria-hidden />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" collisionPadding={8}>
@@ -149,45 +132,52 @@ const TodayHuddleCard = ({
           </DropdownMenu>
         ) : null}
       </div>
-      {showStatus ? (
-        <StatusBadge tone={STATUS_TONE[row.status]}>
-          {BOARD_STATUS_LABEL[row.status]}
-        </StatusBadge>
-      ) : null}
-      {row.syncState === "local" ? (
-        <p className="text-xs text-info">On this device</p>
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <OverflowTooltipText className="line-clamp-2 text-base font-semibold leading-5">
+          {row.name}
+        </OverflowTooltipText>
+        {row.serviceName ? (
+          <OverflowTooltipText className="line-clamp-2 text-sm font-medium leading-5">
+            {row.serviceName}
+          </OverflowTooltipText>
+        ) : (
+          <p className="text-sm text-muted-foreground">Service not set</p>
+        )}
+        {row.note ? (
+          <OverflowTooltipText className="line-clamp-2 text-sm leading-5 text-muted-foreground">
+            {row.note}
+          </OverflowTooltipText>
+        ) : null}
+      </div>
+      {showStatus || row.syncState === "local" || next ? (
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            {showStatus ? (
+              <StatusBadge tone={STATUS_TONE[row.status]}>
+                {BOARD_STATUS_LABEL[row.status]}
+              </StatusBadge>
+            ) : null}
+            {row.syncState === "local" ? (
+              <span className="text-xs text-info">On this device</span>
+            ) : null}
+          </div>
+          {next ? (
+            <VisitProcessAction
+              name={row.name}
+              next={next}
+              onPress={() => onMark(row.visitId, next)}
+            />
+          ) : null}
+        </div>
       ) : null}
       {isInChair ? (
-        <div className="flex min-w-0 flex-col gap-2">
-          <Button asChild className="w-full px-2 hover:scale-100">
-            <Link
-              href={`/patients/${encodeURIComponent(row.patientId)}?visit=${encodeURIComponent(row.visitId)}`}
-              onPointerDown={(event) => event.stopPropagation()}
-            >
-              Open visit
-            </Link>
-          </Button>
-          <Button
-            aria-label={`Mark ${row.name} done`}
-            className="w-full px-2 hover:scale-100"
-            onClick={() => onMark(row.visitId, "complete")}
+        <Button asChild className="w-full px-2 hover:scale-100">
+          <Link
+            href={`/patients/${encodeURIComponent(row.patientId)}?visit=${encodeURIComponent(row.visitId)}`}
             onPointerDown={(event) => event.stopPropagation()}
-            type="button"
-            variant="outline"
           >
-            Done
-          </Button>
-        </div>
-      ) : next && nextLabel ? (
-        <Button
-          aria-label={`Mark ${row.name} ${nextLabel.toLowerCase()}`}
-          className="w-full px-2 hover:scale-100"
-          onClick={() => onMark(row.visitId, next)}
-          onPointerDown={(event) => event.stopPropagation()}
-          type="button"
-          variant="outline"
-        >
-          {nextLabel}
+            Open visit
+          </Link>
         </Button>
       ) : null}
     </li>
