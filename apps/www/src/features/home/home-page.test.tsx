@@ -12,7 +12,7 @@ describe("marketing homepage", () => {
 
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("heading", { name: "Every booking lands in one inbox, not in your Messenger chats." })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "How a day works" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "One clear path from booking to chair" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "What founding clinics are shaping next" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Questions small clinics ask first" })).toBeVisible();
     expect(screen.getAllByRole("link", { name: "Apply as a founding clinic" }).length).toBeGreaterThan(0);
