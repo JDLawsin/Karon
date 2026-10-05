@@ -23,6 +23,10 @@ export const metadata: Metadata = {
   applicationName: "Karon",
   title: { default: "Karon", template: "%s | Karon" },
   description: claimText("entity-sentence"),
+  icons: {
+    icon: [{ url: "/logo.svg", sizes: "any", type: "image/svg+xml" }],
+    shortcut: "/logo.svg"
+  },
   robots: { index: true, follow: true }
 };
 
@@ -35,14 +39,27 @@ export const viewport: Viewport = {
 type RootLayoutProps = { children: ReactNode };
 
 const RootLayout = ({ children }: RootLayoutProps) => {
-  const organization = {
+  const structuredData = {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    "@id": `${siteOrigins.www}/#organization`,
-    name: "Karon",
-    url: siteOrigins.www,
-    logo: new URL("/logo.svg", siteOrigins.www).toString(),
-    description: claimText("entity-sentence")
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${siteOrigins.www}/#organization`,
+        name: "Karon",
+        url: siteOrigins.www,
+        logo: new URL("/logo.svg", siteOrigins.www).toString(),
+        description: claimText("entity-sentence")
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${siteOrigins.www}/#website`,
+        url: siteOrigins.www,
+        name: "Karon",
+        description: claimText("entity-sentence"),
+        inLanguage: "en-PH",
+        publisher: { "@id": `${siteOrigins.www}/#organization` }
+      }
+    ]
   };
 
   return (
@@ -51,9 +68,9 @@ const RootLayout = ({ children }: RootLayoutProps) => {
         <AttributionCapture />
         <a className="sr-only z-50 bg-background p-3 focus:not-sr-only focus:fixed focus:left-2 focus:top-2" href="#main-content">Skip to content</a>
         <SiteHeader />
-        <div id="main-content">{children}</div>
+        <div id="main-content" tabIndex={-1}>{children}</div>
         <SiteFooter />
-        <script dangerouslySetInnerHTML={{ __html: JSON.stringify(organization).replaceAll("<", "\\u003c") }} type="application/ld+json" />
+        <script dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replaceAll("<", "\\u003c") }} type="application/ld+json" />
         <KaronMark aria-hidden className="hidden" />
       </body>
     </html>

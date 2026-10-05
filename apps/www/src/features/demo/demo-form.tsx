@@ -266,7 +266,7 @@ const DemoForm = ({
         </div>
       )}
 
-      <fieldset aria-describedby={describedBy("clinicSize")} aria-invalid={Boolean(errors.clinicSize)} id="clinicSize">
+      <fieldset>
         <legend className="mb-2 font-bold">What would you like to do?</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {(["application", "demo"] as const).map((value) => (
@@ -285,7 +285,7 @@ const DemoForm = ({
       <div><label className="mb-1 block font-semibold" htmlFor="city">City or municipality</label><Input aria-describedby={describedBy("city")} aria-invalid={Boolean(errors.city)} autoComplete="address-level2" id="city" maxLength={100} name="city" required />{errorFor("city")}</div>
       <div><label className="mb-1 block font-semibold" htmlFor="email">Email</label><Input aria-describedby={describedBy("email")} aria-invalid={Boolean(errors.email)} autoComplete="email" id="email" maxLength={254} name="email" required type="email" />{errorFor("email")}</div>
 
-      <fieldset>
+      <fieldset aria-describedby={describedBy("clinicSize")} aria-invalid={Boolean(errors.clinicSize)} id="clinicSize">
         <legend className="mb-2 font-bold">Chairs</legend>
         <div className="grid grid-cols-3 gap-2">
           {(["1_chair", "2_chairs", "3_plus"] as const).map((value, index) => <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-md border border-border bg-background px-2 has-checked:border-primary has-checked:ring-2 has-checked:ring-ring" key={value}><input className={radioClass} name="clinicSize" required type="radio" value={value} /><span className="font-semibold">{index === 2 ? "3 or more" : index + 1}</span></label>)}

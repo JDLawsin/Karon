@@ -81,6 +81,30 @@ describe("founding clinic lead form", () => {
     await waitFor(() => expect(summary).toHaveFocus());
   });
 
+  it("links a clinic-size error to the Chairs group", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({
+      error: "Check the highlighted fields and try again.",
+      fieldErrors: { clinicSize: "Choose the number of chairs." }
+    }, { status: 400 }));
+    const { container } = render(
+      <DemoForm
+        contactEmail="hello@example.test"
+        initialIntent="application"
+        responsePromise="within one business day"
+        submissionId="4cf7f7e0-aa10-4fd8-bfff-a4c45d2ec112"
+      />
+    );
+
+    fireEvent.submit(container.querySelector("form")!);
+
+    const errorLink = await screen.findByRole("link", { name: "Choose the number of chairs." });
+    const chairs = screen.getByRole("group", { name: "Chairs" });
+    expect(errorLink).toHaveAttribute("href", "#clinicSize");
+    expect(chairs).toHaveAttribute("id", "clinicSize");
+    expect(chairs).toHaveAttribute("aria-describedby", "clinicSize-error");
+    expect(chairs).toHaveAttribute("aria-invalid", "true");
+  });
+
   it("ignores malformed stored attribution and still submits", async () => {
     sessionStorage.setItem(UTM_STORAGE_KEY, "null");
     const fetchImpl = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({

@@ -1,7 +1,9 @@
 import { pageMetadata } from "@/lib/page-metadata";
 import ProductPage from "@/features/product/product-page";
+import { claimText } from "../../../content/claims";
+import { primaryNavigation } from "../../../content/site-routes";
 
-const title = "Product";
+const title = `${primaryNavigation[1].label}: ${claimText("category-small-dental")}`;
 const description = "See how Karon carries a patient request from booking to the clinic's Today board.";
 
 export const dynamic = "force-static";

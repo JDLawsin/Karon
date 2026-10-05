@@ -9,17 +9,27 @@ export const pageMetadata = (
 ): Metadata => {
   const canonical = new URL(path, siteOrigins.www).toString();
   const image = new URL("/logo.svg", siteOrigins.www).toString();
+  const includesBrand = title.endsWith(" Karon");
+  const socialTitle = includesBrand ? title : `${title} | Karon`;
 
   return {
-    title,
+    title: includesBrand ? { absolute: title } : title,
     description,
     alternates: { canonical },
     openGraph: {
-      title,
+      title: socialTitle,
       description,
       type: "website",
       url: canonical,
+      siteName: "Karon",
+      locale: "en_PH",
       images: [{ url: image, width: 512, height: 512, alt: "Karon" }]
+    },
+    twitter: {
+      card: "summary",
+      title: socialTitle,
+      description,
+      images: [image]
     }
   };
 };

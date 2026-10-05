@@ -8,7 +8,7 @@ import {
 } from "@karon/design-system";
 import Link from "next/link";
 
-import { claims } from "../../../content/claims";
+import { claims, claimText } from "../../../content/claims";
 import {
   pricingCompetitorClaimId,
   pricingFaqs,
@@ -16,6 +16,7 @@ import {
   pricingLastUpdated
 } from "../../../content/pricing";
 import { siteConfig } from "../../../content/site.config";
+import { siteOrigins } from "../../lib/site-origins";
 import Claim from "../claim/claim";
 import StickyCta from "../site-shell/sticky-cta";
 
@@ -39,9 +40,14 @@ const PricingPage = () => {
   const softwareSchema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
+    "@id": `${siteOrigins.www}/product#software`,
     name: "Karon",
+    url: new URL("/product", siteOrigins.www).toString(),
+    description: claimText("entity-sentence"),
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
+    publisher: { "@id": `${siteOrigins.www}/#organization` },
+    featureList: pricingIncludedClaimIds.map((id) => claims[id].text),
     ...(lockedPrice !== null && {
       offers: {
         "@type": "Offer",
