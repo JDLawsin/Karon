@@ -247,7 +247,7 @@ const DemoForm = ({
             {heardSource && !heardSaved && <Button type="submit" variant="outline">Share answer</Button>}
             {heardSaved && <p className="text-sm font-semibold text-success" role="status">Answer saved.</p>}
           </form>
-          <Link className="inline-flex min-h-11 items-center font-semibold text-primary underline-offset-4 hover:underline" href="/features">See what works today</Link>
+          <Link className="inline-flex min-h-11 items-center font-semibold text-primary underline-offset-4 hover:underline" href="/product">Explore the product</Link>
         </CardContent>
       </Card>
     );

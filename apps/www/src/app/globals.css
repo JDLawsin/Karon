@@ -7,6 +7,11 @@
   scroll-padding-bottom: var(--sticky-cta-space);
 }
 
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   line-height: 1.5;
 }
@@ -15,13 +20,13 @@ body {
   padding-bottom: var(--sticky-cta-space);
 }
 
-.switching-comparison {
+.product-comparison {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;
 }
 
-.switching-comparison thead {
+.product-comparison thead {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -31,13 +36,13 @@ body {
   white-space: nowrap;
 }
 
-.switching-comparison tbody,
-.switching-comparison tr {
+.product-comparison tbody,
+.product-comparison tr {
   display: contents;
 }
 
-.switching-comparison th,
-.switching-comparison td {
+.product-comparison th,
+.product-comparison td {
   min-width: 0;
   border-top: 1px solid var(--border);
   padding: 1rem 0.75rem;
@@ -45,7 +50,7 @@ body {
   vertical-align: top;
 }
 
-.switching-comparison tbody th {
+.product-comparison tbody th {
   grid-column: 1 / -1;
   background: var(--muted);
   font-weight: 700;
@@ -54,17 +59,17 @@ body {
 .comparison-mobile-label {
   display: block;
   margin-bottom: 0.5rem;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 700;
   color: var(--muted-foreground);
 }
 
 @media (min-width: 37.5rem) {
-  .switching-comparison {
+  .product-comparison {
     grid-template-columns: minmax(9rem, 0.8fr) repeat(2, minmax(0, 1fr));
   }
 
-  .switching-comparison thead {
+  .product-comparison thead {
     position: static;
     display: contents;
     width: auto;
@@ -75,17 +80,17 @@ body {
     white-space: normal;
   }
 
-  .switching-comparison thead tr {
+  .product-comparison thead tr {
     display: contents;
   }
 
-  .switching-comparison thead th {
+  .product-comparison thead th {
     border-top: 0;
     background: var(--muted);
     font-weight: 700;
   }
 
-  .switching-comparison tbody th {
+  .product-comparison tbody th {
     grid-column: auto;
     background: transparent;
   }

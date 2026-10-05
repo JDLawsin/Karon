@@ -19,7 +19,9 @@ describe("marketing homepage", () => {
     expect(container.querySelector('[data-claim-id="booking-link"]')).toHaveAttribute("data-claim-status", "live");
     expect(container.querySelector('[data-claim-id="import"]')).toHaveAttribute("data-claim-status", "absent");
     expect(container.querySelectorAll('[data-home-section="trust"] [data-claim-status="live"]')).toHaveLength(4);
-    expect(screen.getByText("Illustrative Karon Today preview using fake patient data.")).toBeInTheDocument();
+    expect(screen.getByText("Illustrative Karon Today preview · fake patient data")).toBeVisible();
+    expect(screen.getByText("No public list price yet")).toBeVisible();
+    expect(container.textContent).not.toMatch(/₱\s*\d/iu);
     expect(screen.getByText(/· Claims checked/)).toBeVisible();
     expect(container.querySelector('[role="img"]')).not.toBeInTheDocument();
     expect([...container.querySelectorAll("[data-home-section]")].map((section) =>

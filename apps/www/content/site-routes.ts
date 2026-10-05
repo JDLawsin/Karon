@@ -1,10 +1,9 @@
 export const siteRoutes = [
   "/",
-  "/features",
+  "/product",
   "/pricing",
-  "/switching",
-  "/security",
   "/about",
+  "/contact",
   "/demo",
   "/legal/privacy",
   "/legal/terms",
@@ -14,9 +13,9 @@ export const siteRoutes = [
 ] as const;
 
 export const primaryNavigation = [
-  { href: "/features", label: "What works today" },
+  { href: "/", label: "Home" },
+  { href: "/product", label: "Product" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/switching", label: "Switching" },
-  { href: "/security", label: "Security" },
-  { href: "/about", label: "About" }
+  { href: "/about", label: "About us" },
+  { href: "/contact", label: "Contact" }
 ] as const;

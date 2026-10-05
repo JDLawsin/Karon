@@ -17,13 +17,13 @@ describe("KR-031 legal pages", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: notice.title })).toBeVisible();
     expect(screen.getByText("Pending counsel review")).toBeVisible();
+    expect(screen.getByText(notice.lastUpdated).closest("time")).toHaveAttribute("datetime", notice.lastUpdated);
     expect(screen.getByRole("navigation", { name: "On this page" })).toBeVisible();
     expect(screen.getAllByRole("link", { name: "Retention and deletion" })
       .every((link) => link.getAttribute("href") === "#retention")).toBe(true);
-    expect(screen.getByText("privacy@example.test")).toHaveAttribute(
-      "href",
-      "mailto:privacy@example.test"
-    );
+    expect(screen.getByRole("link", { name: "contact page" })).toHaveAttribute("href", "/contact");
+    expect(screen.queryByText("privacy@example.test")).toBeNull();
+    expect(screen.getByRole("link", { name: "Contact Karon" })).toHaveAttribute("href", "/contact");
   });
 
   it("covers the required marketing privacy facts without making a compliance claim", () => {
@@ -37,6 +37,13 @@ describe("KR-031 legal pages", () => {
     expect(html).toContain("Data Privacy Act of 2012");
     expect(html).toContain("clinic controls its patient information");
     expect(html).not.toMatch(/\b(?:compliant|certified|guaranteed|fully secure)\b/iu);
+  });
+
+  it("uses the configured privacy mailbox when one is available", () => {
+    render(<LegalPage {...privacyNotice("privacy@example.com")} pageId="privacy" />);
+
+    expect(screen.getByRole("link", { name: "privacy@example.com" }))
+      .toHaveAttribute("href", "mailto:privacy@example.com");
   });
 
   it("keeps every notice free of em dashes and marks unresolved wording as pending", () => {

@@ -1,4 +1,4 @@
-import { Button, Card, CardContent, StatusBadge } from "@karon/design-system";
+import { Button, Card, CardContent, ChevronDown, StatusBadge } from "@karon/design-system";
 import Link from "next/link";
 
 import { homepageFaqs, homepageLiveSteps, homepageRoadmap, homepageTrustClaimIds } from "../../../content/homepage";
@@ -11,12 +11,6 @@ type Props = {
 };
 
 const HomePage = ({ headlineId }: Props) => {
-  const priceFormatter = new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: siteConfig.pricingBand.currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  });
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -60,8 +54,8 @@ const HomePage = ({ headlineId }: Props) => {
           </div>
 
           <figure className="relative mx-auto w-full max-w-2xl pb-8 pt-10 sm:px-8 sm:pb-12">
-            <figcaption className="sr-only">Illustrative Karon Today preview using fake patient data.</figcaption>
-            <div className="relative rounded-lg border border-border bg-card p-3 sm:p-5">
+            <figcaption className="mb-3 text-sm font-semibold text-muted-foreground">Illustrative Karon Today preview · fake patient data</figcaption>
+            <div aria-hidden className="relative rounded-lg border border-border bg-card p-3 sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Demo clinic</p>
@@ -126,8 +120,8 @@ const HomePage = ({ headlineId }: Props) => {
               <p className="text-lg leading-relaxed text-muted-foreground">
                 Patients get a simple way to ask for a time. Your team gets one place to review it and run the day.
               </p>
-              <Link className="mt-4 inline-flex min-h-11 items-center font-semibold text-primary underline-offset-4 hover:underline" href="/features">
-                See what works today
+              <Link className="mt-4 inline-flex min-h-11 items-center font-semibold text-primary underline-offset-4 hover:underline" href="/product">
+                Explore the product
               </Link>
             </div>
           </div>
@@ -156,7 +150,7 @@ const HomePage = ({ headlineId }: Props) => {
                         <span className="rounded-md bg-primary py-3 text-primary-foreground">10:00</span>
                         <span className="rounded-md border border-border py-3">10:30</span>
                       </div>
-                      <div className="mt-4 rounded-md bg-muted px-4 py-3 text-sm text-muted-foreground">karon.app/book/demo-clinic</div>
+                      <div className="mt-4 rounded-md bg-muted px-4 py-3 text-sm text-muted-foreground">Your link: /book/demo-clinic</div>
                     </div>
                   )}
 
@@ -208,7 +202,7 @@ const HomePage = ({ headlineId }: Props) => {
             <p className="mt-4 text-lg leading-relaxed text-muted-foreground">Karon starts with the routines of a small dental clinic, then keeps the public promises tied to what the product can do.</p>
             <Link className="mt-5 inline-flex min-h-11 items-center font-semibold text-primary underline-offset-4 hover:underline" href="/about">Read why we are building Karon</Link>
             <p className="mt-4 text-sm text-muted-foreground">
-              <Link className="font-semibold text-foreground underline-offset-4 hover:underline" href="/features">What works today</Link>
+              <Link className="font-semibold text-foreground underline-offset-4 hover:underline" href="/product">Product</Link>
               {" · Claims checked "}<time dateTime="2026-09-30">September 30, 2026</time>
             </p>
           </div>
@@ -230,15 +224,12 @@ const HomePage = ({ headlineId }: Props) => {
           <Card className="grid gap-8 bg-primary p-6 text-primary-foreground sm:p-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:p-12">
             <div>
               <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl" id="pricing-heading">One Karon Clinic plan</h2>
-              <p className="mt-3 max-w-md text-lg text-primary-foreground">Philippines launch pricing is planned within one clear monthly band.</p>
+              <p className="mt-3 max-w-md text-lg text-primary-foreground">Founding-clinic pricing is discussed and confirmed before you join.</p>
             </div>
             <CardContent className="items-start lg:items-end">
-              <p className="text-4xl font-extrabold tabular-nums sm:text-5xl">
-                {priceFormatter.format(siteConfig.pricingBand.minimum)}–{priceFormatter.format(siteConfig.pricingBand.maximum)}
-              </p>
-              <p className="text-primary-foreground">per month</p>
+              <p className="text-4xl font-extrabold leading-tight sm:text-5xl">No public list price yet</p>
               <Button asChild className="bg-background text-foreground hover:bg-muted">
-                <Link href="/pricing">See founding clinic pricing</Link>
+                <Link href="/pricing">Talk through the founding plan</Link>
               </Button>
             </CardContent>
           </Card>
@@ -255,7 +246,7 @@ const HomePage = ({ headlineId }: Props) => {
             {homepageFaqs.map(({ question, answer }) => (
               <details className="group py-1" key={question}>
                 <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  {question}<span aria-hidden className="text-2xl font-normal text-primary transition-transform duration-motion group-open:rotate-45">+</span>
+                  {question}<ChevronDown aria-hidden className="size-5 shrink-0 text-primary transition-transform duration-motion group-open:rotate-180" />
                 </summary>
                 <p className="max-w-3xl pb-6 leading-relaxed text-muted-foreground">{answer}</p>
               </details>

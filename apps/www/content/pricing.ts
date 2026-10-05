@@ -28,6 +28,10 @@ export const pricingFaqs = [
     answer: "Clinic money is designed for owners, not assistants. The owner collections view is still being built with founding clinics."
   },
   {
+    question: "Does Karon take patient payments today?",
+    answer: "Not yet. Recording patient payments and the owner collections view are still being built with founding clinics. Karon does not present them as available today."
+  },
+  {
     question: "Can I export my data?",
     answer: claimText("clinic-data-export"),
     claimId: "clinic-data-export" as const

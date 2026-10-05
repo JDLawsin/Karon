@@ -78,8 +78,8 @@ export const claims = {
     text: "Share a booking link for patient requests.",
     status: "live",
     oracleRef: { row: "Public /book/[slug] requests + accept/decline", commit: oracleCommit },
-    proof: { kind: "artifact", path: "apps/clinic/src/features/booking/public-booking.ts", commit: seededCommit },
-    lastVerified: "2026-09-30",
+    proof: { kind: "artifact", path: "apps/clinic/src/features/booking/public-booking.ts", commit: "4d84ff6" },
+    lastVerified: "2026-10-05",
     unlocks: ["booking link"],
     includeInLlms: true
   },
@@ -96,8 +96,8 @@ export const claims = {
     text: "Run today's visits from one screen.",
     status: "live",
     oracleRef: { row: "Today board: walk-ins + visit status pipeline", commit: oracleCommit },
-    proof: { kind: "artifact", path: "apps/clinic/src/features/today-board/project-today-board.test.ts", commit: seededCommit },
-    lastVerified: "2026-09-30",
+    proof: { kind: "artifact", path: "apps/clinic/src/features/today-board/project-today-board.test.ts", commit: "0d5fede" },
+    lastVerified: "2026-10-05",
     unlocks: ["today board", "today screen"],
     includeInLlms: true
   },
@@ -122,8 +122,8 @@ export const claims = {
     text: "Each clinic's data is kept separate from every other clinic's.",
     status: "live",
     oracleRef: { row: "Tenant isolation (RLS)", commit: oracleCommit },
-    proof: { kind: "artifact", path: "packages/db/src/rls-isolation.rls.test.ts", commit: seededCommit },
-    lastVerified: "2026-09-30",
+    proof: { kind: "artifact", path: "packages/db/src/rls-isolation.rls.test.ts", commit: "4d84ff6" },
+    lastVerified: "2026-10-05",
     unlocks: []
   },
   "idle-lock": {
@@ -147,8 +147,8 @@ export const claims = {
     text: "Manage clinic details and timezone.",
     status: "live",
     oracleRef: { row: "Create clinic; profile, hours, phone, address, logo", commit: oracleCommit },
-    proof: { kind: "artifact", path: "apps/clinic/src/features/auth/clinic-settings.test.tsx", commit: seededCommit },
-    lastVerified: "2026-09-30",
+    proof: { kind: "artifact", path: "apps/clinic/src/features/auth/clinic-settings.test.tsx", commit: "4d84ff6" },
+    lastVerified: "2026-10-05",
     unlocks: ["clinic profile", "timezone"],
     includeInLlms: true
   },
@@ -164,28 +164,28 @@ export const claims = {
     text: "ClinicPH, a multi-specialty tool rather than dental-only, lists a plan capped at 200 patients per month and 2 staff.",
     status: "live",
     oracleRef: { row: "ClinicPH pricing comparison", commit: oracleCommit },
-    proof: { kind: "artifact", path: "apps/www/content/claims.ts", commit: "7a14101" },
-    lastVerified: "2026-09-30",
+    proof: { kind: "artifact", path: "apps/www/content/claims.ts", commit: "875321d" },
+    lastVerified: "2026-10-05",
     unlocks: [],
     type: "competitor",
     source: "https://www.clinicph.health/pricing",
-    asOf: "2026-09-26",
+    asOf: "2026-10-05",
     approvedBy: ["James", "Counsel"]
   },
   "pricing-page-title": {
     text: "Pricing for small dental clinics",
     status: "live",
     oracleRef: { row: "Pricing page title", commit: oracleCommit },
-    proof: { kind: "artifact", path: "apps/www/content/claims.ts", commit: "7a14101" },
-    lastVerified: "2026-09-30",
+    proof: { kind: "artifact", path: "apps/www/content/claims.ts", commit: "875321d" },
+    lastVerified: "2026-10-05",
     unlocks: []
   },
   "pricing-page-description": {
     text: "See Karon's Philippines launch pricing band and founding-clinic program for small dental clinics.",
     status: "live",
     oracleRef: { row: "Pricing page description", commit: oracleCommit },
-    proof: { kind: "artifact", path: "apps/www/content/claims.ts", commit: "7a14101" },
-    lastVerified: "2026-09-30",
+    proof: { kind: "artifact", path: "apps/www/content/claims.ts", commit: "875321d" },
+    lastVerified: "2026-10-05",
     unlocks: []
   },
   "demo-page-title": {
@@ -221,8 +221,8 @@ export const claims = {
     text: "Built at the chair with founding clinics.",
     status: "live",
     oracleRef: { row: "Today board: walk-ins + visit status pipeline", commit: oracleCommit },
-    proof: { kind: "artifact", path: "apps/clinic/src/features/today-board/today-board.tsx", commit: seededCommit },
-    lastVerified: "2026-09-30",
+    proof: { kind: "artifact", path: "apps/clinic/src/features/today-board/today-board.tsx", commit: "0d5fede" },
+    lastVerified: "2026-10-05",
     unlocks: []
   },
   "patient-records": {

@@ -13,7 +13,7 @@ const NotFound = () => (
     <p className="text-lg text-muted-foreground">The page you requested is not here.</p>
     <nav aria-label="Page not found links" className="flex flex-wrap items-center gap-4">
       <Link href="/">Home</Link>
-      <Link href="/features">What works today</Link>
+      <Link href="/product">Product</Link>
       <Link href="/pricing">Pricing</Link>
       <Button asChild>
         <Link data-cta-id={siteConfig.ctas.primary.ctaId} href={siteConfig.ctas.primary.href}>{siteConfig.ctas.primary.label}</Link>

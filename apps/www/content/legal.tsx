@@ -75,7 +75,12 @@ export const privacyNotice = (contactEmail: string): LegalNotice => ({
       title: "Your rights and how to contact us",
       content: <>
         <p>Under the Philippine Data Privacy Act of 2012, you may have rights to be informed, object, access, correct, erase or block, obtain a copy of certain information, and raise a complaint, subject to the law&apos;s conditions.</p>
-        <p>To ask a privacy question, withdraw launch-update consent, or request access, correction, or deletion, email <a className={externalLink} href={`mailto:${contactEmail}`}>{contactEmail}</a>. We may need to verify that the request concerns your information before acting.</p>
+        <p>
+          To ask a privacy question, withdraw launch-update consent, or request access, correction, or deletion, {contactEmail.endsWith(".test")
+            ? <>use the <a className={externalLink} href="/contact">contact page</a></>
+            : <>email <a className={externalLink} href={`mailto:${contactEmail}`}>{contactEmail}</a></>}.
+          {" "}We may need to verify that the request concerns your information before acting.
+        </p>
         <p>Source checked 2026-09-26: <a className={externalLink} href="https://privacy.gov.ph/data-privacy-act/">National Privacy Commission, Data Privacy Act of 2012</a>.</p>
       </>
     }

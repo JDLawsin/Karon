@@ -1,5 +1,6 @@
 export { default as KaronMark } from "./brand/karon-mark";
 export { default as KaronWordmark } from "./brand/karon-wordmark";
+export { ChevronDown } from "lucide-react";
 export { EmptyState } from "./patterns/empty-state";
 export type { EmptyStateProps } from "./patterns/empty-state";
 export { PageHeader } from "./patterns/page-header";

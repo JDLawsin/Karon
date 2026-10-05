@@ -16,6 +16,7 @@ const SiteFooter = () => (
       </div>
       <nav aria-label="Footer navigation" className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
         {primaryNavigation.map(({ href, label }) => <Link href={href} key={href}>{label}</Link>)}
+        <Link href="/pricing#faq">FAQ</Link>
         <Link href="/legal/privacy">Privacy</Link>
         <Link href="/legal/terms">Terms</Link>
         <Link href="/legal/cookies">Cookie notice</Link>

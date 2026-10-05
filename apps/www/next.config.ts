@@ -28,9 +28,19 @@ const nextConfig: NextConfig = {
   ],
   redirects: async () => [
     {
-      source: "/contact",
-      destination: "/demo",
-      statusCode: 301
+      source: "/features/:path*",
+      destination: "/product",
+      permanent: true
+    },
+    {
+      source: "/switching",
+      destination: "/product",
+      permanent: true
+    },
+    {
+      source: "/security",
+      destination: "/product",
+      permanent: true
     },
     hostRedirect(siteOrigins.www)
   ]

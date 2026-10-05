@@ -1,3 +1,6 @@
+import { Button } from "@karon/design-system";
+import Link from "next/link";
+
 import type { LegalNotice } from "../../../content/legal";
 import { legalApproval } from "../../../content/legal-status";
 
@@ -13,7 +16,7 @@ const LegalPage = ({ title, description, lastUpdated, sections, pageId }: Props)
           <p className="w-fit rounded-sm bg-warning-subtle px-2 py-1 text-sm font-semibold text-warning-foreground">Pending counsel review</p>
         )}
         <h1 className="max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl">{title}</h1>
-        <p className="text-sm text-muted-foreground">Last updated: {lastUpdated}</p>
+        <p className="text-sm text-muted-foreground">Last updated: <time dateTime={lastUpdated}>{lastUpdated}</time></p>
         <p className="max-w-[72ch] text-lg text-muted-foreground">{description}</p>
       </header>
 
@@ -37,6 +40,16 @@ const LegalPage = ({ title, description, lastUpdated, sections, pageId }: Props)
             {content}
           </section>
         ))}
+
+        <aside className="bg-muted p-6 sm:p-8" aria-labelledby={`${pageId}-contact`}>
+          <h2 className="text-xl font-bold" id={`${pageId}-contact`}>Questions about this notice?</h2>
+          <p className="mt-2 max-w-[60ch] leading-7 text-muted-foreground">
+            Ask for a plain-language explanation or tell us what you need help finding. Do not include patient details.
+          </p>
+          <Button asChild className="mt-5 w-full sm:w-auto" variant="outline">
+            <Link href="/contact">Contact Karon</Link>
+          </Button>
+        </aside>
       </article>
     </div>
   </main>

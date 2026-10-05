@@ -1,7 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { pricingFaqs } from "../../../content/pricing";
+import { claims } from "../../../content/claims";
+import { pricingCompetitorClaimId, pricingFaqs } from "../../../content/pricing";
 import PricingPage from "./pricing-page";
 
 vi.mock("../site-shell/sticky-cta", () => ({ default: () => null }));
@@ -13,18 +14,25 @@ describe("pricing page", () => {
 
     expect(within(pricingSection).getAllByTestId("pricing-card")).toHaveLength(1);
     expect(within(pricingSection).getByText("Karon Clinic")).toBeVisible();
-    expect(within(pricingSection).getByText("₱599 to ₱799")).toBeVisible();
-    expect(within(pricingSection).getByText("per month")).toBeVisible();
-    expect(within(pricingSection).getByText("Philippines launch pricing")).toBeVisible();
+    expect(within(pricingSection).getByText("Founding-clinic pricing")).toBeVisible();
+    expect(within(pricingSection).getByText("Confirmed with you before you join.")).toBeVisible();
+    expect(within(pricingSection).getByText("No public list price yet.")).toBeVisible();
+    expect(within(pricingSection).queryByText(/₱\s*\d/iu)).toBeNull();
     expect(within(pricingSection).getByText("Public signup opens after our founding clinics finish testing the full patient visit.")).toBeVisible();
+    expect(within(pricingSection).getByRole("link", { name: "Book a demo" })).toHaveAttribute("href", "/demo?intent=demo");
     expect(within(pricingSection).queryByText(/every staff account included/iu)).toBeNull();
     expect(within(pricingSection).queryByText(/per clinic per month/iu)).toBeNull();
     expect(within(pricingSection).getByRole("link", { name: "ClinicPH pricing" })).toHaveAttribute(
       "href",
       "https://www.clinicph.health/pricing"
     );
-    expect(within(pricingSection).getByText("September 26, 2026").closest("time"))
-      .toHaveAttribute("datetime", "2026-09-26");
+    const competitor = claims[pricingCompetitorClaimId];
+    const competitorDate = new Intl.DateTimeFormat("en-PH", {
+      dateStyle: "long",
+      timeZone: "UTC"
+    }).format(new Date(`${competitor.asOf}T00:00:00Z`));
+    expect(within(pricingSection).getByText(competitorDate).closest("time"))
+      .toHaveAttribute("datetime", competitor.asOf);
 
     const included = within(pricingSection).getByRole("list", { name: "Included today" });
     expect(included.querySelectorAll('[data-claim-status="live"]')).toHaveLength(4);
